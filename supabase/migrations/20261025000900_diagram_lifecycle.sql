@@ -8,7 +8,7 @@ declare
   new_visual jsonb;
   reason text;
   outcome text;
-  current_ms bigint := floor(extract(epoch from clock_timestamp())*1000)::bigint;
+  current_ms bigint;
 begin
   if new.kind <> 'lessons' then return new; end if;
   for item in
@@ -19,6 +19,7 @@ begin
       and r.data->>'status' in ('waiting','running')
     order by r.id for update of r
   loop
+    current_ms := floor(extract(epoch from clock_timestamp())*1000)::bigint;
     reason := null;
     select value into old_visual from jsonb_array_elements(coalesce(old.data->'visuals','[]'::jsonb))
       where value->>'id'=item.visual_id;

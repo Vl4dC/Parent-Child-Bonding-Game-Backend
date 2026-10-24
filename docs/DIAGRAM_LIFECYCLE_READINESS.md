@@ -167,3 +167,11 @@ separate. Feature enablement and hosted migration 009 have not been performed by
 
 The supplemental [OpenAPI snapshot](diagram-lifecycle-readiness.openapi.json) records all 15
 diagram operations and `/ready` from this batch. Existing OpenAPI snapshots remain unchanged.
+
+### Final lock-wait regression addition
+
+Race writes and source invalidation now evaluate the deadline after acquiring the race lock,
+so lock contention cannot turn an already elapsed race into an ordinary cancellation. The final
+full local run passed **737 tests with 28 intentional skips** after adding a PostgreSQL row-lock
+timing regression (the extra skip is its memory adapter variant). The earlier 736-test run above
+is retained as historical evidence. Renderer behavior is unchanged from the 16-test browser run.

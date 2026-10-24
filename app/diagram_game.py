@@ -225,6 +225,7 @@ class DiagramGame:
             r = tx.get("races", race_id, lock=True)
             if not r:
                 raise HTTPException(404, "Race not found.")
+            now = self.now(tx)
         players = tx.players(race_id, private_for=actor if private_actor else None)
         player = next((p for p in players if p["user_id"] == actor), None)
         if not player and not (management and actor in (room["host_id"], r["owner_id"])):

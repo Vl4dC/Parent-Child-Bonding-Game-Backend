@@ -1,8 +1,11 @@
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
+from fastapi import HTTPException
 
+from app.diagram_game import DiagramGame
 from app.diagram_store import DiagramStore
 from learning_service.store import StoredLesson
 from tests.test_diagram_assembly import (
@@ -270,3 +273,39 @@ def test_finished_summary_still_erased_when_source_owner_deletes_data(game):
     )
     with DiagramStore(repo).transaction() as tx:
         assert tx.get("templates", template["id"]) is None and tx.get("races", race["id"]) is None
+
+
+def test_cancel_rechecks_deadline_after_waiting_for_race_lock(game):
+    _, repo, _, now, _, _ = game
+    if not repo.durable:
+        pytest.skip("Concurrent row-lock timing requires PostgreSQL")
+    _, race, _ = setup(game)
+    start(game, race)
+    observed = threading.Event()
+
+    def clock():
+        value = now[0]
+        observed.set()
+        return value
+
+    service = DiagramGame(repo, clock)
+
+    def cancel():
+        try:
+            service.cancel(race["id"], PARENT, {"expected_version": 2}, "deadline-lock-check")
+        except HTTPException as exc:
+            return exc.status_code
+        return 200
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        with DiagramStore(repo).transaction(write=True) as tx:
+            record = tx.get("races", race["id"], lock=True)
+            record["deadline_at"] = now[0] + 100
+            tx.put("races", race["id"], record)
+            pending = pool.submit(cancel)
+            assert observed.wait(2)
+            now[0] += 200
+        assert pending.result(timeout=5) == 409
+    with DiagramStore(repo).transaction() as tx:
+        record = tx.get("races", race["id"])
+        assert service.status(record, tx.players(race["id"]), now[0]) == "expired"
