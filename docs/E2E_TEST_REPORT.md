@@ -138,6 +138,8 @@ PostgreSQL. Severity is for this product (a children's learning app), not generi
 | BUG-15 | Low | visual pages | `_script_json` escapes `</` but not `<!--`, so `<!--<script>` in a visual's `alt` can swallow the page's closing `</script>` and break rendering | Also replace `<!--` |
 | BUG-16 | Low | 401 for an invalid token | `WWW-Authenticate` is sent for a missing credential but not for an invalid or expired one (RFC 6750) | Add `headers={"WWW-Authenticate": "Bearer error=\"invalid_token\""}` to those 401s |
 | BUG-17 | Low (cosmetic) | approval timestamps | The same `reviewed_at` instant is `…Z` in the approve response and `…+00:00` in `GET /api/lessons`; PostgreSQL also returns room `expires_at` in the server's UTC offset | One serializer for all timestamps |
+| BUG-18 | Low | `/api/diagram-assembly/*`, `/api/guardian/*` (merged from main) | A request with no credential gets 401 without `WWW-Authenticate: Bearer`, unlike every other `/api` route | Raise their 401s with the same `WWW-Authenticate` header as the shared auth dependency |
+| BUG-19 | Low | `/api/guardian/*` and `/api/diagram-assembly/*` with their feature off (the default) | The feature flag is checked before the credential: guardian routes answer an anonymous caller 503 "Learner approval is not enabled", and diagram routes answer any token, even a forged one, 503 "Diagram assembly is not enabled", so the flag is visible without an account. Neither returns data | Verify the credential first, then check the flag |
 
 ## 6. Hardening notes (not failures of the current contract)
 

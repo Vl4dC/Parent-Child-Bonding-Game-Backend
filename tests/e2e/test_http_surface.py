@@ -26,15 +26,26 @@ BAD_AUTHORIZATION = [
 ]
 
 
+# Opt-in features merged from main that answer bad credentials differently (BUG-18, BUG-19, both off
+# by default). They get their own checks below; remove a prefix once its bugs are fixed.
+FLAGGED_FEATURES = ("/api/diagram-assembly/", "/api/guardian/")
+
+
+def route_requests(client, *, flagged):
+    for method, path in api_routes(client.app):
+        if path.startswith(FLAGGED_FEATURES) == flagged:
+            url = re.sub(r"\{[^}]+\}", "x", path)
+            yield method, url, {"json": {}} if method in ("POST", "PUT", "PATCH") else {}
+
+
 def test_every_data_route_rejects_missing_or_bad_credentials(client):
-    routes = list(api_routes(client.app))
+    routes = list(route_requests(client, flagged=False))
     # The walk must not silently cover nothing: docs/API_PLATFORM.md lists 43 operations.
     assert len(routes) >= 40
-    assert ("POST", "/api/rooms/join") in routes and ("GET", "/api/me/progress") in routes
+    assert ("POST", "/api/rooms/join", {"json": {}}) in routes
+    assert ("GET", "/api/me/progress", {}) in routes
     anon = anonymous(client)
-    for method, path in routes:
-        url = re.sub(r"\{[^}]+\}", "x", path)
-        body = {"json": {}} if method in ("POST", "PUT", "PATCH") else {}
+    for method, url, body in routes:
         for header in BAD_AUTHORIZATION:
             headers = {"Authorization": header} if header else {}
             r = anon.request(method, url, headers=headers, **body)
@@ -42,6 +53,40 @@ def test_every_data_route_rejects_missing_or_bad_credentials(client):
             assert r.headers["cache-control"] == "no-store"
             if header is None or not header.lower().startswith("bearer ") or len(header) <= 7:
                 assert r.headers["www-authenticate"] == "Bearer"  # no usable credential at all
+
+
+def test_flagged_feature_routes_never_accept_bad_credentials(client):
+    routes = list(route_requests(client, flagged=True))
+    assert len(routes) >= 10  # diagram assembly and guardian approval are both mounted
+    anon = anonymous(client)
+    for method, url, body in routes:
+        for header in BAD_AUTHORIZATION:
+            headers = {"Authorization": header} if header else {}
+            r = anon.request(method, url, headers=headers, **body)
+            assert r.status_code in (401, 503), (method, url, header, r.status_code)
+            assert r.headers["cache-control"] == "no-store"
+
+
+@pytest.mark.xfail(strict=True, reason="BUG-18: these 401s omit WWW-Authenticate")
+@pytest.mark.parametrize(
+    "url", ["/api/diagram-assembly/races/x", "/api/guardian/registration-requests"]
+)
+def test_flagged_features_challenge_a_missing_credential(client, url):
+    r = anonymous(client).get(url)
+    assert r.status_code == 401 and r.headers.get("www-authenticate") == "Bearer"
+
+
+@pytest.mark.xfail(strict=True, reason="BUG-19: the feature flag is checked before the credential")
+@pytest.mark.parametrize(
+    ("url", "header"),
+    [
+        ("/api/diagram-assembly/races/x", "Bearer not-a-real-token"),
+        ("/api/guardian/registration-requests", None),
+    ],
+)
+def test_flagged_features_ask_for_sign_in_before_revealing_the_flag(client, url, header):
+    r = anonymous(client).get(url, headers={"Authorization": header} if header else {})
+    assert r.status_code == 401
 
 
 @pytest.mark.xfail(strict=True, reason="BUG-16: a 401 for an invalid token omits WWW-Authenticate")
