@@ -37,6 +37,8 @@ Use the returned access token as `Authorization: Bearer <access_token>` for `/au
 
 - [API.md](API.md): endpoints, JSON examples, responses, errors, and session lifecycle.
 - [Frontend integration](docs/FRONTEND_INTEGRATION.md): source locations, role mapping, and future contracts.
+- [Backend product requirements](docs/PRODUCT_BACKEND_REQUIREMENTS.md): moved backend planning context.
+- [Original authentication setup](docs/ORIGINAL_AUTH_SETUP.md): archived provider/email setup notes.
 - [Architecture and operations](docs/ARCHITECTURE.md): configuration, boundaries, and release checks.
 - [Contributor instructions](AGENTS.md): backend-only scope and main-repository lookup workflow.
 - Local interactive documentation: [Swagger](http://127.0.0.1:8000/docs),
