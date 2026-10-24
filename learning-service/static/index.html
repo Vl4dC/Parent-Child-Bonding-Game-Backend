@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Learn and Quiz</title>
+  <style>
+    :root {
+      --bg: #f6f5f1; --card: #ffffff; --text: #1d1d1b; --muted: #6b6a65; --line: #e2e0d8;
+      --accent: #3b5bdb; --accent-text: #ffffff; --pick: #e7ecfd;
+      --ok: #1f8a4c; --ok-bg: #e3f4ea; --bad: #c0392b; --bad-bg: #fbe7e4; --warn-bg: #fff4d6;
+      --radius: 12px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #161614; --card: #22221f; --text: #ecebe6; --muted: #a09e96; --line: #3a3934;
+        --accent: #7c95ff; --accent-text: #11131c; --pick: #2a3150;
+        --ok: #5fd08f; --ok-bg: #1d3427; --bad: #ff8a7a; --bad-bg: #3d2320; --warn-bg: #3a3220;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    main { max-width: 720px; margin: 0 auto; padding: 32px 16px 64px; }
+    h1 { font-size: 1.6rem; margin: 0 0 4px; }
+    h2 { font-size: 1.15rem; margin: 0 0 16px; line-height: 1.4; }
+    .sub { color: var(--muted); margin: 0 0 24px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; }
+    .hidden { display: none !important; }
+
+    label { display: block; font-weight: 600; margin-bottom: 6px; }
+    textarea, input[type=number] {
+      width: 100%; font: inherit; color: inherit; background: var(--bg);
+      border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+    }
+    textarea { min-height: 84px; resize: vertical; }
+    .row { display: flex; gap: 16px; flex-wrap: wrap; margin: 16px 0 20px; align-items: flex-end; }
+    .row > div { flex: 1 1 160px; }
+    .seg { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    .seg input { position: absolute; opacity: 0; pointer-events: none; }
+    .seg label { flex: 1; margin: 0; padding: 10px 12px; text-align: center; cursor: pointer; font-weight: 500; }
+    .seg input:checked + label { background: var(--accent); color: var(--accent-text); }
+    .seg input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+    button {
+      font: inherit; cursor: pointer; border-radius: 8px; padding: 10px 18px;
+      border: 1px solid var(--line); background: var(--card); color: var(--text);
+    }
+    button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    .spinner {
+      display: inline-block; width: 14px; height: 14px; margin-right: 8px; vertical-align: -2px;
+      border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error { margin-top: 16px; padding: 12px 14px; border-radius: 8px; background: var(--bad-bg); color: var(--bad); }
+    .note { margin-bottom: 16px; padding: 10px 14px; border-radius: 8px; background: var(--warn-bg); font-size: .92rem; }
+
+    .meta { display: flex; justify-content: space-between; color: var(--muted); font-size: .92rem; margin-bottom: 12px; }
+    .bar { height: 4px; background: var(--line); border-radius: 2px; margin-bottom: 20px; overflow: hidden; }
+    .bar > div { height: 100%; background: var(--accent); transition: width .2s; }
+
+    .options { display: grid; gap: 10px; }
+    .opt {
+      display: flex; gap: 12px; align-items: flex-start; text-align: left; width: 100%;
+      padding: 12px 14px; border: 1.5px solid var(--line); background: var(--card);
+    }
+    .opt:not(:disabled):hover { border-color: var(--accent); }
+    .opt .key {
+      flex: none; width: 26px; height: 26px; border-radius: 6px; display: grid; place-items: center;
+      font-size: .85rem; font-weight: 700; background: var(--bg); border: 1px solid var(--line);
+    }
+    .opt.picked { border-color: var(--accent); background: var(--pick); }
+    .opt.right { border-color: var(--ok); background: var(--ok-bg); }
+    .opt.wrong { border-color: var(--bad); background: var(--bad-bg); }
+    .opt:disabled { opacity: 1; cursor: default; }
+
+    .explain { margin-top: 16px; padding: 12px 14px; border-left: 3px solid var(--ok); background: var(--bg); border-radius: 0 8px 8px 0; }
+    .explain.bad { border-left-color: var(--bad); }
+    .explain strong { display: block; margin-bottom: 2px; }
+    .nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 20px; }
+
+    .score { font-size: 2.2rem; font-weight: 700; margin: 0 0 4px; }
+    .review { list-style: none; padding: 0; margin: 24px 0; display: grid; gap: 12px; }
+    .review li { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+    .review .q { font-weight: 600; margin-bottom: 6px; }
+    .review .a { font-size: .95rem; }
+    .review .ok { color: var(--ok); } .review .no { color: var(--bad); }
+    .review .why { color: var(--muted); font-size: .92rem; margin-top: 6px; }
+    #lesson h3 { font-size: 1rem; margin: 20px 0 6px; }
+    input[type=text] { width: 100%; font: inherit; color: inherit; background: var(--bg);
+                       border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+    .visual { margin: 16px 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+    .visual figcaption { padding: 10px 14px; font-size: .92rem; color: var(--muted); border-top: 1px solid var(--line); }
+    .visual figcaption strong { display: block; color: var(--text); }
+    .flashcard { min-height: 180px; padding: 20px; border: 1.5px solid var(--line); border-radius: var(--radius); background: var(--bg); }
+    .flashcard.back { border-color: var(--accent); }
+    .flashcard h2 { margin: 12px 0 0; }
+    #q-visual iframe, #card-visual iframe { display: block; width: 100%; height: 300px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 14px; }
+    .visual.pending { padding: 18px 16px; color: var(--muted); border-style: dashed; font-size: .92rem; }
+    .visual iframe { display: block; width: 100%; height: 320px; border: 0; }
+    #lesson-points { margin: 0; padding-left: 20px; }
+    kbd { font: .8rem ui-monospace, monospace; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Learn and Quiz</h1>
+  <p class="sub">Pick a topic. The agent explains it for your age, then quizzes you on what you learned.</p>
+
+  <!-- 1. Start: topic + age -->
+  <section id="start" class="card">
+    <form id="start-form">
+      <label for="topic" id="topic-label">What do you want to learn?</label>
+      <textarea id="topic" required maxlength="200" placeholder="e.g. photosynthesis, fractions, how the internet works"></textarea>
+      <div style="margin:14px 0 0">
+        <label for="book">Or study from your own book</label>
+        <input id="book" type="file" accept="application/pdf,image/*" multiple>
+        <p class="sub" style="margin:4px 0 0;font-size:.85rem">A PDF, or photos of pages. Only what the pages say is used.</p>
+        <div id="book-status" class="note hidden" style="margin:8px 0 0"></div>
+        <button id="book-remove" type="button" class="hidden" style="margin-top:8px">Remove the book</button>
+        <div id="book-error" class="error hidden" role="alert"></div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="age">Your age</label>
+          <input id="age" type="number" min="5" max="99" value="12" required>
+        </div>
+      </div>
+      <button id="learn" class="primary" type="submit">Explain it to me</button>
+      <div id="start-error" class="error hidden" role="alert"></div>
+    </form>
+  </section>
+
+  <!-- 2. Lesson -->
+  <section id="lesson" class="card hidden">
+    <p class="sub" id="lesson-meta" style="margin:0 0 4px"></p>
+    <h2 id="lesson-title"></h2>
+    <p id="lesson-summary"></p>
+    <div id="lesson-sections"></div>
+    <p id="visual-status" class="sub hidden" style="margin:12px 0 0"></p>
+    <h3>Key points</h3>
+    <ul id="lesson-points"></ul>
+    <form id="ask-form" class="row" style="margin-top:20px">
+      <div style="flex:3 1 240px">
+        <label for="ask">Want to see something?</label>
+        <input id="ask" type="text" maxlength="300" placeholder="e.g. show me what happens inside the leaf">
+      </div>
+      <div style="flex:0 0 auto"><button id="ask-btn" type="submit">Show me</button></div>
+    </form>
+    <div class="row">
+      <div>
+        <label for="num">Questions</label>
+        <input id="num" type="number" min="1" max="15" value="5" required>
+      </div>
+    </div>
+    <div class="nav">
+      <button id="new-topic" type="button">&larr; New topic</button>
+      <span style="display:flex;gap:10px">
+        <button id="make-cards" type="button">Flashcards</button>
+        <button id="make-quiz" class="primary" type="button">Create quiz</button>
+      </span>
+    </div>
+    <div id="lesson-error" class="error hidden" role="alert"></div>
+  </section>
+
+  <!-- Flashcards -->
+  <section id="cards" class="card hidden">
+    <div class="meta"><span id="card-progress"></span><span id="card-known"></span></div>
+    <div class="bar"><div id="card-bar"></div></div>
+    <div id="card-face" class="flashcard">
+      <p class="sub" id="card-side" style="margin:0 0 8px"></p>
+      <div id="card-visual"></div>
+      <h2 id="card-text"></h2>
+    </div>
+    <div id="card-done" class="hidden">
+      <p class="score" id="card-done-title"></p>
+      <ul id="card-hard" class="review"></ul>
+      <button id="card-followup" type="button" class="primary hidden">Try new questions on these</button>
+    </div>
+    <div id="card-error" class="error hidden" role="alert"></div>
+    <div class="nav">
+      <button id="cards-back" type="button">&larr; Back</button>
+      <span style="display:flex;gap:10px">
+        <button id="card-again" type="button" class="hidden">Still learning</button>
+        <button id="card-know" type="button" class="primary hidden">Got it</button>
+        <button id="card-flip" type="button" class="primary">Show answer</button>
+      </span>
+    </div>
+    <p class="sub" style="margin:16px 0 0;font-size:.85rem">Keys: <kbd>Space</kbd> flip, <kbd>1</kbd> still learning, <kbd>2</kbd> got it.</p>
+  </section>
+
+  <!-- Quiz -->
+  <section id="quiz" class="card hidden">
+    <div id="focus" class="note hidden"></div>
+    <div id="dropped" class="note hidden"></div>
+    <div class="meta"><span id="progress"></span><span id="running"></span></div>
+    <div class="bar"><div id="bar"></div></div>
+    <h2 id="question"></h2>
+    <div id="q-visual"></div>
+    <div id="options" class="options"></div>
+    <div id="explain" class="explain hidden"></div>
+    <div id="quiz-error" class="error hidden" role="alert"></div>
+    <div class="nav">
+      <span></span>
+      <button id="next" class="primary" type="button">Next &rarr;</button>
+    </div>
+    <p class="sub" style="margin:16px 0 0;font-size:.85rem">Keys: <kbd>1</kbd>–<kbd>4</kbd> or <kbd>A</kbd>–<kbd>D</kbd> to answer, <kbd>Enter</kbd> for next.</p>
+  </section>
+
+  <!-- Results -->
+  <section id="results" class="card hidden">
+    <p class="score" id="score"></p>
+    <p class="sub" id="results-title" style="margin:0"></p>
+    <div id="results-note" class="note hidden" style="margin-top:16px"></div>
+    <div id="weak-actions" class="hidden" style="margin-top:16px">
+      <p class="sub" style="margin:0 0 8px">Missed some? Two ways to fix it:</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button id="mistake-cards" type="button">Flashcards of my mistakes</button>
+        <button id="followup" type="button" class="primary">New questions on my weak spots</button>
+      </div>
+    </div>
+    <div id="results-error" class="error hidden" role="alert"></div>
+    <ul id="review" class="review"></ul>
+    <div class="nav">
+      <button id="back-to-lesson" type="button">&larr; Back to lesson</button>
+      <button id="restart" class="primary" type="button">New topic</button>
+    </div>
+  </section>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>
