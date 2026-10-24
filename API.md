@@ -183,3 +183,12 @@ CORS permits configured exact origins, GET/POST/PUT/PATCH/DELETE, Authorization 
 it does not enable cookie credentials or replace authentication. Upstream Supabase rate limits
 exist; application/edge per-client limiting has not been implemented. Never log real passwords,
 Bearer/refresh tokens, email hashes, or request bodies containing them.
+
+
+## Learner approval addition — 24 October 2026
+
+Five opt-in request/status/resend/guardian-decision routes have been added. See
+[LEARNER_APPROVAL.md](docs/LEARNER_APPROVAL.md) and the additive
+[OpenAPI schema](docs/learner-approval.openapi.json). The feature defaults off; approval does not
+activate a learner or grant family access. Earlier auth contracts and existing signup behavior
+remain unchanged. Creation requests require a private random 32–128 character Idempotency-Key.

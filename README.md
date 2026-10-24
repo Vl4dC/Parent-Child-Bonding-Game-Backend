@@ -120,3 +120,13 @@ access to another person's learning data. There is no deployment or frontend cha
 The old `learning-service/static/` files are retained unchanged as historical development artifacts;
 the unified API does not serve them. The old Python project has been consolidated into
 `learning_service/`, with one root dependency lock and one test suite.
+
+
+## Learner approval workflow — 24 October 2026 addition
+
+An opt-in pending-request workflow now supports private status receipts, bounded notification
+resends and verified, request-authorized guardian decisions. See
+[learner approval](docs/LEARNER_APPROVAL.md) for the five endpoints, migration 006, explicit mail
+worker and authority-review bridge. This records decisions only; it does not activate accounts,
+replace existing registration or establish mandatory app-wide guardian consent. Feature defaults
+off. No frontend or hosted service was changed.

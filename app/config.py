@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     generation_daily_limit: int = Field(30, ge=1, le=1000)
     api_requests_per_minute: int = Field(120, ge=1, le=10000)
     job_attempt_limit: int = Field(2, ge=1, le=5)
+    learner_approval_enabled: bool = False
+    learner_approval_secret: SecretStr | None = None
     quiz_model: str = "anthropic:claude-sonnet-5-5"
     visual_model: str | None = None
     model_timeout_seconds: int = Field(60, ge=1, le=300)
@@ -43,6 +45,11 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_auth_mode(self):
+        if self.learner_approval_enabled and (
+            self.learner_approval_secret is None
+            or len(self.learner_approval_secret.get_secret_value().encode()) < 32
+        ):
+            raise ValueError("Learner approval requires a private secret of at least 32 bytes")
         if self.demo_mode:
             if self.app_env not in ("development", "test"):
                 raise ValueError("DEMO_MODE is allowed only with APP_ENV=development or test")

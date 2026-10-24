@@ -345,4 +345,7 @@ def create_app(
     app.include_router(platform_router, responses=common_errors)
     app.include_router(jobs_router, responses=common_errors)
     app.include_router(rooms_router, responses=common_errors)
+    from app.approval_api import install as install_approval
+
+    install_approval(app)
     return app

@@ -64,3 +64,13 @@ No Presence publication or active-game synchronization is implemented yet.
 A future game server must keep secret cards and answer keys off shared room payloads. The prototype's
 full `RoomState.secret` must never become a public API response. Derive actors from verified identity,
 validate phase/turn actions on the server, and choose/freeze rules before implementing each mode.
+
+
+## Learner approval endpoints — additive note, 24 October 2026
+
+Opt-in canonical routes now cover pending learner registration, private receipt polling,
+notification resend and verified guardian decisions. See [LEARNER_APPROVAL.md](LEARNER_APPROVAL.md).
+No frontend file was changed. The signup branch still needs future API-base/proxy wiring and
+required headers; no same-origin /api/registration/learner alias is introduced. Parent/learner
+labels are not authority. Birth-year intake does not settle the under-16 versus under-18 policy.
+No activation, username login or automatic family-link behavior is included.
