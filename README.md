@@ -129,3 +129,13 @@ finish/review, independent all/missed retries, exact-snapshot history and review
 Owning authors can review, correct into a new immutable version, and confirm that snapshot.
 See [non-AI quiz API](docs/QUIZ_PRACTICE_API.md). This adds no model calls, AI changes, frontend
 changes, rewards, ranking or multiplayer. Existing production/generation contracts remain intact.
+
+
+## Learner approval workflow — 24 October 2026 addition
+
+An opt-in pending-request workflow now supports private status receipts, bounded notification
+resends and verified, request-authorized guardian decisions. See
+[learner approval](docs/LEARNER_APPROVAL.md) for the five endpoints, migration 006, explicit mail
+worker and authority-review bridge. This records decisions only; it does not activate accounts,
+replace existing registration or establish mandatory app-wide guardian consent. Feature defaults
+off. No frontend or hosted service was changed.

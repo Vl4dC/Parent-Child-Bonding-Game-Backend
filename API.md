@@ -192,3 +192,12 @@ idempotent answers, finish/review, all/missed retries, snapshot history, idempot
 author review, question revisions and snapshot-bound approval. See
 [QUIZ_PRACTICE_API.md](docs/QUIZ_PRACTICE_API.md) and the additive
 [OpenAPI supplement](docs/quiz-practice.openapi.json). AI generation/safety code is unchanged.
+
+
+## Learner approval addition — 24 October 2026
+
+Five opt-in request/status/resend/guardian-decision routes have been added. See
+[LEARNER_APPROVAL.md](docs/LEARNER_APPROVAL.md) and the additive
+[OpenAPI schema](docs/learner-approval.openapi.json). The feature defaults off; approval does not
+activate a learner or grant family access. Earlier auth contracts and existing signup behavior
+remain unchanged. Creation requests require a private random 32–128 character Idempotency-Key.

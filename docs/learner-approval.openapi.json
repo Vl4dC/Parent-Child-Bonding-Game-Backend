@@ -1,0 +1,733 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Learner approval API — additive schema",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/auth/registration/learners": {
+      "post": {
+        "tags": [
+          "Learner approval"
+        ],
+        "summary": "Register",
+        "operationId": "register_auth_registration_learners_post",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 32,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationAccepted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified session required"
+          },
+          "403": {
+            "description": "Email, request-specific authority, or proof rejected"
+          },
+          "404": {
+            "description": "Request not found or not authorized"
+          },
+          "409": {
+            "description": "Stale state or conflicting retry"
+          },
+          "410": {
+            "description": "Request receipt expired"
+          },
+          "429": {
+            "description": "Request or notification limit reached"
+          },
+          "503": {
+            "description": "Approval disabled or storage unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/registration/requests/{request_id}": {
+      "get": {
+        "tags": [
+          "Learner approval"
+        ],
+        "summary": "Status",
+        "operationId": "status_auth_registration_requests__request_id__get",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Request Id"
+            }
+          },
+          {
+            "name": "X-Registration-Receipt",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "writeOnly": true,
+              "format": "password",
+              "minLength": 16,
+              "maxLength": 256,
+              "title": "X-Registration-Receipt"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified session required"
+          },
+          "403": {
+            "description": "Email, request-specific authority, or proof rejected"
+          },
+          "404": {
+            "description": "Request not found or not authorized"
+          },
+          "409": {
+            "description": "Stale state or conflicting retry"
+          },
+          "410": {
+            "description": "Request receipt expired"
+          },
+          "429": {
+            "description": "Request or notification limit reached"
+          },
+          "503": {
+            "description": "Approval disabled or storage unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/registration/requests/{request_id}/resend": {
+      "post": {
+        "tags": [
+          "Learner approval"
+        ],
+        "summary": "Resend",
+        "operationId": "resend_auth_registration_requests__request_id__resend_post",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Request Id"
+            }
+          },
+          {
+            "name": "X-Registration-Receipt",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "writeOnly": true,
+              "format": "password",
+              "minLength": 16,
+              "maxLength": 256,
+              "title": "X-Registration-Receipt"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalMessage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified session required"
+          },
+          "403": {
+            "description": "Email, request-specific authority, or proof rejected"
+          },
+          "404": {
+            "description": "Request not found or not authorized"
+          },
+          "409": {
+            "description": "Stale state or conflicting retry"
+          },
+          "410": {
+            "description": "Request receipt expired"
+          },
+          "429": {
+            "description": "Request or notification limit reached"
+          },
+          "503": {
+            "description": "Approval disabled or storage unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/guardian/registration-requests": {
+      "get": {
+        "tags": [
+          "Learner approval"
+        ],
+        "summary": "Requests",
+        "operationId": "requests_api_guardian_registration_requests_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 36,
+              "default": "",
+              "title": "After"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuardianPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified session required"
+          },
+          "403": {
+            "description": "Email, request-specific authority, or proof rejected"
+          },
+          "404": {
+            "description": "Request not found or not authorized"
+          },
+          "409": {
+            "description": "Stale state or conflicting retry"
+          },
+          "410": {
+            "description": "Request receipt expired"
+          },
+          "429": {
+            "description": "Request or notification limit reached"
+          },
+          "503": {
+            "description": "Approval disabled or storage unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/guardian/registration-requests/{request_id}/decision": {
+      "post": {
+        "tags": [
+          "Learner approval"
+        ],
+        "summary": "Decision",
+        "operationId": "decision_api_guardian_registration_requests__request_id__decision_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Request Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified session required"
+          },
+          "403": {
+            "description": "Email, request-specific authority, or proof rejected"
+          },
+          "404": {
+            "description": "Request not found or not authorized"
+          },
+          "409": {
+            "description": "Stale state or conflicting retry"
+          },
+          "410": {
+            "description": "Request receipt expired"
+          },
+          "429": {
+            "description": "Request or notification limit reached"
+          },
+          "503": {
+            "description": "Approval disabled or storage unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApprovalMessage": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "ApprovalMessage"
+      },
+      "DecisionInput": {
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "approve",
+              "decline"
+            ],
+            "title": "Decision"
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Version"
+          },
+          "proof": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 32,
+            "format": "password",
+            "title": "Proof",
+            "writeOnly": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "decision",
+          "expected_version",
+          "proof"
+        ],
+        "title": "DecisionInput"
+      },
+      "GuardianPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/GuardianRequest"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "title": "GuardianPage"
+      },
+      "GuardianRequest": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Request Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "declined",
+              "expired"
+            ],
+            "title": "Status"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "activated": {
+            "type": "boolean",
+            "const": false,
+            "title": "Activated",
+            "default": false
+          },
+          "learner_display_name": {
+            "type": "string",
+            "title": "Learner Display Name"
+          },
+          "learner_birth_year": {
+            "type": "integer",
+            "title": "Learner Birth Year"
+          },
+          "can_decide": {
+            "type": "boolean",
+            "title": "Can Decide"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "status",
+          "version",
+          "expires_at",
+          "learner_display_name",
+          "learner_birth_year",
+          "can_decide"
+        ],
+        "title": "GuardianRequest"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "RegistrationAccepted": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Request Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "declined",
+              "expired"
+            ],
+            "title": "Status"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "activated": {
+            "type": "boolean",
+            "const": false,
+            "title": "Activated",
+            "default": false
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "receipt": {
+            "type": "string",
+            "title": "Receipt"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "status",
+          "version",
+          "expires_at",
+          "message",
+          "receipt"
+        ],
+        "title": "RegistrationAccepted"
+      },
+      "RegistrationInput": {
+        "properties": {
+          "learnerDisplayName": {
+            "type": "string",
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Learnerdisplayname"
+          },
+          "parentEmail": {
+            "type": "string",
+            "format": "email",
+            "title": "Parentemail"
+          },
+          "learnerBirthYear": {
+            "type": "integer",
+            "title": "Learnerbirthyear"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "learnerDisplayName",
+          "parentEmail",
+          "learnerBirthYear"
+        ],
+        "title": "RegistrationInput"
+      },
+      "RegistrationStatus": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Request Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "declined",
+              "expired"
+            ],
+            "title": "Status"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "activated": {
+            "type": "boolean",
+            "const": false,
+            "title": "Activated",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "status",
+          "version",
+          "expires_at"
+        ],
+        "title": "RegistrationStatus"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

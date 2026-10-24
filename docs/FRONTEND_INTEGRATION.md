@@ -74,3 +74,13 @@ Question corrections return a new quiz/snapshot; approvals are owner confirmatio
 snapshot. Future frontend wiring must supply Bearer identity, idempotency keys and current answer
 counts. No frontend file was changed. Generation, safety checking and AI content production are
 untouched; points/coins/badges, multiplayer and family access remain separate pending rules.
+
+
+## Learner approval endpoints — additive note, 24 October 2026
+
+Opt-in canonical routes now cover pending learner registration, private receipt polling,
+notification resend and verified guardian decisions. See [LEARNER_APPROVAL.md](LEARNER_APPROVAL.md).
+No frontend file was changed. The signup branch still needs future API-base/proxy wiring and
+required headers; no same-origin /api/registration/learner alias is introduced. Parent/learner
+labels are not authority. Birth-year intake does not settle the under-16 versus under-18 policy.
+No activation, username login or automatic family-link behavior is included.
