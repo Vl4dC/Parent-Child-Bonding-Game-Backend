@@ -36,11 +36,20 @@ Use typed Pydantic request/response models and meaningful behavioral tests for n
 
 ```sh
 uv sync --locked
-uv run ruff check app tests
-uv run ruff format --check app tests
+uv run ruff check app learning_service scripts tests
+uv run ruff format --check app learning_service scripts tests
 uv run pytest -q
 ```
 
 Regenerate uv.lock with `uv lock` for dependency changes. Inspect the exact staged files before
 publishing: only templates may include environment examples, and credentials must be placeholders
 or the explicitly synthetic demo fixtures. Report implemented behavior, checks, and remaining limits.
+
+## Unified platform
+
+Read docs/API_PLATFORM.md and docs/DATABASE.md. Generation engines live in learning_service/;
+there is one app factory, one root lockfile, and one test tree. All /api routes use verified identity
+and an owned unit of work. Keep api_private out of exposed Supabase schemas; it contains answer keys.
+Use new migrations rather than editing already-applied SQL. Never run destructive test fixtures
+against a hosted/shared database. TEST_DATABASE_URL must name a disposable database ending in _test.
+Keep the original learning-service/static artifacts unchanged under backend-only requests.

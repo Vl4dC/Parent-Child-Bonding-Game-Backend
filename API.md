@@ -1,5 +1,9 @@
 # Backend API reference
 
+The authentication reference below is retained. The unified application also exposes learning,
+review, profiles, attempts, progress, jobs, and private rooms: see [Platform API](docs/API_PLATFORM.md).
+Python 3.13+ and the root environment are now required. All data routes use verified Bearer identity.
+
 Source of truth: `app/main.py`, `app/models.py`, and the running `/openapi.json`.
 Base URL in the documented local command: `http://127.0.0.1:8000`.
 Swagger docs: `/docs`; ReDoc: `/redoc`. All requests below use JSON unless noted.
@@ -175,7 +179,7 @@ Wording above is illustrative; clients should primarily handle status and respon
 | 502 | Successful upstream response could not be parsed as JSON |
 | 503 | Upstream transport failure or provider server error |
 
-CORS permits configured exact origins, GET/POST/PUT, Authorization and Content-Type headers;
+CORS permits configured exact origins, GET/POST/PUT/PATCH/DELETE, Authorization and Content-Type headers;
 it does not enable cookie credentials or replace authentication. Upstream Supabase rate limits
 exist; application/edge per-client limiting has not been implemented. Never log real passwords,
 Bearer/refresh tokens, email hashes, or request bodies containing them.

@@ -1,3 +1,10 @@
+# Historical learning-service backlog
+
+This imported backlog predates integration into the API repository. Its OneDrive, missing-git,
+SQLite, and nickname-only identity statements do not describe the current application. Use the root
+README, docs/API_PLATFORM.md, and docs/DATABASE.md for implemented behavior and remaining decisions.
+The original notes below remain as historical context, not authorization to implement every idea.
+
 # Next steps
 
 As of 2026-10-24. Sizes are rough: **S** small, **M** medium, **L** large. **?** means I need a decision from you first.

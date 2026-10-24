@@ -1,5 +1,8 @@
 # Backend requirements moved from the product plan
 
+For implemented API behavior, read [API_PLATFORM.md](API_PLATFORM.md). The source extracts below
+are historical product requirements; their future-tense wording is not a current delivery inventory.
+
 These requirements were recorded in the frontend product plan at `bad7e5a`. They describe
 planned behavior, not completed endpoints. This relocation does not start feature implementation.
 Use FastAPI and Supabase; confirm that each feature is finished and stable with the user before

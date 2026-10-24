@@ -24,6 +24,7 @@ SESSION = {
 
 def make_client(handler):
     settings = Settings(
+        app_env="test",
         supabase_url="https://example.supabase.co",
         supabase_publishable_key="sb_publishable_test",
         _env_file=None,

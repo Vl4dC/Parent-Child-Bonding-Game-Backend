@@ -1,7 +1,11 @@
+import asyncio
+import secrets
+import threading
 from contextlib import asynccontextmanager
 from typing import Annotated
 
 import httpx
+import psycopg
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,6 +14,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.config import Settings
 from app.demo import DemoAuth
+from app.http_limits import BodyLimit
 from app.models import (
     Credentials,
     EmailRequest,
@@ -21,40 +26,70 @@ from app.models import (
     User,
     VerifyRequest,
 )
+from app.repository import MemoryRepository, PostgresRepository
 
 bearer = HTTPBearer(auto_error=False)
 Bearer = Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]
 
 
-def create_app(settings: Settings | None = None, transport: httpx.AsyncBaseTransport | None = None):
+def create_app(
+    settings: Settings | None = None,
+    transport: httpx.AsyncBaseTransport | None = None,
+    repository=None,
+):
     settings = settings or Settings()
+    owns_repository = repository is None
+    if repository is None:
+        if settings.database_url:
+            repository = PostgresRepository.from_settings(settings)
+        elif settings.app_env == "test" or settings.demo_mode:
+            repository = MemoryRepository()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        if settings.demo_mode:
-            app.state.demo_auth = DemoAuth()
-            yield
-            return
-        # No shared user sessions: each call explicitly supplies its own bearer token.
-        async with httpx.AsyncClient(
-            base_url=f"{str(settings.supabase_url).rstrip('/')}/auth/v1/",
-            headers={"apikey": settings.supabase_publishable_key.get_secret_value()},
-            timeout=15,
-            transport=transport,
-        ) as client:
-            app.state.auth = client
-            yield
+        if repository is None:
+            raise RuntimeError(
+                "DATABASE_URL is required for application data outside test/demo mode"
+            )
+        if settings.app_env == "production" and not repository.durable:
+            raise RuntimeError("Production requires PostgreSQL persistence")
+        try:
+            if settings.demo_mode:
+                app.state.demo_auth = DemoAuth()
+                yield
+                return
+            # No shared user sessions: each call explicitly supplies its own bearer token.
+            async with httpx.AsyncClient(
+                base_url=f"{str(settings.supabase_url).rstrip('/')}/auth/v1/",
+                headers={"apikey": settings.supabase_publishable_key.get_secret_value()},
+                timeout=15,
+                transport=transport,
+            ) as client:
+                app.state.auth = client
+                yield
+        finally:
+            if owns_repository and hasattr(repository, "close"):
+                await asyncio.to_thread(repository.close)
+
+    from learning_service.api_docs import DESCRIPTION, SWAGGER_UI, TAGS
 
     app = FastAPI(
         title="Family Learning API (LOCAL DEMO)" if settings.demo_mode else "Family Learning API",
-        version="0.1.0",
+        description=DESCRIPTION,
+        openapi_tags=TAGS,
+        swagger_ui_parameters=SWAGGER_UI,
+        version="0.2.0",
         lifespan=lifespan,
     )
+    app.state.repository = repository
+    app.state.settings = settings
+    app.state.generation_slots = threading.BoundedSemaphore(settings.generation_concurrency)
+    app.add_middleware(BodyLimit)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=False,
-        allow_methods=["GET", "POST", "PUT"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
         allow_headers=["Authorization", "Content-Type"],
     )
 
@@ -71,10 +106,17 @@ def create_app(settings: Settings | None = None, transport: httpx.AsyncBaseTrans
             },
         )
 
+    @app.exception_handler(psycopg.Error)
+    async def storage_error(request: Request, exc):
+        return JSONResponse(
+            status_code=503, content={"detail": "Application storage is temporarily unavailable."}
+        )
+
     @app.middleware("http")
     async def no_auth_cache(request: Request, call_next):
         response = await call_next(request)
-        if request.url.path.startswith("/auth/"):
+        response.headers["X-Request-ID"] = secrets.token_hex(12)
+        if request.url.path.startswith(("/auth/", "/api/")):
             response.headers["Cache-Control"] = "no-store"
             response.headers["Pragma"] = "no-cache"
             response.headers["Referrer-Policy"] = "no-referrer"
@@ -153,6 +195,17 @@ def create_app(settings: Settings | None = None, transport: httpx.AsyncBaseTrans
     async def health():
         return {"status": "ok", "auth_mode": "demo" if settings.demo_mode else "supabase"}
 
+    @app.get("/ready")
+    async def ready():
+        try:
+            ok = repository is not None and await asyncio.to_thread(repository.ready)
+        except Exception:
+            ok = False
+        return JSONResponse(
+            status_code=200 if ok else 503,
+            content={"ready": ok, "durable": bool(repository and repository.durable)},
+        )
+
     if settings.demo_mode:
 
         @app.get("/auth/demo-accounts", response_model=list[User])
@@ -230,11 +283,15 @@ def create_app(settings: Settings | None = None, transport: httpx.AsyncBaseTrans
 
     @app.get("/auth/me", response_model=User)
     async def me(request: Request, token: Token):
+        if not settings.demo_mode and token.startswith("demo_"):
+            raise HTTPException(401, "Demo sessions are not accepted in Supabase mode.")
         if settings.demo_mode:
             session = request.app.state.demo_auth.authenticate(token)
             return request.app.state.demo_auth.user(session.email)
         # Verify with Supabase; never trust a locally decoded, unverified JWT.
         return await upstream(request, "GET", "user", token=token)
+
+    app.state.verify_identity = me
 
     @app.post("/auth/logout", status_code=204)
     async def logout(request: Request, token: Token):
@@ -263,4 +320,18 @@ def create_app(settings: Settings | None = None, transport: httpx.AsyncBaseTrans
             },
         )
 
+    from app.jobs import router as jobs_router
+    from app.platform import router as platform_router
+    from app.rooms import router as rooms_router
+    from learning_service.routes import app as learning_router
+
+    common_errors = {
+        401: {"description": "Authentication required"},
+        429: {"description": "Request or generation limit reached"},
+        503: {"description": "Storage or generation unavailable"},
+    }
+    app.include_router(learning_router, responses=common_errors)
+    app.include_router(platform_router, responses=common_errors)
+    app.include_router(jobs_router, responses=common_errors)
+    app.include_router(rooms_router, responses=common_errors)
     return app
