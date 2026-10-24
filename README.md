@@ -1,100 +1,120 @@
 # Parent–Child Bonding Game API
 
-Backend-only FastAPI service for the Parent–Child Bonding Game. This repository owns API endpoints,
-validation, authentication, backend tests, and Markdown documentation.
+Backend-only FastAPI API for authentication, owned learning data, reviewed content, generation jobs,
+and private lobbies. Frontend context lives in the
+[main repository](https://github.com/RahulRohidasPatil/Parent-Child-Bonding-Game).
 
-Frontend source and product context live in the [main repository](https://github.com/RahulRohidasPatil/Parent-Child-Bonding-Game).
-Read that repository before implementing new API requirements. It currently requires GitHub access.
+## Local demo without services
 
-## Quick start: offline demo
-
-Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/). Run from this repository's root:
+Python **3.13+** and [uv](https://docs.astral.sh/uv/) are required. Run from this repository's root:
 
 ```sh
 cp .env.demo.example .env
 uv sync --locked
-uv run uvicorn app.main:create_app --factory --reload --host 127.0.0.1 --port 8000 --no-access-log
+uv run uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000 --no-access-log
 ```
 
-Use one worker. Demo sessions are held in memory and disappear on restart. No Supabase account,
-SMTP sender, or database is required. Demo mode refuses production startup.
-
-| Account | Email | Synthetic password |
-| --- | --- | --- |
-| Parent | `parent@demo.example.com` | `DemoParent123!` |
-| Child | `child@demo.example.com` | `DemoChild123!` |
+Generation defaults off, so this command makes no model calls. Demo storage is in memory, resets
+on restart, and cannot be used in production. Parent login: `parent@demo.example.com` /
+`DemoParent123!`; child login: `child@demo.example.com` / `DemoChild123!`. These are synthetic fixtures.
 
 ```sh
-curl -s http://127.0.0.1:8000/auth/login \
+curl http://127.0.0.1:8000/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"email":"parent@demo.example.com","password":"DemoParent123!"}'
 ```
 
-Use the returned access token as `Authorization: Bearer <access_token>` for `/auth/me` and
-`/auth/logout`. Refresh with `/auth/refresh`; replace both tokens after every successful refresh.
+Use the returned access token in `Authorization: Bearer <access_token>`. The API sets no auth cookies.
 
-## API documentation
-
-- [API.md](API.md): endpoints, JSON examples, responses, errors, and session lifecycle.
-- [Frontend integration](docs/FRONTEND_INTEGRATION.md): source locations, role mapping, and future contracts.
-- [Backend product requirements](docs/PRODUCT_BACKEND_REQUIREMENTS.md): moved backend planning context.
-- [Original authentication setup](docs/ORIGINAL_AUTH_SETUP.md): archived provider/email setup notes.
-- [Architecture and operations](docs/ARCHITECTURE.md): configuration, boundaries, and release checks.
-- [Contributor instructions](AGENTS.md): backend-only scope and main-repository lookup workflow.
-- Local interactive documentation: [Swagger](http://127.0.0.1:8000/docs),
-  [ReDoc](http://127.0.0.1:8000/redoc), [OpenAPI JSON](http://127.0.0.1:8000/openapi.json).
-
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| GET | `/health` | Process health and auth mode |
-| GET | `/auth/demo-accounts` | Demo-only synthetic account list |
-| POST | `/auth/register` | Request signup confirmation |
-| POST | `/auth/login` | Sign in |
-| POST | `/auth/verify` | Verify signup/recovery OTP or hash |
-| POST | `/auth/resend` | Resend signup confirmation |
-| POST | `/auth/refresh` | Rotate session tokens |
-| GET | `/auth/me` | Verified current identity |
-| POST | `/auth/logout` | Revoke current session |
-| POST | `/auth/forgot-password` | Request recovery email |
-| PUT | `/auth/password` | Update authenticated user's password |
-
-Demo mode supports login, refresh, identity, and logout. Registration and email/password mutations
-return 409 in demo mode for valid requests. Input and token validation still apply.
-
-## Supabase mode
+## Supabase and durable storage
 
 ```sh
 cp .env.example .env
-# Set your own SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY in .env.
+# Configure Supabase Auth, DATABASE_URL, and exact CORS origins.
 uv sync --locked
 uv run uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000 --no-access-log
 ```
 
-The template defaults to `APP_ENV=production` and `DEMO_MODE=false`. Use a publishable key;
-secret/service-role keys are rejected. Set `CORS_ORIGINS` to a JSON array of exact frontend origins.
-Supabase manages real accounts, passwords, email confirmation, and sessions. Configure a real
-sender and confirmation/recovery flow before promising public email delivery; SMTP setup and live
-email verification are not included here. Keep confirmation enabled.
+Apply the versioned SQL migrations in `supabase/migrations/` to a **development** project before
+starting data routes. Migration/hosted database changes are explicit operator actions; application
+startup never applies migrations. See [database setup and tests](docs/DATABASE.md).
 
-## Quality checks
+`DATABASE_URL` is a private, server-only PostgreSQL credential with ownership of the migration
+objects. Request transactions switch to `authenticated` and set verified identity claims so RLS
+applies. Job claiming and quota reservation use server-only database functions. No service-role API
+key is added to the authentication flow. Never put the database credential in browser configuration.
+
+**Keep `api_private` outside Supabase's exposed Data API schemas.** It stores private text and
+answer keys. Application data is accessed through the authenticated FastAPI routes.
+
+Real registration/recovery delivery still needs a configured email sender and confirmation flow.
+Email confirmation stays enabled; SMTP work and live email verification are not part of this change.
+
+## API and documentation
+
+- [API.md](API.md): authentication reference plus links to the full platform contract.
+- [Platform API](docs/API_PLATFORM.md): learning, review, attempts, profiles, jobs, progress, rooms.
+- [Database and verification](docs/DATABASE.md): migrations, roles, integration tests, operational limits.
+- [Frontend integration](docs/FRONTEND_INTEGRATION.md): frontend source locations and integration boundary.
+- [Architecture](docs/ARCHITECTURE.md): current module responsibilities and invariants.
+- [Contributor instructions](AGENTS.md): backend scope and continuation workflow.
+
+Swagger: http://127.0.0.1:8000/docs. OpenAPI: http://127.0.0.1:8000/openapi.json.
+`GET /health` is process health; `GET /ready` verifies application storage and reports whether it is durable.
+
+## Learning and generation
+
+Upload PDF/photos → correct extracted pages → confirm material → generate a draft lesson → review
+and approve it → generate private practice quizzes or flashcards → record individual results.
+Edits create new lesson IDs; historical attempts retain their original immutable question set.
+Approval records **owner confirmation**, not verified guardian/teacher authority or independent fact checking.
+Scored solo submissions also require an explicit question-set review/approval step.
+
+Set `GENERATION_ENABLED=true` only after configuring the model provider and budget. Direct generation
+routes remain available for compatibility. Durable jobs are preferred for long operations:
+
+```sh
+uv run python -m app.worker --once
+# or run continuously:
+uv run python -m app.worker
+```
+
+Workers require PostgreSQL and explicit generation enablement. They do not start automatically with
+the API. Jobs have idempotency keys, a ten-pending-job limit per owner, retry limits, and expiring leases.
+Workflow attempt budgets count failures too; one workflow can make several provider calls. These
+limits are not a currency spending guarantee: configure the provider's own budget as well.
+
+## Checks
 
 ```sh
 uv sync --locked
-uv run ruff check app tests
-uv run ruff format --check app tests
+uv run ruff check app learning_service tests
+uv run ruff format --check app learning_service tests
 uv run pytest -q
 ```
 
-GitHub Actions runs these checks on pushes and pull requests. Tests exercise mocked Supabase
-requests and isolated offline sessions, without sending emails or requiring secrets.
+Without `TEST_DATABASE_URL`, database-specific cases skip. For the full suite:
 
-## Current scope
+```sh
+# This MUST be a disposable database whose name ends in _test. Its api_private schema is reset.
+TEST_DATABASE_URL=postgresql://localhost/questnest_api_test uv run pytest -q
+```
 
-This is a tested authentication foundation. Multiplayer rooms, game state, learning content,
-uploads, progress, rewards, persistent profiles, verified family relationships, and guardian consent
-are future API work. Frontend prototypes do not establish that these backend features exist.
-Account labels and demo family metadata do not grant access to another user's data.
+CI uses a disposable PostgreSQL service and runs the full test tree. Model and vision calls are
+faked in tests; no real emails or paid generation are exercised. PostgreSQL tests include real RLS,
+transactions, quotas, room concurrency, job retries, and restart persistence. They use a test-only
+`auth.uid()` compatibility function; they do not prove a hosted Supabase Realtime connection.
 
-The repository is public; the API has not been deployed. Real deployments need HTTPS, per-client
-rate limiting, a browser session strategy, configured email delivery, and operational monitoring.
-Never commit local `.env` files, real credentials, tokens, logs, or user data.
+## Deliberately pending
+
+Private room APIs support lobby membership, readiness, host transfer, expiry, change notifications,
+and reconnect snapshots. They do not start games or implement public matchmaking, teams, scoring,
+rankings, or rewards. Private Supabase notifications carry only a room ID; refetch the authorized snapshot.
+
+Guardian approval, family access rules, coins/boxes/badges, purchases, base upgrades, individual game
+rules, and the proposed AI age-safety gate remain pending product decisions. Role labels grant no
+access to another person's learning data. There is no deployment or frontend change in this work.
+
+The old `learning-service/static/` files are retained unchanged as historical development artifacts;
+the unified API does not serve them. The old Python project has been consolidated into
+`learning_service/`, with one root dependency lock and one test suite.

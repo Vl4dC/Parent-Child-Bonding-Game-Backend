@@ -186,6 +186,7 @@ def test_supabase_mode_excludes_demo_routes_and_tokens():
         pytest.fail("A demo token must be rejected before contacting Supabase")
 
     settings = Settings(
+        app_env="test",
         supabase_url="https://example.supabase.co",
         supabase_publishable_key="sb_publishable_test",
         _env_file=None,

@@ -5,13 +5,22 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", hide_input_in_errors=True)
 
     app_env: Literal["development", "test", "production"] = "production"
     demo_mode: bool = False
     supabase_url: HttpUrl | None = None
     supabase_publishable_key: SecretStr | None = None
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
+    database_url: SecretStr | None = None
+    generation_enabled: bool = False
+    generation_concurrency: int = Field(2, ge=1, le=8)
+    generation_daily_limit: int = Field(30, ge=1, le=1000)
+    api_requests_per_minute: int = Field(120, ge=1, le=10000)
+    job_attempt_limit: int = Field(2, ge=1, le=5)
+    quiz_model: str = "anthropic:claude-sonnet-5-5"
+    visual_model: str | None = None
+    model_timeout_seconds: int = Field(60, ge=1, le=300)
 
     @field_validator("supabase_publishable_key")
     @classmethod

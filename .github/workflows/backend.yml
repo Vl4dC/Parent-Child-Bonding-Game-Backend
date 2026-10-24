@@ -7,13 +7,28 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: questnest_api_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/questnest_api_test
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
         with:
           version: '0.13.1'
-          python-version: '3.12'
+          python-version: '3.13'
       - run: uv sync --locked
-      - run: uv run ruff check app tests
-      - run: uv run ruff format --check app tests
+      - run: uv run ruff check app learning_service tests
+      - run: uv run ruff format --check app learning_service tests
       - run: uv run pytest -q

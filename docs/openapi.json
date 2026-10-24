@@ -1,0 +1,5640 @@
+{
+  "components": {
+    "schemas": {
+      "Approval": {
+        "additionalProperties": false,
+        "properties": {
+          "confirmed": {
+            "const": true,
+            "title": "Confirmed",
+            "type": "boolean"
+          },
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "confirmed"
+        ],
+        "title": "Approval",
+        "type": "object"
+      },
+      "ApprovalRecord": {
+        "properties": {
+          "kind": {
+            "const": "owner_confirmation",
+            "title": "Kind",
+            "type": "string"
+          },
+          "reviewed_at": {
+            "format": "date-time",
+            "title": "Reviewed At",
+            "type": "string"
+          },
+          "reviewer_id": {
+            "title": "Reviewer Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reviewer_id",
+          "reviewed_at",
+          "kind"
+        ],
+        "title": "ApprovalRecord",
+        "type": "object"
+      },
+      "Body_upload_material_api_materials_post": {
+        "properties": {
+          "files": {
+            "description": "One PDF (a digital book), or one or more photos of pages (JPG, PNG, WebP)",
+            "items": {
+              "contentMediaType": "application/octet-stream",
+              "type": "string"
+            },
+            "title": "Files",
+            "type": "array"
+          }
+        },
+        "required": [
+          "files"
+        ],
+        "title": "Body_upload_material_api_materials_post",
+        "type": "object"
+      },
+      "Chapter": {
+        "properties": {
+          "end": {
+            "title": "End",
+            "type": "integer"
+          },
+          "start": {
+            "title": "Start",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "start",
+          "end"
+        ],
+        "title": "Chapter",
+        "type": "object"
+      },
+      "CheckIn": {
+        "properties": {
+          "choice": {
+            "description": "Option number, from 0 (True = 0, False = 1 on true/false questions)",
+            "title": "Choice",
+            "type": "integer"
+          },
+          "index": {
+            "description": "Question number, from 0",
+            "title": "Index",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "index",
+          "choice"
+        ],
+        "title": "CheckIn",
+        "type": "object"
+      },
+      "CheckOut": {
+        "properties": {
+          "answer_index": {
+            "title": "Answer Index",
+            "type": "integer"
+          },
+          "answer_visual_html": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer Visual Html"
+          },
+          "correct": {
+            "title": "Correct",
+            "type": "boolean"
+          },
+          "explanation": {
+            "title": "Explanation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "correct",
+          "answer_index",
+          "explanation"
+        ],
+        "title": "CheckOut",
+        "type": "object"
+      },
+      "Completion": {
+        "properties": {
+          "completed_at": {
+            "format": "date-time",
+            "title": "Completed At",
+            "type": "string"
+          },
+          "lesson_id": {
+            "title": "Lesson Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "lesson_id",
+          "completed_at"
+        ],
+        "title": "Completion",
+        "type": "object"
+      },
+      "CreateDeck": {
+        "properties": {
+          "num_cards": {
+            "default": 8,
+            "maximum": 20.0,
+            "minimum": 3.0,
+            "title": "Num Cards",
+            "type": "integer"
+          }
+        },
+        "title": "CreateDeck",
+        "type": "object"
+      },
+      "CreateJob": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "lesson",
+              "quiz",
+              "flashcards",
+              "visuals",
+              "followup"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "parameters": {
+            "additionalProperties": true,
+            "title": "Parameters",
+            "type": "object"
+          },
+          "resource_id": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource Id"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "CreateJob",
+        "type": "object"
+      },
+      "CreateQuiz": {
+        "properties": {
+          "num_questions": {
+            "default": 5,
+            "maximum": 15.0,
+            "minimum": 1.0,
+            "title": "Num Questions",
+            "type": "integer"
+          }
+        },
+        "title": "CreateQuiz",
+        "type": "object"
+      },
+      "CreateRoom": {
+        "additionalProperties": false,
+        "properties": {
+          "capacity": {
+            "default": 4,
+            "maximum": 8.0,
+            "minimum": 2.0,
+            "title": "Capacity",
+            "type": "integer"
+          },
+          "display_name": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Display Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "display_name"
+        ],
+        "title": "CreateRoom",
+        "type": "object"
+      },
+      "CreateTournament": {
+        "properties": {
+          "lesson_id": {
+            "description": "The lesson `id` returned by `POST /api/lessons`",
+            "title": "Lesson Id",
+            "type": "string"
+          },
+          "num_questions": {
+            "default": 5,
+            "maximum": 15.0,
+            "minimum": 1.0,
+            "title": "Num Questions",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "lesson_id"
+        ],
+        "title": "CreateTournament",
+        "type": "object"
+      },
+      "Credentials": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "format": "password",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Password",
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "Credentials",
+        "type": "object"
+      },
+      "DeckState": {
+        "properties": {
+          "hard": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Hard",
+            "type": "array"
+          },
+          "known": {
+            "title": "Known",
+            "type": "integer"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next"
+          },
+          "reviews": {
+            "title": "Reviews",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "next",
+          "known",
+          "total",
+          "reviews",
+          "hard"
+        ],
+        "title": "DeckState",
+        "type": "object"
+      },
+      "EmailRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "EmailRequest",
+        "type": "object"
+      },
+      "Error": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "Error",
+        "type": "object"
+      },
+      "FollowupIn": {
+        "properties": {
+          "num_questions": {
+            "anyOf": [
+              {
+                "maximum": 10.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Leave out to decide from the weak spots",
+            "title": "Num Questions"
+          }
+        },
+        "title": "FollowupIn",
+        "type": "object"
+      },
+      "FoundPages": {
+        "properties": {
+          "characters": {
+            "description": "Size of the text that would go into the lesson",
+            "title": "Characters",
+            "type": "integer"
+          },
+          "how": {
+            "enum": [
+              "pages",
+              "chapter",
+              "search"
+            ],
+            "title": "How",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "pages": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Pages",
+            "type": "array"
+          },
+          "preview": {
+            "description": "The start of that text",
+            "title": "Preview",
+            "type": "string"
+          },
+          "truncated": {
+            "title": "Truncated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "pages",
+          "how",
+          "label",
+          "characters",
+          "truncated",
+          "preview"
+        ],
+        "title": "FoundPages",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "Job": {
+        "additionalProperties": false,
+        "properties": {
+          "attempts": {
+            "title": "Attempts",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "lesson",
+              "quiz",
+              "flashcards",
+              "visuals",
+              "followup"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "lease_until": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lease Until"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          },
+          "source_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Kind"
+          },
+          "source_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Revision"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "attempts",
+          "created_at"
+        ],
+        "title": "Job",
+        "type": "object"
+      },
+      "JobResult": {
+        "additionalProperties": false,
+        "properties": {
+          "resource_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource Id"
+          },
+          "visual_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Visual Ids",
+            "type": "array"
+          }
+        },
+        "title": "JobResult",
+        "type": "object"
+      },
+      "JoinRoom": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "pattern": "^[A-Z0-9]{8}$",
+            "title": "Code",
+            "type": "string"
+          },
+          "display_name": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Display Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "display_name"
+        ],
+        "title": "JoinRoom",
+        "type": "object"
+      },
+      "LeftRoom": {
+        "additionalProperties": false,
+        "properties": {
+          "left": {
+            "const": true,
+            "title": "Left",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "left"
+        ],
+        "title": "LeftRoom",
+        "type": "object"
+      },
+      "Lesson": {
+        "properties": {
+          "key_points": {
+            "description": "3-6 short takeaways to remember",
+            "items": {
+              "type": "string"
+            },
+            "title": "Key Points",
+            "type": "array"
+          },
+          "sections": {
+            "description": "2-6 sections, each building on the last",
+            "items": {
+              "$ref": "#/components/schemas/LessonSection"
+            },
+            "title": "Sections",
+            "type": "array"
+          },
+          "summary": {
+            "description": "One or two sentences: what they'll learn and why it matters",
+            "title": "Summary",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "summary",
+          "sections",
+          "key_points"
+        ],
+        "title": "Lesson",
+        "type": "object"
+      },
+      "LessonApproval": {
+        "properties": {
+          "approval": {
+            "$ref": "#/components/schemas/ApprovalRecord"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "status": {
+            "const": "approved",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "approval"
+        ],
+        "title": "LessonApproval",
+        "type": "object"
+      },
+      "LessonEdit": {
+        "additionalProperties": false,
+        "properties": {
+          "lesson": {
+            "$ref": "#/components/schemas/Lesson"
+          }
+        },
+        "required": [
+          "lesson"
+        ],
+        "title": "LessonEdit",
+        "type": "object"
+      },
+      "LessonRequest": {
+        "properties": {
+          "age": {
+            "maximum": 99.0,
+            "minimum": 5.0,
+            "title": "Age",
+            "type": "integer"
+          },
+          "material_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Study from this upload (`POST /api/materials`) instead of general knowledge. `topic` then says which part: a topic, 'chapter 3' or 'pages 40-55'.",
+            "title": "Material Id"
+          },
+          "prefers_visuals": {
+            "default": false,
+            "description": "Learner has asked for visuals before",
+            "title": "Prefers Visuals",
+            "type": "boolean"
+          },
+          "topic": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Topic",
+            "type": "string"
+          }
+        },
+        "required": [
+          "topic",
+          "age"
+        ],
+        "title": "LessonRequest",
+        "type": "object"
+      },
+      "LessonRevision": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "previous_id": {
+            "title": "Previous Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "status": {
+            "const": "draft",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "revision",
+          "status",
+          "previous_id"
+        ],
+        "title": "LessonRevision",
+        "type": "object"
+      },
+      "LessonSection": {
+        "properties": {
+          "body": {
+            "description": "1-3 short paragraphs; if there is a visual, written to go with it",
+            "title": "Body",
+            "type": "string"
+          },
+          "heading": {
+            "title": "Heading",
+            "type": "string"
+          },
+          "visual": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SectionVisual"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A visual for this section, or null if words are enough"
+          }
+        },
+        "required": [
+          "heading",
+          "body"
+        ],
+        "title": "LessonSection",
+        "type": "object"
+      },
+      "LessonSource": {
+        "description": "Where an upload-based lesson came from.",
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "material_id": {
+            "title": "Material Id",
+            "type": "string"
+          },
+          "material_revision": {
+            "default": 1,
+            "title": "Material Revision",
+            "type": "integer"
+          },
+          "pages": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Pages",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "truncated": {
+            "default": false,
+            "title": "Truncated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "material_id",
+          "title",
+          "pages",
+          "label"
+        ],
+        "title": "LessonSource",
+        "type": "object"
+      },
+      "MaterialInfo": {
+        "properties": {
+          "blank_pages": {
+            "description": "Pages with no readable text",
+            "title": "Blank Pages",
+            "type": "integer"
+          },
+          "chapters": {
+            "description": "Chapter headings found in the book; ask for one by name, e.g. 'chapter 3'",
+            "items": {
+              "$ref": "#/components/schemas/Chapter"
+            },
+            "title": "Chapters",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "pdf",
+              "photos"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "page_count": {
+            "title": "Page Count",
+            "type": "integer"
+          },
+          "text_pages": {
+            "description": "Pages whose text was read directly from the PDF (free)",
+            "title": "Text Pages",
+            "type": "integer"
+          },
+          "vision_pages": {
+            "description": "Pages that were pictures and were read by the vision model",
+            "title": "Vision Pages",
+            "type": "integer"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "page_count",
+          "text_pages",
+          "vision_pages",
+          "blank_pages",
+          "chapters",
+          "warnings"
+        ],
+        "title": "MaterialInfo",
+        "type": "object"
+      },
+      "MaterialPages": {
+        "properties": {
+          "confirmed": {
+            "title": "Confirmed",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "pages": {
+            "items": {
+              "$ref": "#/components/schemas/Page"
+            },
+            "title": "Pages",
+            "type": "array"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "revision",
+          "confirmed",
+          "pages"
+        ],
+        "title": "MaterialPages",
+        "type": "object"
+      },
+      "MaterialRevision": {
+        "properties": {
+          "material_id": {
+            "title": "Material Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "pages": {
+            "items": {
+              "$ref": "#/components/schemas/Page"
+            },
+            "title": "Pages",
+            "type": "array"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "material_id",
+          "revision",
+          "name",
+          "pages"
+        ],
+        "title": "MaterialRevision",
+        "type": "object"
+      },
+      "MaterialStatus": {
+        "properties": {
+          "confirmed": {
+            "title": "Confirmed",
+            "type": "boolean"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "revision",
+          "confirmed"
+        ],
+        "title": "MaterialStatus",
+        "type": "object"
+      },
+      "Member": {
+        "additionalProperties": false,
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "display_name",
+          "ready"
+        ],
+        "title": "Member",
+        "type": "object"
+      },
+      "Message": {
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "Message",
+        "type": "object"
+      },
+      "Page": {
+        "properties": {
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "via": {
+            "enum": [
+              "text",
+              "vision",
+              "none"
+            ],
+            "title": "Via",
+            "type": "string"
+          }
+        },
+        "required": [
+          "number",
+          "text",
+          "via"
+        ],
+        "title": "Page",
+        "type": "object"
+      },
+      "PagesUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "pages": {
+            "items": {
+              "$ref": "#/components/schemas/Page"
+            },
+            "maxItems": 600,
+            "minItems": 1,
+            "title": "Pages",
+            "type": "array"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "pages"
+        ],
+        "title": "PagesUpdate",
+        "type": "object"
+      },
+      "PasswordRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "password": {
+            "format": "password",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Password",
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "password"
+        ],
+        "title": "PasswordRequest",
+        "type": "object"
+      },
+      "Preferences": {
+        "additionalProperties": false,
+        "properties": {
+          "captions": {
+            "default": true,
+            "title": "Captions",
+            "type": "boolean"
+          },
+          "contrast": {
+            "default": "normal",
+            "enum": [
+              "normal",
+              "more"
+            ],
+            "title": "Contrast",
+            "type": "string"
+          },
+          "motion": {
+            "default": "full",
+            "enum": [
+              "full",
+              "reduce"
+            ],
+            "title": "Motion",
+            "type": "string"
+          },
+          "read_aloud": {
+            "default": false,
+            "title": "Read Aloud",
+            "type": "boolean"
+          },
+          "text": {
+            "default": "md",
+            "enum": [
+              "md",
+              "lg",
+              "xl"
+            ],
+            "title": "Text",
+            "type": "string"
+          },
+          "theme": {
+            "default": "light",
+            "enum": [
+              "light",
+              "dark"
+            ],
+            "title": "Theme",
+            "type": "string"
+          }
+        },
+        "title": "Preferences",
+        "type": "object"
+      },
+      "Profile": {
+        "additionalProperties": false,
+        "properties": {
+          "avatar_reference": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Reference"
+          },
+          "daily_goal": {
+            "default": 15,
+            "maximum": 120.0,
+            "minimum": 1.0,
+            "title": "Daily Goal",
+            "type": "integer"
+          },
+          "display_name": {
+            "default": "Learner",
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "preferences": {
+            "$ref": "#/components/schemas/Preferences"
+          }
+        },
+        "title": "Profile",
+        "type": "object"
+      },
+      "Progress": {
+        "properties": {
+          "correct_answers": {
+            "title": "Correct Answers",
+            "type": "integer"
+          },
+          "flashcard_reviews": {
+            "title": "Flashcard Reviews",
+            "type": "integer"
+          },
+          "lessons_completed": {
+            "title": "Lessons Completed",
+            "type": "integer"
+          },
+          "quiz_answers": {
+            "title": "Quiz Answers",
+            "type": "integer"
+          },
+          "tournaments_submitted": {
+            "title": "Tournaments Submitted",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "lessons_completed",
+          "quiz_answers",
+          "correct_answers",
+          "flashcard_reviews",
+          "tournaments_submitted"
+        ],
+        "title": "Progress",
+        "type": "object"
+      },
+      "PublicCard": {
+        "properties": {
+          "back": {
+            "title": "Back",
+            "type": "string"
+          },
+          "back_visual_html": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Back Visual Html"
+          },
+          "front": {
+            "title": "Front",
+            "type": "string"
+          },
+          "front_visual_html": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Front Visual Html"
+          },
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "concept",
+              "diagram"
+            ],
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "index",
+          "kind",
+          "front",
+          "back"
+        ],
+        "title": "PublicCard",
+        "type": "object"
+      },
+      "PublicDeck": {
+        "properties": {
+          "cards": {
+            "items": {
+              "$ref": "#/components/schemas/PublicCard"
+            },
+            "title": "Cards",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "lesson_id": {
+            "title": "Lesson Id",
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/DeckState"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "lesson_id",
+          "title",
+          "cards",
+          "state"
+        ],
+        "title": "PublicDeck",
+        "type": "object"
+      },
+      "PublicLesson": {
+        "properties": {
+          "age": {
+            "title": "Age",
+            "type": "integer"
+          },
+          "approval": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "key_points": {
+            "description": "3-6 short takeaways to remember",
+            "items": {
+              "type": "string"
+            },
+            "title": "Key Points",
+            "type": "array"
+          },
+          "previous_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Id"
+          },
+          "revision": {
+            "default": 1,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "sections": {
+            "description": "2-6 sections, each building on the last",
+            "items": {
+              "$ref": "#/components/schemas/LessonSection"
+            },
+            "title": "Sections",
+            "type": "array"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LessonSource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set when the lesson was built from an upload: which pages"
+          },
+          "status": {
+            "default": "draft",
+            "enum": [
+              "draft",
+              "approved"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "summary": {
+            "description": "One or two sentences: what they'll learn and why it matters",
+            "title": "Summary",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "topic": {
+            "title": "Topic",
+            "type": "string"
+          },
+          "visuals": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PublicVisual"
+            },
+            "title": "Visuals",
+            "type": "array"
+          }
+        },
+        "required": [
+          "title",
+          "summary",
+          "sections",
+          "key_points",
+          "id",
+          "topic",
+          "age"
+        ],
+        "title": "PublicLesson",
+        "type": "object"
+      },
+      "PublicQuestion": {
+        "description": "A question as the browser sees it: no answer, no explanation.",
+        "properties": {
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "multiple_choice",
+              "true_false",
+              "short_answer"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "visual_html": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visual Html"
+          }
+        },
+        "required": [
+          "index",
+          "type",
+          "question",
+          "options"
+        ],
+        "title": "PublicQuestion",
+        "type": "object"
+      },
+      "PublicQuiz": {
+        "properties": {
+          "dropped": {
+            "title": "Dropped",
+            "type": "integer"
+          },
+          "focus": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Focus",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "lesson_id": {
+            "title": "Lesson Id",
+            "type": "string"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/PublicQuestion"
+            },
+            "title": "Questions",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "lesson_id",
+          "title",
+          "dropped",
+          "questions"
+        ],
+        "title": "PublicQuiz",
+        "type": "object"
+      },
+      "PublicVisual": {
+        "description": "A visual ready for <iframe sandbox=\"allow-scripts\" srcdoc=html>.",
+        "properties": {
+          "alt": {
+            "title": "Alt",
+            "type": "string"
+          },
+          "caption": {
+            "title": "Caption",
+            "type": "string"
+          },
+          "html": {
+            "title": "Html",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "diagram",
+              "chart",
+              "interactive"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "section_index": {
+            "title": "Section Index",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "section_index",
+          "title",
+          "caption",
+          "alt",
+          "html"
+        ],
+        "title": "PublicVisual",
+        "type": "object"
+      },
+      "QuizDeckIn": {
+        "properties": {
+          "which": {
+            "default": "missed",
+            "description": "`missed`: only wrong answers. `all`: the whole quiz.",
+            "enum": [
+              "missed",
+              "all"
+            ],
+            "title": "Which",
+            "type": "string"
+          }
+        },
+        "title": "QuizDeckIn",
+        "type": "object"
+      },
+      "RefreshRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "refresh_token": {
+            "format": "password",
+            "maxLength": 4096,
+            "minLength": 1,
+            "title": "Refresh Token",
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "refresh_token"
+        ],
+        "title": "RefreshRequest",
+        "type": "object"
+      },
+      "Register": {
+        "additionalProperties": false,
+        "properties": {
+          "account_type": {
+            "enum": [
+              "learner",
+              "parent"
+            ],
+            "title": "Account Type",
+            "type": "string"
+          },
+          "display_name": {
+            "maxLength": 60,
+            "minLength": 1,
+            "pattern": ".*\\S.*",
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "format": "password",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Password",
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "display_name",
+          "account_type"
+        ],
+        "title": "Register",
+        "type": "object"
+      },
+      "ResourcePage": {
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "title": "ResourcePage",
+        "type": "object"
+      },
+      "Result": {
+        "properties": {
+          "answer_index": {
+            "title": "Answer Index",
+            "type": "integer"
+          },
+          "answer_visual_html": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer Visual Html"
+          },
+          "choice": {
+            "title": "Choice",
+            "type": "integer"
+          },
+          "correct": {
+            "title": "Correct",
+            "type": "boolean"
+          },
+          "explanation": {
+            "title": "Explanation",
+            "type": "string"
+          },
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "correct",
+          "answer_index",
+          "explanation",
+          "index",
+          "choice"
+        ],
+        "title": "Result",
+        "type": "object"
+      },
+      "ReviewIn": {
+        "properties": {
+          "card": {
+            "description": "Card number: the `next` value of the deck state",
+            "title": "Card",
+            "type": "integer"
+          },
+          "expected_reviews": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Review counter from the current deck state; detects stale updates",
+            "title": "Expected Reviews"
+          },
+          "result": {
+            "enum": [
+              "know",
+              "again"
+            ],
+            "title": "Result",
+            "type": "string"
+          }
+        },
+        "required": [
+          "card",
+          "result"
+        ],
+        "title": "ReviewIn",
+        "type": "object"
+      },
+      "RoomCommand": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "ready",
+              "leave",
+              "close"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "expected_version": {
+            "minimum": 1.0,
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "ready": {
+            "default": false,
+            "title": "Ready",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "expected_version",
+          "action"
+        ],
+        "title": "RoomCommand",
+        "type": "object"
+      },
+      "RoomSnapshot": {
+        "additionalProperties": false,
+        "properties": {
+          "capacity": {
+            "title": "Capacity",
+            "type": "integer"
+          },
+          "closed": {
+            "title": "Closed",
+            "type": "boolean"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "host_id": {
+            "title": "Host Id",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/Member"
+            },
+            "title": "Members",
+            "type": "array"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "host_id",
+          "capacity",
+          "version",
+          "closed",
+          "expires_at",
+          "members"
+        ],
+        "title": "RoomSnapshot",
+        "type": "object"
+      },
+      "SectionVisual": {
+        "description": "The lesson writer's plan for a picture; the visualization harness draws it.",
+        "properties": {
+          "brief": {
+            "description": "What to draw: elements, labels in the learner's words, interactions",
+            "title": "Brief",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "diagram",
+              "chart",
+              "interactive"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "purpose": {
+            "description": "What the learner should understand from it, one sentence",
+            "title": "Purpose",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "purpose",
+          "brief"
+        ],
+        "title": "SectionVisual",
+        "type": "object"
+      },
+      "Session": {
+        "properties": {
+          "access_token": {
+            "title": "Access Token",
+            "type": "string"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "expires_in": {
+            "title": "Expires In",
+            "type": "integer"
+          },
+          "refresh_token": {
+            "title": "Refresh Token",
+            "type": "string"
+          },
+          "token_type": {
+            "const": "bearer",
+            "default": "bearer",
+            "title": "Token Type",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        },
+        "required": [
+          "access_token",
+          "refresh_token",
+          "expires_in",
+          "user"
+        ],
+        "title": "Session",
+        "type": "object"
+      },
+      "SubmitIn": {
+        "properties": {
+          "answers": {
+            "description": "One option number (from 0) per question, in question order",
+            "items": {
+              "type": "integer"
+            },
+            "title": "Answers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "answers"
+        ],
+        "title": "SubmitIn",
+        "type": "object"
+      },
+      "SubmitOut": {
+        "properties": {
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/Result"
+            },
+            "title": "Results",
+            "type": "array"
+          },
+          "score": {
+            "title": "Score",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "score",
+          "total",
+          "results"
+        ],
+        "title": "SubmitOut",
+        "type": "object"
+      },
+      "User": {
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "email_confirmed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Confirmed At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "user_metadata": {
+            "additionalProperties": true,
+            "title": "User Metadata",
+            "type": "object"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "User",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "VerifyRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "token": {
+            "anyOf": [
+              {
+                "format": "password",
+                "maxLength": 10,
+                "minLength": 6,
+                "type": "string",
+                "writeOnly": true
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token"
+          },
+          "token_hash": {
+            "anyOf": [
+              {
+                "format": "password",
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string",
+                "writeOnly": true
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token Hash"
+          },
+          "type": {
+            "enum": [
+              "signup",
+              "recovery"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "VerifyRequest",
+        "type": "object"
+      },
+      "VisualsIn": {
+        "properties": {
+          "ask": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A picture you want, in your own words. Leave out to draw what the lesson planned.",
+            "title": "Ask"
+          }
+        },
+        "title": "VisualsIn",
+        "type": "object"
+      },
+      "VisualsOut": {
+        "properties": {
+          "visuals": {
+            "items": {
+              "$ref": "#/components/schemas/PublicVisual"
+            },
+            "title": "Visuals",
+            "type": "array"
+          }
+        },
+        "required": [
+          "visuals"
+        ],
+        "title": "VisualsOut",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "description": "\nAuthenticated learn -> quiz -> flashcards API. Data persists in Supabase PostgreSQL; only the\nexplicit offline demo uses ephemeral storage. Authorize with a Bearer access token before trying data routes.\nModel generation is opt-in. The full contract is documented in docs/API_PLATFORM.md.\n\n## Try it in this order\n0. *(optional)* **Your book** - `POST /api/materials` with a PDF, or several photos of pages. Copy the material `id`.\n   Correct extracted text with `GET/PUT /api/materials/{id}/pages`, then confirm its revision with\n   `POST /api/materials/{id}/confirm`. In step 1 add `material_id` and say which part to study (a topic, `chapter 3`, or `pages 40-55`);\n   everything after that uses only what your pages say. `GET /api/materials/{material_id}/find` shows which\n   pages a request would use, without spending anything.\n1. **Learn** - `POST /api/lessons` with a topic and an age. Copy the lesson `id` from the response.\n2. *(optional)* `POST /api/lessons/{lesson_id}/visuals` draws the diagrams the lesson planned (once per lesson).\n   Send `ask` to get a picture of your own request.\n3. **Quiz** - `POST /api/lessons/{lesson_id}/quiz`. Copy the quiz `id`. Questions arrive *without* answers.\n4. `POST /api/quiz/{quiz_id}/check` once per question: `index` is the question number (from 0) and `choice`\n   the option number (from 0). The answer is revealed after you commit, and **only your first answer to a\n   question counts**.\n5. **Weak spots** - once you have at least one wrong answer:\n   `POST /api/quiz/{quiz_id}/followup` writes *different* questions on the same weak ideas, and\n   `POST /api/quiz/{quiz_id}/flashcards` makes cards of your mistakes.\n6. **Flashcards** - `POST /api/lessons/{lesson_id}/flashcards` (or the mistakes deck above), then\n   `POST /api/flashcards/{deck_id}/review` with `know` or `again` for the `next` card.\n\n## Good to know\n- **Slow calls:** anything that writes with the model takes 10-40 seconds. Swagger shows a spinner, then the duration.\n- **Pictures:** diagrams come back as complete HTML pages inside JSON (`html`, `visual_html`, `*_visual_html`),\n  which Swagger can't render. Fetch **`/view`** endpoints with your Authorization header and render the response in a sandbox. Never put tokens in URLs.\n- **Errors:** `404` unknown or unowned id, `409` nothing to practise yet (no wrong answers),\n  `413`/`415` upload too big or not a PDF/picture, `422` invalid input (or a request the book doesn't cover),\n  `502` the model call failed.\n- **Uploads:** PDFs are read locally for free; pictures (scans, photos) are read by the vision model,\n  with provider usage charges. Limits: 25 MB per file, 600 pages, 100 picture pages, 20 photos at once.\n- Long generation can use `/api/jobs` with an Idempotency-Key and a separately started worker.\n- Scored solo sets require explicit lesson and question review; no multiplayer tournament is claimed.\n",
+    "title": "Family Learning API",
+    "version": "0.2.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/flashcards/{deck_id}": {
+      "get": {
+        "description": "All cards plus `state`: which card is `next`, how many are `known`, and which were `hard`.",
+        "operationId": "get_deck_api_flashcards__deck_id__get",
+        "parameters": [
+          {
+            "description": "A deck `id`, from a flashcards endpoint",
+            "in": "path",
+            "name": "deck_id",
+            "required": true,
+            "schema": {
+              "description": "A deck `id`, from a flashcards endpoint",
+              "title": "Deck Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicDeck"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unknown or unowned id. Ephemeral demo records also disappear on restart."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get a deck and its progress",
+        "tags": [
+          "Flashcards"
+        ]
+      }
+    },
+    "/api/flashcards/{deck_id}/cards/{index}/view": {
+      "get": {
+        "description": "A diagram card's picture as a standalone page (404 if that side has none).",
+        "operationId": "view_card_api_flashcards__deck_id__cards__index__view_get",
+        "parameters": [
+          {
+            "description": "A deck `id`, from a flashcards endpoint",
+            "in": "path",
+            "name": "deck_id",
+            "required": true,
+            "schema": {
+              "description": "A deck `id`, from a flashcards endpoint",
+              "title": "Deck Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "index",
+            "required": true,
+            "schema": {
+              "title": "Index",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Which side of the card",
+            "in": "query",
+            "name": "side",
+            "required": false,
+            "schema": {
+              "default": "front",
+              "description": "Which side of the card",
+              "enum": [
+                "front",
+                "back"
+              ],
+              "title": "Side",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unknown or unowned id. Ephemeral demo records also disappear on restart."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "View a diagram card as a web page",
+        "tags": [
+          "Flashcards"
+        ]
+      }
+    },
+    "/api/flashcards/{deck_id}/review": {
+      "post": {
+        "description": "`know` retires the card; `again` brings it back after 3 other cards. The deck is finished when `next` is\nnull. 422 if that card isn't waiting to be reviewed (for example it is already known).",
+        "operationId": "review_card_api_flashcards__deck_id__review_post",
+        "parameters": [
+          {
+            "description": "A deck `id`, from a flashcards endpoint",
+            "in": "path",
+            "name": "deck_id",
+            "required": true,
+            "schema": {
+              "description": "A deck `id`, from a flashcards endpoint",
+              "title": "Deck Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 128,
+                  "minLength": 8,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "again": {
+                  "summary": "Still learning",
+                  "value": {
+                    "card": 0,
+                    "result": "again"
+                  }
+                },
+                "know": {
+                  "summary": "Got it",
+                  "value": {
+                    "card": 0,
+                    "result": "know"
+                  }
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/ReviewIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeckState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unknown or unowned id. Ephemeral demo records also disappear on restart."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Mark a card known or still learning",
+        "tags": [
+          "Flashcards"
+        ]
+      }
+    },
+    "/api/jobs": {
+      "post": {
+        "description": "Queue validated generation with an Idempotency-Key; submitting does not call a model.",
+        "operationId": "submit_job_api_jobs_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 8,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateJob"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Submit Job",
+        "tags": [
+          "Generation jobs"
+        ]
+      }
+    },
+    "/api/jobs/{job_id}": {
+      "delete": {
+        "description": "Cancel queued work. A running provider request cannot safely be cancelled by this API.",
+        "operationId": "cancel_job_api_jobs__job_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Cancel Job",
+        "tags": [
+          "Generation jobs"
+        ]
+      },
+      "get": {
+        "description": "Return owned job status and result references without inputs or internal lease credentials.",
+        "operationId": "get_job_api_jobs__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Job",
+        "tags": [
+          "Generation jobs"
+        ]
+      }
+    },
+    "/api/lessons": {
+      "post": {
+        "description": "Write a lesson on `topic` at the reading level of a learner `age` years old: summary, sections that\nbuild on each other, key points.\n\nVisuals are planned *with* the lesson: each section that needs a picture carries a `visual` plan.\nWords like \"visually\" or \"show me\" in `topic`, or `prefers_visuals`, ask for a picture in nearly every\nsection; younger learners get more pictures. The pictures themselves are drawn by\n`POST /api/lessons/{lesson_id}/visuals`.\n\n**From your own book:** with `material_id` (from `POST /api/materials`), `topic` says which part to study:\na topic (`photosynthesis`), a chapter (`chapter 3`) or pages (`pages 40-55`). The lesson, and everything\nbuilt from it (visuals, quiz, flashcards, follow-ups), then uses **only what those pages say**. If the\npages don't cover the request you get a 422 saying so, instead of an invented lesson; the response's\n`source` lists the pages used. Takes about 20-30 s.",
+        "operationId": "create_lesson_api_lessons_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "from_book": {
+                  "summary": "From my uploaded book (paste the material id)",
+                  "value": {
+                    "age": 14,
+                    "material_id": "<id from POST /api/materials>",
+                    "topic": "photosynthesis"
+                  }
+                },
+                "pictures": {
+                  "summary": "Asks for pictures in the topic",
+                  "value": {
+                    "age": 14,
+                    "topic": "how the internet works, explain it visually"
+                  }
+                },
+                "visual_learner": {
+                  "summary": "Returning learner who likes visuals",
+                  "value": {
+                    "age": 12,
+                    "prefers_visuals": true,
+                    "topic": "photosynthesis"
+                  }
+                },
+                "young": {
+                  "summary": "Young learner",
+                  "value": {
+                    "age": 8,
+                    "topic": "the water cycle"
+                  }
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/LessonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicLesson"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "The model call failed, or produced nothing usable. Safe to try again."
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Explain a topic for an age",
+        "tags": [
+          "Learn"
+        ]
+      }
+    },
+    "/api/lessons/{lesson_id}": {
+      "get": {
+        "description": "The lesson with every visual drawn for it so far.",
+        "operationId": "get_lesson_api_lessons__lesson_id__get",
+        "parameters": [
+          {
+            "description": "The lesson `id` returned by `POST /api/lessons`",
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "description": "The lesson `id` returned by `POST /api/lessons`",
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicLesson"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unknown or unowned id. Ephemeral demo records also disappear on restart."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get a lesson",
+        "tags": [
+          "Learn"
+        ]
+      }
+    },
+    "/api/lessons/{lesson_id}/approve": {
+      "post": {
+        "operationId": "approve_lesson_api_lessons__lesson_id__approve_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Approval"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonApproval"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Approve Lesson",
+        "tags": [
+          "Review"
+        ]
+      }
+    },
+    "/api/lessons/{lesson_id}/complete": {
+      "post": {
+        "operationId": "complete_lesson_api_lessons__lesson_id__complete_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Completion"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Complete Lesson",
+        "tags": [
+          "Progress"
+        ]
+      }
+    },
+    "/api/lessons/{lesson_id}/flashcards": {
+      "post": {
+        "description": "Write flashcards from the lesson at the learner's age: terms, how/why, cause and effect, fill-in-the-blank,\nplus up to 2 diagram cards (a hidden box on the front, the completed diagram on the back) when the lesson\nhas diagrams. Exactly `num_cards` cards. Takes about 15-25 s.",
+        "operationId": "create_deck_api_lessons__lesson_id__flashcards_post",
+        "parameters": [
+          {
+            "description": "The lesson `id` returned by `POST /api/lessons`",
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "description": "The lesson `id` returned by `POST /api/lessons`",
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "eight": {
+                  "summary": "Eight cards",
+                  "value": {
+                    "num_cards": 8
+                  }
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/CreateDeck"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicDeck"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unknown or unowned id. Ephemeral demo records also disappear on restart."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "The model call failed, or produced nothing usable. Safe to try again."
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create flashcards from a lesson",
+        "tags": [
+          "Flashcards"
+        ]
+      }
+    },
+    "/api/lessons/{lesson_id}/quiz": {
+      "post": {
+        "description": "Build a practice quiz from the lesson text, pitched at the learner's age.\n\nWhen the lesson has diagrams, some questions hide one box in a diagram and ask what belongs there\n(`visual_html`; see it with `GET /api/quiz/{quiz_id}/questions/{index}/view`).\n\nQuestions come **without answers**; send each one to `POST /api/quiz/{quiz_id}/check`. `dropped` counts\nquestions removed because they failed the review step. Takes about 20-40 s.",
+        "operationId": "create_quiz_api_lessons__lesson_id__quiz_post",
+        "parameters": [
+          {
+            "description": "The lesson `id` returned by `POST /api/lessons`",
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "description": "The lesson `id` returned by `POST /api/lessons`",
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "five": {
+                  "summary": "Five questions",
+                  "value": {
+                    "num_questions": 5
+                  }
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/CreateQuiz"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicQuiz"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unknown or unowned id. Ephemeral demo records also disappear on restart."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "The model call failed, or produced nothing usable. Safe to try again."
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create a quiz from a lesson",
+        "tags": [
+          "Quiz"
+        ]
+      }
+    },
+    "/api/lessons/{lesson_id}/revisions": {
+      "post": {
+        "operationId": "revise_lesson_api_lessons__lesson_id__revisions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LessonEdit"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonRevision"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Revise Lesson",
+        "tags": [
+          "Review"
+        ]
+      }
+    },
+    "/api/lessons/{lesson_id}/visuals": {
+      "post": {
+        "description": "Draw diagrams, charts and interactive widgets for the lesson.\n\nWithout `ask`: draws the visuals the lesson planned, **once per lesson** (repeat calls return an empty\nlist). With `ask`: draws one visual answering that request, every time.\n\nEach visual's `html` is a complete web page; see it rendered with `GET /api/lessons/{lesson_id}/visuals/{visual_id}/view`.\nTakes about 15-30 s.",
+        "operationId": "create_visuals_api_lessons__lesson_id__visuals_post",
+        "parameters": [
+          {
+            "description": "The lesson `id` returned by `POST /api/lessons`",
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "description": "The lesson `id` returned by `POST /api/lessons`",
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "ask": {
+                  "summary": "Ask for a picture",
+                  "value": {
+                    "ask": "show me what happens inside the leaf"
+                  }
+                },
+                "planned": {
+                  "summary": "Draw what the lesson planned",
+                  "value": {}
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/VisualsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unknown or unowned id. Ephemeral demo records also disappear on restart."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "The model call failed, or produced nothing usable. Safe to try again."
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Draw the lesson's visuals",
+        "tags": [
+          "Learn"
+        ]
+      }
+    },
+    "/api/lessons/{lesson_id}/visuals/{visual_id}/view": {
+      "get": {
+        "description": "The visual as a standalone page. Fetch with a Bearer token; render the HTML in a sandboxed frame. Never put tokens in the URL.",
+        "operationId": "view_visual_api_lessons__lesson_id__visuals__visual_id__view_get",
+        "parameters": [
+          {
+            "description": "The lesson `id` returned by `POST /api/lessons`",
+            "in": "path",
+            "name": "lesson_id",
+            "required": true,
+            "schema": {
+              "description": "The lesson `id` returned by `POST /api/lessons`",
+              "title": "Lesson Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "visual_id",
+            "required": true,
+            "schema": {
+              "title": "Visual Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unknown or unowned id. Ephemeral demo records also disappear on restart."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "View a lesson visual as a web page",
+        "tags": [
+          "Learn"
+        ]
+      }
+    },
+    "/api/materials": {
+      "post": {
+        "description": "Read an upload so lessons can be built from it.\n\n**Text PDFs** are read locally and cost nothing. **Pages that are pictures** (scanned PDFs, photos) are read by\nthe vision model: a fraction of a cent per page, in parallel, so a scanned book takes up to a minute.\nLimits: 25 MB per file (60 MB together), 600 PDF pages, 100 picture pages read per upload, 20 photos.\n\nThe response says how many pages were read each way, lists the chapter headings found (ask for one with\n`chapter 3`) and warns about pages that couldn't be read. Only extracted text is persisted in owned application storage; original images are not retained.\nAuthentication and explicit material confirmation are required before generating from it.",
+        "operationId": "upload_material_api_materials_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "content-length",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Content-Length"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_material_api_materials_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialInfo"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "The upload is too big (25 MB per file, 600 PDF pages, 20 files)."
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "That file isn't a PDF or a picture (JPG, PNG or WebP) that can be read."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "The model call failed, or produced nothing usable. Safe to try again."
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Upload a book or photos of pages",
+        "tags": [
+          "Your book"
+        ]
+      }
+    },
+    "/api/materials/{material_id}": {
+      "delete": {
+        "description": "Forget the uploaded pages now. Owned derived lessons, questions, decks, progress, and jobs are removed too.",
+        "operationId": "delete_material_api_materials__material_id__delete",
+        "parameters": [
+          {
+            "description": "The material `id` returned by `POST /api/materials`",
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "description": "The material `id` returned by `POST /api/materials`",
+              "title": "Material Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unknown or unowned id. Ephemeral demo records also disappear on restart."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Remove an upload",
+        "tags": [
+          "Your book"
+        ]
+      },
+      "get": {
+        "description": "Page counts, how each page was read, the chapter headings found, and any warnings.",
+        "operationId": "get_material_api_materials__material_id__get",
+        "parameters": [
+          {
+            "description": "The material `id` returned by `POST /api/materials`",
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "description": "The material `id` returned by `POST /api/materials`",
+              "title": "Material Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialInfo"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unknown or unowned id. Ephemeral demo records also disappear on restart."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get an upload's details",
+        "tags": [
+          "Your book"
+        ]
+      }
+    },
+    "/api/materials/{material_id}/confirm": {
+      "post": {
+        "operationId": "confirm_material_api_materials__material_id__confirm_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Approval"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Confirm Material",
+        "tags": [
+          "Materials"
+        ]
+      }
+    },
+    "/api/materials/{material_id}/find": {
+      "get": {
+        "description": "Preview which pages a lesson request would be built from. Searches locally: no model call, no cost.\n422 if the book doesn't contain it.",
+        "operationId": "find_pages_api_materials__material_id__find_get",
+        "parameters": [
+          {
+            "description": "The material `id` returned by `POST /api/materials`",
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "description": "The material `id` returned by `POST /api/materials`",
+              "title": "Material Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "What you would type as the lesson topic: a topic, `chapter 3` or `pages 40-55`",
+            "in": "query",
+            "name": "topic",
+            "required": true,
+            "schema": {
+              "description": "What you would type as the lesson topic: a topic, `chapter 3` or `pages 40-55`",
+              "maxLength": 200,
+              "minLength": 1,
+              "title": "Topic",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FoundPages"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unknown or unowned id. Ephemeral demo records also disappear on restart."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Which pages would a request use?",
+        "tags": [
+          "Your book"
+        ]
+      }
+    },
+    "/api/materials/{material_id}/pages": {
+      "get": {
+        "operationId": "material_pages_api_materials__material_id__pages_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialPages"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Material Pages",
+        "tags": [
+          "Materials"
+        ]
+      },
+      "put": {
+        "operationId": "edit_pages_api_materials__material_id__pages_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PagesUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Edit Pages",
+        "tags": [
+          "Materials"
+        ]
+      }
+    },
+    "/api/materials/{material_id}/revisions/{revision}": {
+      "get": {
+        "description": "Read the immutable extracted-text revision used by an older lesson's source reference.",
+        "operationId": "material_revision_api_materials__material_id__revisions__revision__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "revision",
+            "required": true,
+            "schema": {
+              "title": "Revision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialRevision"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Material Revision",
+        "tags": [
+          "Materials"
+        ]
+      }
+    },
+    "/api/me/data": {
+      "delete": {
+        "description": "Delete application data and leave rooms; the Supabase Auth account remains active.",
+        "operationId": "delete_own_data_api_me_data_delete",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Own Data",
+        "tags": [
+          "Profile"
+        ]
+      }
+    },
+    "/api/me/profile": {
+      "get": {
+        "operationId": "get_profile_api_me_profile_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Profile",
+        "tags": [
+          "Profile"
+        ]
+      },
+      "put": {
+        "operationId": "put_profile_api_me_profile_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Profile"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Put Profile",
+        "tags": [
+          "Profile"
+        ]
+      }
+    },
+    "/api/me/progress": {
+      "get": {
+        "operationId": "progress_api_me_progress_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Progress"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Progress",
+        "tags": [
+          "Progress"
+        ]
+      }
+    },
+    "/api/quiz/{quiz_id}": {
+      "get": {
+        "description": "The quiz as the learner sees it: questions and options, never answers.",
+        "operationId": "get_quiz_api_quiz__quiz_id__get",
+        "parameters": [
+          {
+            "description": "A quiz `id`, from `POST /api/lessons/{lesson_id}/quiz` or a follow-up quiz",
+            "in": "path",
+            "name": "quiz_id",
+            "required": true,
+            "schema": {
+              "description": "A quiz `id`, from `POST /api/lessons/{lesson_id}/quiz` or a follow-up quiz",
+              "title": "Quiz Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicQuiz"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unknown or unowned id. Ephemeral demo records also disappear on restart."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get a quiz",
+        "tags": [
+          "Quiz"
+        ]
+      }
+    },
+    "/api/quiz/{quiz_id}/attempts": {
+      "post": {
+        "operationId": "new_attempt_api_quiz__quiz_id__attempts_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quiz_id",
+            "required": true,
+            "schema": {
+              "title": "Quiz Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "New Attempt",
+        "tags": [
+          "Quiz"
+        ]
+      }
+    },
+    "/api/quiz/{quiz_id}/check": {
+      "post": {
+        "description": "Grade one answer and reveal the correct option and the explanation.\n\n`choice` is the option number from 0 (true/false questions have two options: True = 0, False = 1).\nOnly the learner's **first** answer to each question is recorded; that is what the follow-up quiz and the\nmistakes flashcards are built from. Later calls for the same question still return the grade.\nDiagram questions also return `answer_visual_html`, the completed diagram.\n\n422 if `index` or `choice` is out of range.",
+        "operationId": "check_answer_api_quiz__quiz_id__check_post",
+        "parameters": [
+          {
+            "description": "A quiz `id`, from `POST /api/lessons/{lesson_id}/quiz` or a follow-up quiz",
+            "in": "path",
+            "name": "quiz_id",
+            "required": true,
+            "schema": {
+              "description": "A quiz `id`, from `POST /api/lessons/{lesson_id}/quiz` or a follow-up quiz",
+              "title": "Quiz Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "first_option": {
+                  "summary": "Question 0, first option",
+                  "value": {
+                    "choice": 0,
+                    "index": 0
+                  }
+                },
+                "second_question": {
+                  "summary": "Question 1, second option",
+                  "value": {
+                    "choice": 1,
+                    "index": 1
+                  }
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/CheckIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unknown or unowned id. Ephemeral demo records also disappear on restart."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Answer a question",
+        "tags": [
+          "Quiz"
+        ]
+      }
+    },
+    "/api/quiz/{quiz_id}/flashcards": {
+      "post": {
+        "description": "Flashcards of the questions answered wrongly (`which: missed`) or of the whole quiz (`all`).\nNo model call: instant. Review them with `POST /api/flashcards/{deck_id}/review`.\n\nCards ask the question without options; the back has the answer, the explanation and what the learner\nchose. Diagram questions keep their picture. 409 if nothing was answered wrongly.",
+        "operationId": "create_quiz_deck_api_quiz__quiz_id__flashcards_post",
+        "parameters": [
+          {
+            "description": "A quiz `id`, from `POST /api/lessons/{lesson_id}/quiz` or a follow-up quiz",
+            "in": "path",
+            "name": "quiz_id",
+            "required": true,
+            "schema": {
+              "description": "A quiz `id`, from `POST /api/lessons/{lesson_id}/quiz` or a follow-up quiz",
+              "title": "Quiz Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "all": {
+                  "summary": "The whole quiz",
+                  "value": {
+                    "which": "all"
+                  }
+                },
+                "missed": {
+                  "summary": "Only my mistakes",
+                  "value": {
+                    "which": "missed"
+                  }
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/QuizDeckIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicDeck"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unknown or unowned id. Ephemeral demo records also disappear on restart."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Nothing to practise, review required, stale state, or conflicting replay."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Flashcards of my mistakes",
+        "tags": [
+          "Weak spots"
+        ]
+      }
+    },
+    "/api/quiz/{quiz_id}/followup": {
+      "post": {
+        "description": "Write a new quiz on what this learner got wrong: **different** questions on the same weak ideas, so it\ncan't be passed by remembering the old answers (new situations, other wording, other options; a missed\ndiagram question gets another box of the same diagram hidden).\n\nNeeds at least one wrong answer so far (409 otherwise). `focus` lists the ideas being practised and\n`parent_id` is the quiz it came from. It is a normal quiz: answer it with `/check`; it records answers too,\nso it can have its own follow-up. Without `num_questions`: 2 per weak idea, between 3 and 10.\nTakes about 20-40 s.",
+        "operationId": "create_followup_api_quiz__quiz_id__followup_post",
+        "parameters": [
+          {
+            "description": "A quiz `id`, from `POST /api/lessons/{lesson_id}/quiz` or a follow-up quiz",
+            "in": "path",
+            "name": "quiz_id",
+            "required": true,
+            "schema": {
+              "description": "A quiz `id`, from `POST /api/lessons/{lesson_id}/quiz` or a follow-up quiz",
+              "title": "Quiz Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "auto": {
+                  "summary": "Let it decide how many",
+                  "value": {}
+                },
+                "five": {
+                  "summary": "Five questions",
+                  "value": {
+                    "num_questions": 5
+                  }
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/FollowupIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicQuiz"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unknown or unowned id. Ephemeral demo records also disappear on restart."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Nothing to practise, review required, stale state, or conflicting replay."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "The model call failed, or produced nothing usable. Safe to try again."
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "New quiz on my weak spots",
+        "tags": [
+          "Weak spots"
+        ]
+      }
+    },
+    "/api/quiz/{quiz_id}/questions/{index}/view": {
+      "get": {
+        "description": "The diagram of a diagram question as a standalone page (404 if the question has none).",
+        "operationId": "view_question_api_quiz__quiz_id__questions__index__view_get",
+        "parameters": [
+          {
+            "description": "A quiz `id`, from `POST /api/lessons/{lesson_id}/quiz` or a follow-up quiz",
+            "in": "path",
+            "name": "quiz_id",
+            "required": true,
+            "schema": {
+              "description": "A quiz `id`, from `POST /api/lessons/{lesson_id}/quiz` or a follow-up quiz",
+              "title": "Quiz Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "index",
+            "required": true,
+            "schema": {
+              "title": "Index",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "`question`: the diagram with its hidden box. `answer`: the completed diagram, only once that question has been answered.",
+            "in": "query",
+            "name": "show",
+            "required": false,
+            "schema": {
+              "default": "question",
+              "description": "`question`: the diagram with its hidden box. `answer`: the completed diagram, only once that question has been answered.",
+              "enum": [
+                "question",
+                "answer"
+              ],
+              "title": "Show",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unknown or unowned id. Ephemeral demo records also disappear on restart."
+          },
+          "409": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Nothing to practise, review required, stale state, or conflicting replay."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "View a diagram question as a web page",
+        "tags": [
+          "Quiz"
+        ]
+      }
+    },
+    "/api/resources/{kind}": {
+      "get": {
+        "operationId": "resources_api_resources__kind__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "enum": [
+                "materials",
+                "lessons",
+                "quizzes",
+                "tournaments",
+                "decks",
+                "jobs",
+                "completions"
+              ],
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "After",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourcePage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Resources",
+        "tags": [
+          "Resources"
+        ]
+      }
+    },
+    "/api/rooms": {
+      "post": {
+        "description": "Create a private lobby with an eight-character invite code and 24-hour expiry.",
+        "operationId": "create_room_api_rooms_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRoom"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Room",
+        "tags": [
+          "Private rooms"
+        ]
+      }
+    },
+    "/api/rooms/join": {
+      "post": {
+        "description": "Join by invite code. Repeating a join by the same account returns its existing membership.",
+        "operationId": "join_room_api_rooms_join_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinRoom"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Join Room",
+        "tags": [
+          "Private rooms"
+        ]
+      }
+    },
+    "/api/rooms/{room_id}": {
+      "get": {
+        "description": "Read the current authorized lobby snapshot, including after reconnecting.",
+        "operationId": "snapshot_api_rooms__room_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "room_id",
+            "required": true,
+            "schema": {
+              "title": "Room Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Snapshot",
+        "tags": [
+          "Private rooms"
+        ]
+      }
+    },
+    "/api/rooms/{room_id}/commands": {
+      "post": {
+        "description": "Set readiness, leave, or close as host. Reject stale versions with 409; no game is started.",
+        "operationId": "room_command_api_rooms__room_id__commands_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "room_id",
+            "required": true,
+            "schema": {
+              "title": "Room Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoomCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/RoomSnapshot"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LeftRoom"
+                    }
+                  ],
+                  "title": "Response Room Command Api Rooms  Room Id  Commands Post"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Room Command",
+        "tags": [
+          "Private rooms"
+        ]
+      }
+    },
+    "/api/tournament": {
+      "post": {
+        "description": "Same questions as a practice quiz, but answered all at once: nothing is revealed until `submit`.\nTakes about 20-40 s.",
+        "operationId": "create_tournament_api_tournament_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "five": {
+                  "summary": "Five questions",
+                  "value": {
+                    "lesson_id": "<lesson id>",
+                    "num_questions": 5
+                  }
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/CreateTournament"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicQuiz"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unknown or unowned id. Ephemeral demo records also disappear on restart."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "The model call failed, or produced nothing usable. Safe to try again."
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create a tournament from a lesson",
+        "tags": [
+          "Tournament"
+        ]
+      }
+    },
+    "/api/tournament/{tournament_id}": {
+      "get": {
+        "description": "The questions and options, without answers.",
+        "operationId": "get_tournament_api_tournament__tournament_id__get",
+        "parameters": [
+          {
+            "description": "The `id` returned by `POST /api/tournament`",
+            "in": "path",
+            "name": "tournament_id",
+            "required": true,
+            "schema": {
+              "description": "The `id` returned by `POST /api/tournament`",
+              "title": "Tournament Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicQuiz"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unknown or unowned id. Ephemeral demo records also disappear on restart."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get a tournament",
+        "tags": [
+          "Tournament"
+        ]
+      }
+    },
+    "/api/tournament/{tournament_id}/approve": {
+      "post": {
+        "operationId": "approve_tournament_api_tournament__tournament_id__approve_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tournament_id",
+            "required": true,
+            "schema": {
+              "title": "Tournament Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Approval"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Approve Tournament",
+        "tags": [
+          "Review"
+        ]
+      }
+    },
+    "/api/tournament/{tournament_id}/review": {
+      "get": {
+        "operationId": "review_tournament_api_tournament__tournament_id__review_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tournament_id",
+            "required": true,
+            "schema": {
+              "title": "Tournament Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Review Tournament",
+        "tags": [
+          "Review"
+        ]
+      }
+    },
+    "/api/tournament/{tournament_id}/submit": {
+      "post": {
+        "description": "Score every answer and reveal the correct options and explanations. 422 if the number of answers differs\nfrom the number of questions, or an option number is out of range.",
+        "operationId": "submit_api_tournament__tournament_id__submit_post",
+        "parameters": [
+          {
+            "description": "The `id` returned by `POST /api/tournament`",
+            "in": "path",
+            "name": "tournament_id",
+            "required": true,
+            "schema": {
+              "description": "The `id` returned by `POST /api/tournament`",
+              "title": "Tournament Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "five": {
+                  "summary": "Five answers (all the first option)",
+                  "value": {
+                    "answers": [
+                      0,
+                      0,
+                      0,
+                      0,
+                      0
+                    ]
+                  }
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/SubmitIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmitOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unknown or unowned id. Ephemeral demo records also disappear on restart."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Submit all answers and get the score",
+        "tags": [
+          "Tournament"
+        ]
+      }
+    },
+    "/auth/forgot-password": {
+      "post": {
+        "operationId": "forgot_password_auth_forgot_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Forgot Password"
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "login_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Credentials"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Login"
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "logout_auth_logout_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Logout"
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "operationId": "me_auth_me_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Me"
+      }
+    },
+    "/auth/password": {
+      "put": {
+        "operationId": "update_password_auth_password_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Password"
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "operationId": "refresh_auth_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Refresh"
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "operationId": "register_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Register"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register"
+      }
+    },
+    "/auth/resend": {
+      "post": {
+        "operationId": "resend_auth_resend_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resend"
+      }
+    },
+    "/auth/verify": {
+      "post": {
+        "operationId": "verify_auth_verify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Verify"
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health"
+      }
+    },
+    "/ready": {
+      "get": {
+        "operationId": "ready_ready_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Ready"
+      }
+    }
+  },
+  "tags": [
+    {
+      "description": "Optional: upload a digital book (PDF) or photos of pages, then study a part of it.",
+      "name": "Your book"
+    },
+    {
+      "description": "Explain a topic at the learner's age, and draw the diagrams it needs.",
+      "name": "Learn"
+    },
+    {
+      "description": "Practice quiz built from the lesson. Answers are revealed one question at a time.",
+      "name": "Quiz"
+    },
+    {
+      "description": "Flashcards built from the lesson, with a review loop kept on the server.",
+      "name": "Flashcards"
+    },
+    {
+      "description": "After a quiz: flashcards of the mistakes, and a new quiz on the same weak ideas.",
+      "name": "Weak spots"
+    },
+    {
+      "description": "Placeholder for the gamified mode: answer everything, submit once, get a score.",
+      "name": "Tournament"
+    }
+  ]
+}
