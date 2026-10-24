@@ -217,3 +217,13 @@ or activation setting has changed. The feature remains off by default, activatio
 and existing registration paths are not yet subject to mandatory approval enforcement. The prior
 602-passed/17-skipped results refer to the unchanged runtime code; no new runtime test result is
 claimed for this documentation-only addition.
+
+## Integration verification after quiz PR #6 — 24 October 2026
+
+The approval branch was synchronized with main e2ba3f0 before merge. Documentation conflicts
+were resolved by preserving current main as an exact prefix and retaining the approval appendices.
+Combined local suite: **641 passed, 18 skipped** on Python 3.13 and disposable PostgreSQL 16.
+Lint passed; all 72 Python files passed formatting. Seventeen skips are memory variants of
+database-only checks whose PostgreSQL cases ran; one disables the live paid safety-model check.
+No frontend or AI code was changed. Hosted configuration, activation and age enforcement remain
+outside this merge. Earlier test counts are historical results for the original standalone branch.

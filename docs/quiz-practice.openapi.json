@@ -1,0 +1,1934 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Non-AI quiz practice API — additive contract",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/quiz/{quiz_id}/progress": {
+      "get": {
+        "tags": [
+          "Quiz practice"
+        ],
+        "summary": "Progress",
+        "description": "Resume from saved first answers; never return unanswered keys or explanations.",
+        "operationId": "progress_api_quiz__quiz_id__progress_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "quiz_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Quiz Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__quiz_practice__Progress"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified identity required"
+          },
+          "404": {
+            "description": "Quiz absent or owned by another account"
+          },
+          "409": {
+            "description": "Stale state, conflicting retry, or incomplete attempt"
+          },
+          "429": {
+            "description": "Request limit reached"
+          },
+          "503": {
+            "description": "Storage unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quiz/{quiz_id}/results": {
+      "get": {
+        "tags": [
+          "Quiz practice"
+        ],
+        "summary": "Results",
+        "description": "Factual partial/final counts, without rewards, pass thresholds or mastery claims.",
+        "operationId": "results_api_quiz__quiz_id__results_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "quiz_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Quiz Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Results"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified identity required"
+          },
+          "404": {
+            "description": "Quiz absent or owned by another account"
+          },
+          "409": {
+            "description": "Stale state, conflicting retry, or incomplete attempt"
+          },
+          "429": {
+            "description": "Request limit reached"
+          },
+          "503": {
+            "description": "Storage unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quiz/{quiz_id}/answers": {
+      "post": {
+        "tags": [
+          "Quiz practice"
+        ],
+        "summary": "Answer",
+        "operationId": "answer_api_quiz__quiz_id__answers_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "quiz_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Quiz Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnswerInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnswerResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified identity required"
+          },
+          "404": {
+            "description": "Quiz absent or owned by another account"
+          },
+          "409": {
+            "description": "Stale state, conflicting retry, or incomplete attempt"
+          },
+          "429": {
+            "description": "Request limit reached"
+          },
+          "503": {
+            "description": "Storage unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quiz/{quiz_id}/finish": {
+      "post": {
+        "tags": [
+          "Quiz practice"
+        ],
+        "summary": "Finish",
+        "operationId": "finish_api_quiz__quiz_id__finish_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "quiz_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Quiz Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinishInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Results"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified identity required"
+          },
+          "404": {
+            "description": "Quiz absent or owned by another account"
+          },
+          "409": {
+            "description": "Stale state, conflicting retry, or incomplete attempt"
+          },
+          "429": {
+            "description": "Request limit reached"
+          },
+          "503": {
+            "description": "Storage unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quiz/{quiz_id}/review": {
+      "get": {
+        "tags": [
+          "Quiz practice"
+        ],
+        "summary": "Review",
+        "operationId": "review_api_quiz__quiz_id__review_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "quiz_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Quiz Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Review"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified identity required"
+          },
+          "404": {
+            "description": "Quiz absent or owned by another account"
+          },
+          "409": {
+            "description": "Stale state, conflicting retry, or incomplete attempt"
+          },
+          "429": {
+            "description": "Request limit reached"
+          },
+          "503": {
+            "description": "Storage unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quiz/{quiz_id}/retry": {
+      "post": {
+        "tags": [
+          "Quiz practice"
+        ],
+        "summary": "Retry",
+        "operationId": "retry_api_quiz__quiz_id__retry_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "quiz_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Quiz Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetryInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicQuiz"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified identity required"
+          },
+          "404": {
+            "description": "Quiz absent or owned by another account"
+          },
+          "409": {
+            "description": "Stale state, conflicting retry, or incomplete attempt"
+          },
+          "429": {
+            "description": "Request limit reached"
+          },
+          "503": {
+            "description": "Storage unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quiz/{quiz_id}/attempts": {
+      "get": {
+        "tags": [
+          "Quiz practice"
+        ],
+        "summary": "Attempts",
+        "description": "Owned attempts sharing this exact question snapshot; no sibling answer payloads.",
+        "operationId": "attempts_api_quiz__quiz_id__attempts_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "quiz_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Quiz Id"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 128,
+              "default": "",
+              "title": "After"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttemptPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified identity required"
+          },
+          "404": {
+            "description": "Quiz absent or owned by another account"
+          },
+          "409": {
+            "description": "Stale state, conflicting retry, or incomplete attempt"
+          },
+          "429": {
+            "description": "Request limit reached"
+          },
+          "503": {
+            "description": "Storage unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quiz/{quiz_id}/review-deck": {
+      "post": {
+        "tags": [
+          "Quiz practice"
+        ],
+        "summary": "Review Deck",
+        "description": "Reuse checked question answers as cards; never generate new content.",
+        "operationId": "review_deck_api_quiz__quiz_id__review_deck_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "quiz_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Quiz Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewDeckInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicDeck"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified identity required"
+          },
+          "404": {
+            "description": "Quiz absent or owned by another account"
+          },
+          "409": {
+            "description": "Stale state, conflicting retry, or incomplete attempt"
+          },
+          "429": {
+            "description": "Request limit reached"
+          },
+          "503": {
+            "description": "Storage unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quiz/{quiz_id}/author-review": {
+      "get": {
+        "tags": [
+          "Quiz practice"
+        ],
+        "summary": "Author Review",
+        "description": "Explicit answer-containing owner view, distinct from answer-free play and saved progress.",
+        "operationId": "author_review_api_quiz__quiz_id__author_review_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "quiz_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Quiz Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthorReview"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified identity required"
+          },
+          "404": {
+            "description": "Quiz absent or owned by another account"
+          },
+          "409": {
+            "description": "Stale state, conflicting retry, or incomplete attempt"
+          },
+          "429": {
+            "description": "Request limit reached"
+          },
+          "503": {
+            "description": "Storage unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quiz/{quiz_id}/revisions": {
+      "post": {
+        "tags": [
+          "Quiz practice"
+        ],
+        "summary": "Revise Questions",
+        "operationId": "revise_questions_api_quiz__quiz_id__revisions_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "quiz_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Quiz Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuizRevisionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizRevisionOutput"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified identity required"
+          },
+          "404": {
+            "description": "Quiz absent or owned by another account"
+          },
+          "409": {
+            "description": "Stale state, conflicting retry, or incomplete attempt"
+          },
+          "429": {
+            "description": "Request limit reached"
+          },
+          "503": {
+            "description": "Storage unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quiz/{quiz_id}/approve": {
+      "post": {
+        "tags": [
+          "Quiz practice"
+        ],
+        "summary": "Approve Questions",
+        "operationId": "approve_questions_api_quiz__quiz_id__approve_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "quiz_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Quiz Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuizApprovalInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizApprovalOutput"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified identity required"
+          },
+          "404": {
+            "description": "Quiz absent or owned by another account"
+          },
+          "409": {
+            "description": "Stale state, conflicting retry, or incomplete attempt"
+          },
+          "429": {
+            "description": "Request limit reached"
+          },
+          "503": {
+            "description": "Storage unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AnswerInput": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Index"
+          },
+          "choice": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Choice"
+          },
+          "expected_answered": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Expected Answered"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "index",
+          "choice",
+          "expected_answered"
+        ],
+        "title": "AnswerInput"
+      },
+      "AnswerResponse": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "recorded_choice": {
+            "type": "integer",
+            "title": "Recorded Choice"
+          },
+          "feedback": {
+            "$ref": "#/components/schemas/CheckOut"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/app__quiz_practice__Progress"
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "recorded_choice",
+          "feedback",
+          "progress"
+        ],
+        "title": "AnswerResponse"
+      },
+      "AttemptPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AttemptSummary"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "title": "AttemptPage"
+      },
+      "AttemptSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "question_set_id": {
+            "type": "string",
+            "title": "Question Set Id"
+          },
+          "lesson_id": {
+            "type": "string",
+            "title": "Lesson Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "not_started",
+              "in_progress",
+              "ready_to_finish",
+              "completed"
+            ],
+            "title": "Status"
+          },
+          "answered": {
+            "type": "integer",
+            "title": "Answered"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "score": {
+            "type": "integer",
+            "title": "Score"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "question_set_id",
+          "lesson_id",
+          "title",
+          "parent_id",
+          "status",
+          "answered",
+          "total",
+          "score",
+          "completed_at"
+        ],
+        "title": "AttemptSummary"
+      },
+      "AuthorQuestion": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Options"
+          },
+          "answer_index": {
+            "type": "integer",
+            "title": "Answer Index"
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "type",
+          "question",
+          "options",
+          "answer_index",
+          "explanation"
+        ],
+        "title": "AuthorQuestion"
+      },
+      "AuthorReview": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "question_set_id": {
+            "type": "string",
+            "title": "Question Set Id"
+          },
+          "lesson_id": {
+            "type": "string",
+            "title": "Lesson Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "approved": {
+            "type": "boolean",
+            "title": "Approved"
+          },
+          "approval": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/AuthorQuestion"
+            },
+            "type": "array",
+            "title": "Questions"
+          },
+          "review_kind": {
+            "type": "string",
+            "const": "owner_confirmation",
+            "title": "Review Kind",
+            "default": "owner_confirmation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "question_set_id",
+          "lesson_id",
+          "title",
+          "approved",
+          "approval",
+          "questions"
+        ],
+        "title": "AuthorReview"
+      },
+      "CheckOut": {
+        "properties": {
+          "correct": {
+            "type": "boolean",
+            "title": "Correct"
+          },
+          "answer_index": {
+            "type": "integer",
+            "title": "Answer Index"
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation"
+          },
+          "answer_visual_html": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer Visual Html"
+          }
+        },
+        "type": "object",
+        "required": [
+          "correct",
+          "answer_index",
+          "explanation"
+        ],
+        "title": "CheckOut"
+      },
+      "DeckState": {
+        "properties": {
+          "next": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next"
+          },
+          "known": {
+            "type": "integer",
+            "title": "Known"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "reviews": {
+            "type": "integer",
+            "title": "Reviews"
+          },
+          "hard": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Hard"
+          }
+        },
+        "type": "object",
+        "required": [
+          "next",
+          "known",
+          "total",
+          "reviews",
+          "hard"
+        ],
+        "title": "DeckState"
+      },
+      "FinishInput": {
+        "properties": {
+          "expected_answered": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Expected Answered"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_answered"
+        ],
+        "title": "FinishInput"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "PublicCard": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "concept",
+              "diagram"
+            ],
+            "title": "Kind"
+          },
+          "front": {
+            "type": "string",
+            "title": "Front"
+          },
+          "back": {
+            "type": "string",
+            "title": "Back"
+          },
+          "front_visual_html": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Front Visual Html"
+          },
+          "back_visual_html": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Back Visual Html"
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "kind",
+          "front",
+          "back"
+        ],
+        "title": "PublicCard"
+      },
+      "PublicDeck": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "lesson_id": {
+            "type": "string",
+            "title": "Lesson Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "cards": {
+            "items": {
+              "$ref": "#/components/schemas/PublicCard"
+            },
+            "type": "array",
+            "title": "Cards"
+          },
+          "state": {
+            "$ref": "#/components/schemas/DeckState"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "lesson_id",
+          "title",
+          "cards",
+          "state"
+        ],
+        "title": "PublicDeck"
+      },
+      "PublicQuestion": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "multiple_choice",
+              "true_false",
+              "short_answer"
+            ],
+            "title": "Type"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Options"
+          },
+          "visual_html": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visual Html"
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "type",
+          "question",
+          "options"
+        ],
+        "title": "PublicQuestion",
+        "description": "A question as the browser sees it: no answer, no explanation."
+      },
+      "PublicQuiz": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "lesson_id": {
+            "type": "string",
+            "title": "Lesson Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "dropped": {
+            "type": "integer",
+            "title": "Dropped"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/PublicQuestion"
+            },
+            "type": "array",
+            "title": "Questions"
+          },
+          "focus": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Focus",
+            "default": []
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "lesson_id",
+          "title",
+          "dropped",
+          "questions"
+        ],
+        "title": "PublicQuiz"
+      },
+      "QuestionInput": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "multiple_choice",
+              "true_false"
+            ],
+            "title": "Type"
+          },
+          "question": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Question"
+          },
+          "options": {
+            "items": {
+              "type": "string",
+              "maxLength": 500,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 4,
+            "minItems": 2,
+            "title": "Options"
+          },
+          "answer_index": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Answer Index"
+          },
+          "explanation": {
+            "type": "string",
+            "maxLength": 6000,
+            "minLength": 1,
+            "title": "Explanation"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "question",
+          "options",
+          "answer_index",
+          "explanation"
+        ],
+        "title": "QuestionInput"
+      },
+      "QuizApprovalInput": {
+        "properties": {
+          "expected_question_set_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Expected Question Set Id"
+          },
+          "confirmed": {
+            "type": "boolean",
+            "const": true,
+            "title": "Confirmed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_question_set_id",
+          "confirmed"
+        ],
+        "title": "QuizApprovalInput"
+      },
+      "QuizApprovalOutput": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "question_set_id": {
+            "type": "string",
+            "title": "Question Set Id"
+          },
+          "approved": {
+            "type": "boolean",
+            "title": "Approved"
+          },
+          "approval": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Approval"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "question_set_id",
+          "approved",
+          "approval"
+        ],
+        "title": "QuizApprovalOutput"
+      },
+      "QuizRevisionInput": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "pattern": ".*\\S.*",
+            "title": "Title"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/QuestionInput"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Questions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "title",
+          "questions"
+        ],
+        "title": "QuizRevisionInput"
+      },
+      "QuizRevisionOutput": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "previous_id": {
+            "type": "string",
+            "title": "Previous Id"
+          },
+          "question_set_id": {
+            "type": "string",
+            "title": "Question Set Id"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "status": {
+            "type": "string",
+            "const": "draft",
+            "title": "Status",
+            "default": "draft"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "previous_id",
+          "question_set_id",
+          "revision"
+        ],
+        "title": "QuizRevisionOutput"
+      },
+      "Results": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "question_set_id": {
+            "type": "string",
+            "title": "Question Set Id"
+          },
+          "lesson_id": {
+            "type": "string",
+            "title": "Lesson Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "not_started",
+              "in_progress",
+              "ready_to_finish",
+              "completed"
+            ],
+            "title": "Status"
+          },
+          "answered": {
+            "type": "integer",
+            "title": "Answered"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "score": {
+            "type": "integer",
+            "title": "Score"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "percentage": {
+            "type": "integer",
+            "title": "Percentage"
+          },
+          "accuracy_on_answered": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accuracy On Answered"
+          },
+          "scoring_basis": {
+            "type": "string",
+            "const": "first_recorded_answers",
+            "title": "Scoring Basis",
+            "default": "first_recorded_answers"
+          },
+          "result_kind": {
+            "type": "string",
+            "const": "private_formative_practice",
+            "title": "Result Kind",
+            "default": "private_formative_practice"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "question_set_id",
+          "lesson_id",
+          "title",
+          "parent_id",
+          "status",
+          "answered",
+          "total",
+          "score",
+          "completed_at",
+          "percentage",
+          "accuracy_on_answered"
+        ],
+        "title": "Results"
+      },
+      "RetryInput": {
+        "properties": {
+          "which": {
+            "type": "string",
+            "enum": [
+              "all",
+              "missed"
+            ],
+            "title": "Which",
+            "default": "all"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RetryInput"
+      },
+      "Review": {
+        "properties": {
+          "results": {
+            "$ref": "#/components/schemas/Results"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewItem"
+            },
+            "type": "array",
+            "title": "Questions"
+          },
+          "lesson_id": {
+            "type": "string",
+            "title": "Lesson Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "results",
+          "questions",
+          "lesson_id"
+        ],
+        "title": "Review"
+      },
+      "ReviewDeckInput": {
+        "properties": {
+          "which": {
+            "type": "string",
+            "enum": [
+              "all",
+              "missed"
+            ],
+            "title": "Which",
+            "default": "missed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ReviewDeckInput"
+      },
+      "ReviewItem": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Options"
+          },
+          "choice": {
+            "type": "integer",
+            "title": "Choice"
+          },
+          "feedback": {
+            "$ref": "#/components/schemas/CheckOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "question",
+          "options",
+          "choice",
+          "feedback"
+        ],
+        "title": "ReviewItem"
+      },
+      "SavedAnswer": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "choice": {
+            "type": "integer",
+            "title": "Choice"
+          },
+          "correct": {
+            "type": "boolean",
+            "title": "Correct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "choice",
+          "correct"
+        ],
+        "title": "SavedAnswer"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "app__quiz_practice__Progress": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "question_set_id": {
+            "type": "string",
+            "title": "Question Set Id"
+          },
+          "lesson_id": {
+            "type": "string",
+            "title": "Lesson Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "not_started",
+              "in_progress",
+              "ready_to_finish",
+              "completed"
+            ],
+            "title": "Status"
+          },
+          "answered": {
+            "type": "integer",
+            "title": "Answered"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "score": {
+            "type": "integer",
+            "title": "Score"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "next_index": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Index"
+          },
+          "answers": {
+            "items": {
+              "$ref": "#/components/schemas/SavedAnswer"
+            },
+            "type": "array",
+            "title": "Answers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "question_set_id",
+          "lesson_id",
+          "title",
+          "parent_id",
+          "status",
+          "answered",
+          "total",
+          "score",
+          "completed_at",
+          "next_index",
+          "answers"
+        ],
+        "title": "Progress"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

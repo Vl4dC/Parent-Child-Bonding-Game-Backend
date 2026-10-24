@@ -185,6 +185,15 @@ exist; application/edge per-client limiting has not been implemented. Never log 
 Bearer/refresh tokens, email hashes, or request bodies containing them.
 
 
+## Non-AI quiz lifecycle — 24 October 2026 addition
+
+Eleven deterministic operations now supplement existing quiz contracts: resume/results, strict
+idempotent answers, finish/review, all/missed retries, snapshot history, idempotent review cards,
+author review, question revisions and snapshot-bound approval. See
+[QUIZ_PRACTICE_API.md](docs/QUIZ_PRACTICE_API.md) and the additive
+[OpenAPI supplement](docs/quiz-practice.openapi.json). AI generation/safety code is unchanged.
+
+
 ## Learner approval addition — 24 October 2026
 
 Five opt-in request/status/resend/guardian-decision routes have been added. See
