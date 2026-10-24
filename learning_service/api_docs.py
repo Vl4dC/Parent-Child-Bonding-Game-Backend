@@ -99,6 +99,23 @@ SWAGGER_UI = {
 }
 
 
+def mark_file_fields(node) -> None:
+    """Add `format: binary` to every uploaded-file field in an OpenAPI schema, in place.
+
+    FastAPI describes a file as `contentMediaType: application/octet-stream` (OpenAPI 3.1), which Swagger UI
+    does not recognise: it shows a list of text boxes instead of a file picker. `format: binary` is what it
+    looks for; the 3.1 keyword stays, so schema-driven clients are unaffected.
+    """
+    if isinstance(node, dict):
+        if node.get("contentMediaType") == "application/octet-stream":
+            node.setdefault("format", "binary")
+        for value in node.values():
+            mark_file_fields(value)
+    elif isinstance(node, list):
+        for value in node:
+            mark_file_fields(value)
+
+
 class Error(BaseModel):
     detail: str
 

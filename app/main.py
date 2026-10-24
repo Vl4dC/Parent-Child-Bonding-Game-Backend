@@ -71,7 +71,7 @@ def create_app(
             if owns_repository and hasattr(repository, "close"):
                 await asyncio.to_thread(repository.close)
 
-    from learning_service.api_docs import DESCRIPTION, SWAGGER_UI, TAGS
+    from learning_service.api_docs import DESCRIPTION, SWAGGER_UI, TAGS, mark_file_fields
     from learning_service.safety import AgeBlocked, SafetyUnavailable
 
     app = FastAPI(
@@ -345,4 +345,13 @@ def create_app(
     app.include_router(platform_router, responses=common_errors)
     app.include_router(jobs_router, responses=common_errors)
     app.include_router(rooms_router, responses=common_errors)
+
+    generate_openapi = app.openapi
+
+    def openapi_with_file_pickers():
+        if app.openapi_schema is None:
+            mark_file_fields(generate_openapi())
+        return app.openapi_schema
+
+    app.openapi = openapi_with_file_pickers
     return app

@@ -122,6 +122,17 @@ def test_api_documentation_served(client):
     assert r.status_code == 200 and "/api/lessons" in r.json()["paths"]
 
 
+def test_upload_is_documented_as_a_file_picker(client):
+    # Swagger UI only draws a file picker (not text boxes) for `format: binary`.
+    spec = client.get("/openapi.json").json()
+    ref = spec["paths"]["/api/materials"]["post"]["requestBody"]["content"]["multipart/form-data"][
+        "schema"
+    ]["$ref"]
+    files = spec["components"]["schemas"][ref.rsplit("/", 1)[1]]["properties"]["files"]
+    assert files["type"] == "array"
+    assert files["items"]["type"] == "string" and files["items"]["format"] == "binary"
+
+
 # ---------------------------------------------------------------- visuals
 def test_auto_visuals_are_stored_and_rendered(client, lesson_id):
     r = client.post(f"/api/lessons/{lesson_id}/visuals", json={})

@@ -37,7 +37,12 @@ not a merge patch. Avatar references are display metadata and grant no inventory
 
 ## Learning integration
 
-1. Upload material and retrieve its extracted pages.
+1. Upload material and retrieve its extracted pages. Send the user's file as-is in a
+   `multipart/form-data` body: one `files` part per file, taken straight from an
+   `<input type="file">` (`FormData.append("files", file)`). Do not base64-encode or convert it, and
+   let the browser set the `Content-Type` boundary. The backend renders, resizes and converts pages
+   itself. Accepted: one PDF, or 1–20 JPG/PNG/WebP photos (HEIC/HEIF is rejected with 415). In
+   Swagger `/docs` this field is a file picker.
 2. Correct pages with an expected revision; confirm that exact revision explicitly.
 3. Queue lesson generation with an Idempotency-Key and poll the owned job result, or use the legacy
    synchronous route for development. Generation must be explicitly enabled by the operator.

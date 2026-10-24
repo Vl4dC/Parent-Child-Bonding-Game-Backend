@@ -53,6 +53,7 @@
             "description": "One PDF (a digital book), or one or more photos of pages (JPG, PNG, WebP)",
             "items": {
               "contentMediaType": "application/octet-stream",
+              "format": "binary",
               "type": "string"
             },
             "title": "Files",
