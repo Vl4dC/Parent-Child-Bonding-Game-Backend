@@ -333,8 +333,11 @@ def create_app(
 
     from app.jobs import router as jobs_router
     from app.platform import router as platform_router
+    from app.quiz_practice import install as install_quiz_practice
     from app.rooms import router as rooms_router
     from learning_service.routes import app as learning_router
+
+    install_quiz_practice(app)
 
     common_errors = {
         401: {"description": "Authentication required"},

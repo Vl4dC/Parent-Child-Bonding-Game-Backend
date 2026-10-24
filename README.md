@@ -120,3 +120,12 @@ access to another person's learning data. There is no deployment or frontend cha
 The old `learning-service/static/` files are retained unchanged as historical development artifacts;
 the unified API does not serve them. The old Python project has been consolidated into
 `learning_service/`, with one root dependency lock and one test suite.
+
+
+## Deterministic quiz backend — 24 October 2026 addition
+
+Existing private quizzes now support saved lifecycle/results, idempotent first-answer recording,
+finish/review, independent all/missed retries, exact-snapshot history and review-card creation.
+Owning authors can review, correct into a new immutable version, and confirm that snapshot.
+See [non-AI quiz API](docs/QUIZ_PRACTICE_API.md). This adds no model calls, AI changes, frontend
+changes, rewards, ranking or multiplayer. Existing production/generation contracts remain intact.
