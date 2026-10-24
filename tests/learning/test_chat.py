@@ -164,15 +164,14 @@ def test_unknown_unconfirmed_and_empty_requests_are_refused(client, model):
     assert model.prompts == []
 
 
-def test_another_account_cannot_chat_with_my_pdf(client, model):
+def test_another_player_cannot_chat_with_my_pdf(client, model):
     mid = book(client)["id"]
-    other = client.post(
-        "/auth/login", json={"email": "child@demo.example.com", "password": "DemoChild123!"}
-    ).json()["access_token"]
     r = client.post(
         "/api/chat",
         json={"message": "photosynthesis", "age": 12, "material_id": mid},
-        headers={"Authorization": f"Bearer {other}"},
+        headers={
+            "X-Player-ID": "00000000-0000-4000-8000-000000000002"
+        },  # a different data partition
     )
     assert r.status_code == 404 and model.prompts == []
 
@@ -348,12 +347,5 @@ def test_chat_is_off_when_generation_is_disabled(client, model):
     from fastapi.testclient import TestClient
 
     with TestClient(app) as off:
-        token = off.post(
-            "/auth/login", json={"email": "parent@demo.example.com", "password": "DemoParent123!"}
-        ).json()["access_token"]
-        r = off.post(
-            "/api/chat",
-            json={"message": "hi", "age": 12},
-            headers={"Authorization": f"Bearer {token}"},
-        )
+        r = off.post("/api/chat", json={"message": "hi", "age": 12})
     assert r.status_code == 503 and model.prompts == []

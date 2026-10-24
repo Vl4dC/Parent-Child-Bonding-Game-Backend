@@ -49,6 +49,7 @@ def repository(request):
     with psycopg.connect(url) as connection:
         connection.execute(
             "truncate api_private.records, api_private.rooms, api_private.generation_usage, api_private.request_usage"
+            " cascade"
         )
     repo = PostgresRepository(url)
     try:

@@ -1,0 +1,1962 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Diagram lifecycle and readiness supplement",
+    "version": "2026-10-25"
+  },
+  "paths": {
+    "/ready": {
+      "get": {
+        "summary": "Ready",
+        "operationId": "ready_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/diagram-assembly/templates": {
+      "post": {
+        "tags": [
+          "Diagram assembly"
+        ],
+        "summary": "Create Template",
+        "operationId": "create_template_api_diagram_assembly_templates_post",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemplateInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateInfo"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source/race absent or access denied"
+          },
+          "409": {
+            "description": "Stale version, not ready, or incompatible race phase"
+          },
+          "422": {
+            "description": "Unsupported diagram or invalid placement"
+          },
+          "429": {
+            "description": "Request limit or renderer busy"
+          },
+          "503": {
+            "description": "Feature, renderer or storage unavailable"
+          }
+        }
+      }
+    },
+    "/api/diagram-assembly/templates/{template_id}": {
+      "get": {
+        "tags": [
+          "Diagram assembly"
+        ],
+        "summary": "Template",
+        "operationId": "template_api_diagram_assembly_templates__template_id__get",
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Template Id"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateInfo"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source/race absent or access denied"
+          },
+          "409": {
+            "description": "Stale version, not ready, or incompatible race phase"
+          },
+          "422": {
+            "description": "Unsupported diagram or invalid placement"
+          },
+          "429": {
+            "description": "Request limit or renderer busy"
+          },
+          "503": {
+            "description": "Feature, renderer or storage unavailable"
+          }
+        }
+      }
+    },
+    "/api/diagram-assembly/races": {
+      "post": {
+        "tags": [
+          "Diagram assembly"
+        ],
+        "summary": "Create Race",
+        "operationId": "create_race_api_diagram_assembly_races_post",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RaceInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RaceCreated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source/race absent or access denied"
+          },
+          "409": {
+            "description": "Stale version, not ready, or incompatible race phase"
+          },
+          "422": {
+            "description": "Unsupported diagram or invalid placement"
+          },
+          "429": {
+            "description": "Request limit or renderer busy"
+          },
+          "503": {
+            "description": "Feature, renderer or storage unavailable"
+          }
+        }
+      }
+    },
+    "/api/diagram-assembly/races/{race_id}": {
+      "get": {
+        "tags": [
+          "Diagram assembly"
+        ],
+        "summary": "Race",
+        "operationId": "race_api_diagram_assembly_races__race_id__get",
+        "parameters": [
+          {
+            "name": "race_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Race Id"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RaceSnapshot"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source/race absent or access denied"
+          },
+          "409": {
+            "description": "Stale version, not ready, or incompatible race phase"
+          },
+          "422": {
+            "description": "Unsupported diagram or invalid placement"
+          },
+          "429": {
+            "description": "Request limit or renderer busy"
+          },
+          "503": {
+            "description": "Feature, renderer or storage unavailable"
+          }
+        }
+      }
+    },
+    "/api/diagram-assembly/rooms/{room_id}/race": {
+      "get": {
+        "tags": [
+          "Diagram assembly"
+        ],
+        "summary": "Current Race",
+        "operationId": "current_race_api_diagram_assembly_rooms__room_id__race_get",
+        "parameters": [
+          {
+            "name": "room_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Room Id"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RaceSnapshot"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source/race absent or access denied"
+          },
+          "409": {
+            "description": "Stale version, not ready, or incompatible race phase"
+          },
+          "422": {
+            "description": "Unsupported diagram or invalid placement"
+          },
+          "429": {
+            "description": "Request limit or renderer busy"
+          },
+          "503": {
+            "description": "Feature, renderer or storage unavailable"
+          }
+        }
+      }
+    },
+    "/api/diagram-assembly/races/{race_id}/start": {
+      "post": {
+        "tags": [
+          "Diagram assembly"
+        ],
+        "summary": "Start",
+        "operationId": "start_api_diagram_assembly_races__race_id__start_post",
+        "parameters": [
+          {
+            "name": "race_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Race Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VersionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RaceAction"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source/race absent or access denied"
+          },
+          "409": {
+            "description": "Stale version, not ready, or incompatible race phase"
+          },
+          "422": {
+            "description": "Unsupported diagram or invalid placement"
+          },
+          "429": {
+            "description": "Request limit or renderer busy"
+          },
+          "503": {
+            "description": "Feature, renderer or storage unavailable"
+          }
+        }
+      }
+    },
+    "/api/diagram-assembly/rooms/{room_id}/management": {
+      "get": {
+        "tags": [
+          "Diagram assembly"
+        ],
+        "summary": "Management",
+        "operationId": "management_api_diagram_assembly_rooms__room_id__management_get",
+        "parameters": [
+          {
+            "name": "room_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Room Id"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RaceManagement"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source/race absent or access denied"
+          },
+          "409": {
+            "description": "Stale version, not ready, or incompatible race phase"
+          },
+          "422": {
+            "description": "Unsupported diagram or invalid placement"
+          },
+          "429": {
+            "description": "Request limit or renderer busy"
+          },
+          "503": {
+            "description": "Feature, renderer or storage unavailable"
+          }
+        }
+      }
+    },
+    "/api/diagram-assembly/races/{race_id}/board": {
+      "get": {
+        "tags": [
+          "Diagram assembly"
+        ],
+        "summary": "Board",
+        "operationId": "board_api_diagram_assembly_races__race_id__board_get",
+        "parameters": [
+          {
+            "name": "race_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Race Id"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Board"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source/race absent or access denied"
+          },
+          "409": {
+            "description": "Stale version, not ready, or incompatible race phase"
+          },
+          "422": {
+            "description": "Unsupported diagram or invalid placement"
+          },
+          "429": {
+            "description": "Request limit or renderer busy"
+          },
+          "503": {
+            "description": "Feature, renderer or storage unavailable"
+          }
+        }
+      }
+    },
+    "/api/diagram-assembly/races/{race_id}/study": {
+      "get": {
+        "tags": [
+          "Diagram assembly"
+        ],
+        "summary": "Study",
+        "operationId": "study_api_diagram_assembly_races__race_id__study_get",
+        "parameters": [
+          {
+            "name": "race_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Race Id"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Study"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source/race absent or access denied"
+          },
+          "409": {
+            "description": "Stale version, not ready, or incompatible race phase"
+          },
+          "422": {
+            "description": "Unsupported diagram or invalid placement"
+          },
+          "429": {
+            "description": "Request limit or renderer busy"
+          },
+          "503": {
+            "description": "Feature, renderer or storage unavailable"
+          }
+        }
+      }
+    },
+    "/api/diagram-assembly/races/{race_id}/placements": {
+      "put": {
+        "tags": [
+          "Diagram assembly"
+        ],
+        "summary": "Placements",
+        "operationId": "placements_api_diagram_assembly_races__race_id__placements_put",
+        "parameters": [
+          {
+            "name": "race_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Race Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlacementsInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerAction"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source/race absent or access denied"
+          },
+          "409": {
+            "description": "Stale version, not ready, or incompatible race phase"
+          },
+          "422": {
+            "description": "Unsupported diagram or invalid placement"
+          },
+          "429": {
+            "description": "Request limit or renderer busy"
+          },
+          "503": {
+            "description": "Feature, renderer or storage unavailable"
+          }
+        }
+      }
+    },
+    "/api/diagram-assembly/races/{race_id}/finish": {
+      "post": {
+        "tags": [
+          "Diagram assembly"
+        ],
+        "summary": "Finish",
+        "operationId": "finish_api_diagram_assembly_races__race_id__finish_post",
+        "parameters": [
+          {
+            "name": "race_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Race Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VersionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerAction"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source/race absent or access denied"
+          },
+          "409": {
+            "description": "Stale version, not ready, or incompatible race phase"
+          },
+          "422": {
+            "description": "Unsupported diagram or invalid placement"
+          },
+          "429": {
+            "description": "Request limit or renderer busy"
+          },
+          "503": {
+            "description": "Feature, renderer or storage unavailable"
+          }
+        }
+      }
+    },
+    "/api/diagram-assembly/races/{race_id}/forfeit": {
+      "post": {
+        "tags": [
+          "Diagram assembly"
+        ],
+        "summary": "Forfeit",
+        "operationId": "forfeit_api_diagram_assembly_races__race_id__forfeit_post",
+        "parameters": [
+          {
+            "name": "race_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Race Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VersionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerAction"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source/race absent or access denied"
+          },
+          "409": {
+            "description": "Stale version, not ready, or incompatible race phase"
+          },
+          "422": {
+            "description": "Unsupported diagram or invalid placement"
+          },
+          "429": {
+            "description": "Request limit or renderer busy"
+          },
+          "503": {
+            "description": "Feature, renderer or storage unavailable"
+          }
+        }
+      }
+    },
+    "/api/diagram-assembly/races/{race_id}/results": {
+      "get": {
+        "tags": [
+          "Diagram assembly"
+        ],
+        "summary": "Results",
+        "operationId": "results_api_diagram_assembly_races__race_id__results_get",
+        "parameters": [
+          {
+            "name": "race_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Race Id"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__diagram_api__Results"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source/race absent or access denied"
+          },
+          "409": {
+            "description": "Stale version, not ready, or incompatible race phase"
+          },
+          "422": {
+            "description": "Unsupported diagram or invalid placement"
+          },
+          "429": {
+            "description": "Request limit or renderer busy"
+          },
+          "503": {
+            "description": "Feature, renderer or storage unavailable"
+          }
+        }
+      }
+    },
+    "/api/diagram-assembly/races/{race_id}/review": {
+      "get": {
+        "tags": [
+          "Diagram assembly"
+        ],
+        "summary": "Review",
+        "operationId": "review_api_diagram_assembly_races__race_id__review_get",
+        "parameters": [
+          {
+            "name": "race_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Race Id"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__diagram_api__Review"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source/race absent or access denied"
+          },
+          "409": {
+            "description": "Stale version, not ready, or incompatible race phase"
+          },
+          "422": {
+            "description": "Unsupported diagram or invalid placement"
+          },
+          "429": {
+            "description": "Request limit or renderer busy"
+          },
+          "503": {
+            "description": "Feature, renderer or storage unavailable"
+          }
+        }
+      }
+    },
+    "/api/diagram-assembly/races/{race_id}/cancel": {
+      "post": {
+        "tags": [
+          "Diagram assembly"
+        ],
+        "summary": "Cancel",
+        "operationId": "cancel_api_diagram_assembly_races__race_id__cancel_post",
+        "parameters": [
+          {
+            "name": "race_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Race Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VersionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RaceAction"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source/race absent or access denied"
+          },
+          "409": {
+            "description": "Stale version, not ready, or incompatible race phase"
+          },
+          "422": {
+            "description": "Unsupported diagram or invalid placement"
+          },
+          "429": {
+            "description": "Request limit or renderer busy"
+          },
+          "503": {
+            "description": "Feature, renderer or storage unavailable"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Board": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "question": {
+            "type": "string",
+            "const": "How does this work?",
+            "title": "Question"
+          },
+          "puzzle_svg": {
+            "type": "string",
+            "title": "Puzzle Svg"
+          },
+          "view_box": {
+            "type": "string",
+            "title": "View Box"
+          },
+          "slots": {
+            "items": {
+              "$ref": "#/components/schemas/Slot"
+            },
+            "type": "array",
+            "title": "Slots"
+          },
+          "cards": {
+            "items": {
+              "$ref": "#/components/schemas/Card"
+            },
+            "type": "array",
+            "title": "Cards"
+          },
+          "placements": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Placements"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "started_at": {
+            "type": "integer",
+            "title": "Started At"
+          },
+          "deadline_at": {
+            "type": "integer",
+            "title": "Deadline At"
+          },
+          "server_now": {
+            "type": "integer",
+            "title": "Server Now"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "question",
+          "puzzle_svg",
+          "view_box",
+          "slots",
+          "cards",
+          "placements",
+          "version",
+          "started_at",
+          "deadline_at",
+          "server_now"
+        ],
+        "title": "Board"
+      },
+      "Card": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "text"
+        ],
+        "title": "Card"
+      },
+      "PlacementsInput": {
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Version"
+          },
+          "placements": {
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 64,
+              "minLength": 1
+            },
+            "propertyNames": {
+              "maxLength": 64,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 40,
+            "title": "Placements"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_version",
+          "placements"
+        ],
+        "title": "PlacementsInput"
+      },
+      "PlayerAction": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "placed": {
+            "type": "integer",
+            "title": "Placed"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "completed": {
+            "type": "boolean",
+            "title": "Completed"
+          },
+          "elapsed_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elapsed Ms"
+          },
+          "submissions": {
+            "type": "integer",
+            "title": "Submissions"
+          },
+          "correct_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correct Count"
+          },
+          "incorrect_slot_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Incorrect Slot Ids"
+          },
+          "forfeited": {
+            "type": "boolean",
+            "title": "Forfeited"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "placed",
+          "total",
+          "completed",
+          "elapsed_ms",
+          "submissions",
+          "correct_count",
+          "incorrect_slot_ids",
+          "forfeited"
+        ],
+        "title": "PlayerAction"
+      },
+      "PlayerResult": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "completed": {
+            "type": "boolean",
+            "title": "Completed"
+          },
+          "elapsed_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elapsed Ms"
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank"
+          },
+          "forfeited": {
+            "type": "boolean",
+            "title": "Forfeited"
+          },
+          "submissions": {
+            "type": "integer",
+            "title": "Submissions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "display_name",
+          "completed",
+          "elapsed_ms",
+          "rank",
+          "forfeited",
+          "submissions"
+        ],
+        "title": "PlayerResult"
+      },
+      "RaceAction": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "countdown",
+              "cancelled"
+            ],
+            "title": "Status"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "deadline_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline At"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "status",
+          "started_at",
+          "deadline_at"
+        ],
+        "title": "RaceAction"
+      },
+      "RaceCreated": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "room_id": {
+            "type": "string",
+            "title": "Room Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "waiting",
+              "running",
+              "finished",
+              "expired",
+              "cancelled"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "room_id",
+          "version",
+          "status"
+        ],
+        "title": "RaceCreated"
+      },
+      "RaceInput": {
+        "properties": {
+          "template_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Template Id"
+          },
+          "room_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Room Id"
+          },
+          "expected_room_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Room Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "template_id",
+          "room_id",
+          "expected_room_version"
+        ],
+        "title": "RaceInput"
+      },
+      "RaceManagement": {
+        "properties": {
+          "room_id": {
+            "type": "string",
+            "title": "Room Id"
+          },
+          "race_id": {
+            "type": "string",
+            "title": "Race Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "waiting",
+              "countdown",
+              "running",
+              "finished",
+              "expired",
+              "cancelled"
+            ],
+            "title": "Status"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "room_id",
+          "race_id",
+          "version",
+          "status"
+        ],
+        "title": "RaceManagement"
+      },
+      "RaceMember": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "placed": {
+            "type": "integer",
+            "title": "Placed"
+          },
+          "completed": {
+            "type": "boolean",
+            "title": "Completed"
+          },
+          "forfeited": {
+            "type": "boolean",
+            "title": "Forfeited"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "display_name",
+          "placed",
+          "completed",
+          "forfeited"
+        ],
+        "title": "RaceMember"
+      },
+      "RaceSnapshot": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "room_id": {
+            "type": "string",
+            "title": "Room Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "waiting",
+              "countdown",
+              "running",
+              "finished",
+              "expired",
+              "cancelled"
+            ],
+            "title": "Status"
+          },
+          "question": {
+            "type": "string",
+            "const": "How does this work?",
+            "title": "Question"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "deadline_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline At"
+          },
+          "server_now": {
+            "type": "integer",
+            "title": "Server Now"
+          },
+          "my_player_id": {
+            "type": "string",
+            "title": "My Player Id"
+          },
+          "players": {
+            "items": {
+              "$ref": "#/components/schemas/RaceMember"
+            },
+            "type": "array",
+            "title": "Players"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceAvailability"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "room_id",
+          "version",
+          "status",
+          "question",
+          "total",
+          "started_at",
+          "deadline_at",
+          "server_now",
+          "my_player_id",
+          "players",
+          "source"
+        ],
+        "title": "RaceSnapshot"
+      },
+      "Slot": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "x": {
+            "type": "number",
+            "title": "X"
+          },
+          "y": {
+            "type": "number",
+            "title": "Y"
+          },
+          "width": {
+            "type": "number",
+            "title": "Width"
+          },
+          "height": {
+            "type": "number",
+            "title": "Height"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "x",
+          "y",
+          "width",
+          "height"
+        ],
+        "title": "Slot"
+      },
+      "Solution": {
+        "properties": {
+          "slot_id": {
+            "type": "string",
+            "title": "Slot Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slot_id",
+          "text"
+        ],
+        "title": "Solution"
+      },
+      "SourceAvailability": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "source_unavailable",
+                  "source_unapproved",
+                  "source_changed"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "available",
+          "reason"
+        ],
+        "title": "SourceAvailability"
+      },
+      "Study": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "question": {
+            "type": "string",
+            "const": "How does this work?",
+            "title": "Question"
+          },
+          "reference_svg": {
+            "type": "string",
+            "title": "Reference Svg"
+          },
+          "view_box": {
+            "type": "string",
+            "title": "View Box"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "question",
+          "reference_svg",
+          "view_box"
+        ],
+        "title": "Study"
+      },
+      "TemplateInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "lesson_id": {
+            "type": "string",
+            "title": "Lesson Id"
+          },
+          "visual_id": {
+            "type": "string",
+            "title": "Visual Id"
+          },
+          "source_hash": {
+            "type": "string",
+            "title": "Source Hash"
+          },
+          "created_at": {
+            "type": "integer",
+            "title": "Created At"
+          },
+          "slots": {
+            "type": "integer",
+            "title": "Slots"
+          },
+          "renderer": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Renderer"
+          },
+          "snapshot_version": {
+            "type": "integer",
+            "const": 1,
+            "title": "Snapshot Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "lesson_id",
+          "visual_id",
+          "source_hash",
+          "created_at",
+          "slots",
+          "renderer",
+          "snapshot_version"
+        ],
+        "title": "TemplateInfo"
+      },
+      "TemplateInput": {
+        "properties": {
+          "lesson_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Lesson Id"
+          },
+          "visual_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Visual Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "lesson_id",
+          "visual_id"
+        ],
+        "title": "TemplateInput"
+      },
+      "VersionInput": {
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_version"
+        ],
+        "title": "VersionInput"
+      },
+      "app__diagram_api__Results": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "finished",
+              "expired"
+            ],
+            "title": "Status"
+          },
+          "players": {
+            "items": {
+              "$ref": "#/components/schemas/PlayerResult"
+            },
+            "type": "array",
+            "title": "Players"
+          },
+          "winner_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Winner Ids"
+          },
+          "scoring": {
+            "type": "string",
+            "const": "fastest_correct_server_elapsed",
+            "title": "Scoring"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceAvailability"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "players",
+          "winner_ids",
+          "scoring",
+          "source"
+        ],
+        "title": "Results"
+      },
+      "app__diagram_api__Review": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "finished",
+              "expired"
+            ],
+            "title": "Status"
+          },
+          "players": {
+            "items": {
+              "$ref": "#/components/schemas/PlayerResult"
+            },
+            "type": "array",
+            "title": "Players"
+          },
+          "winner_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Winner Ids"
+          },
+          "scoring": {
+            "type": "string",
+            "const": "fastest_correct_server_elapsed",
+            "title": "Scoring"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceAvailability"
+          },
+          "reference_svg": {
+            "type": "string",
+            "title": "Reference Svg"
+          },
+          "solution": {
+            "items": {
+              "$ref": "#/components/schemas/Solution"
+            },
+            "type": "array",
+            "title": "Solution"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "players",
+          "winner_ids",
+          "scoring",
+          "source",
+          "reference_svg",
+          "solution"
+        ],
+        "title": "Review"
+      }
+    }
+  }
+}

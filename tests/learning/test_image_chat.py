@@ -391,15 +391,7 @@ def test_image_chat_is_off_when_generation_is_disabled(client, vision):
         repository=client.app.state.repository,
     )
     with TestClient(app) as off:
-        token = off.post(
-            "/auth/login", json={"email": "parent@demo.example.com", "password": "DemoParent123!"}
-        ).json()["access_token"]
-        r = off.post(
-            "/api/chat/image",
-            data={"message": "hi", "age": "12"},
-            files=[png()],
-            headers={"Authorization": f"Bearer {token}"},
-        )
+        r = off.post("/api/chat/image", data={"message": "hi", "age": "12"}, files=[png()])
     assert r.status_code == 503 and vision.calls == []
 
 

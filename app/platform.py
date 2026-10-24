@@ -180,6 +180,16 @@ def delete_own_data():
     for key, data in all_records(unit, "materials"):
         for revision in range(1, data["revision"] + 1):
             unit.delete("material_vectors", f"{key}:{revision}")
+    if unit.connection:
+        if unit.connection.execute(
+            "select to_regprocedure('api_private.diagram_forget_player()') is not null"
+        ).fetchone()[0]:
+            unit.connection.execute(
+                "select pg_advisory_xact_lock(hashtextextended('diagram-account-delete',0))"
+            )
+            unit.forget_diagram_player = True
+    else:
+        unit.forget_diagram_player = True
     for kind in (
         "profile",
         "materials",

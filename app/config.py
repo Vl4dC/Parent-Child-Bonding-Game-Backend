@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import Field, HttpUrl, SecretStr, field_validator, model_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -9,8 +9,6 @@ class Settings(BaseSettings):
 
     app_env: Literal["development", "test", "production"] = "production"
     demo_mode: bool = False
-    supabase_url: HttpUrl | None = None
-    supabase_publishable_key: SecretStr | None = None
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
     database_url: SecretStr | None = None
     database_pool_size: int = Field(8, ge=1, le=64)
@@ -23,19 +21,20 @@ class Settings(BaseSettings):
     generation_daily_limit: int = Field(30, ge=1, le=1000)
     api_requests_per_minute: int = Field(120, ge=1, le=10000)
     job_attempt_limit: int = Field(2, ge=1, le=5)
+    learner_approval_enabled: bool = False
+    learner_approval_secret: SecretStr | None = None
+    diagram_assembly_enabled: bool = False
+    diagram_node_executable: str = "node"
+    diagram_browser_executable: str | None = None
+    diagram_browser_sandbox: bool = True
+    diagram_render_timeout: int = Field(20, ge=5, le=60)
+    diagram_render_concurrency: int = Field(1, ge=1, le=4)
     quiz_model: str = "anthropic:claude-sonnet-5-5"
     visual_model: str | None = None
     # Meaning-based book search. Empty disables it (keyword search only); needs the provider's API key.
     embedding_model: str | None = "openrouter:openai/text-embedding-3-small"
     embedding_dimensions: int = Field(512, ge=64, le=3072)
     model_timeout_seconds: int = Field(60, ge=1, le=300)
-
-    @field_validator("supabase_publishable_key")
-    @classmethod
-    def public_key_only(cls, value: SecretStr | None) -> SecretStr | None:
-        if value is not None and not value.get_secret_value().startswith("sb_publishable_"):
-            raise ValueError("Use a Supabase publishable key, never a secret or service-role key")
-        return value
 
     @field_validator("cors_origins")
     @classmethod
@@ -45,10 +44,13 @@ class Settings(BaseSettings):
         return value
 
     @model_validator(mode="after")
-    def validate_auth_mode(self):
+    def validate_runtime(self):
+        if self.learner_approval_enabled and (
+            self.learner_approval_secret is None
+            or len(self.learner_approval_secret.get_secret_value().encode()) < 32
+        ):
+            raise ValueError("Learner approval requires a private secret of at least 32 bytes")
         if self.demo_mode:
             if self.app_env not in ("development", "test"):
                 raise ValueError("DEMO_MODE is allowed only with APP_ENV=development or test")
-        elif self.supabase_url is None or self.supabase_publishable_key is None:
-            raise ValueError("Supabase URL and publishable key are required when DEMO_MODE is off")
         return self

@@ -2,14 +2,16 @@
 
 ## Runtime contract
 
-Use Supabase PostgreSQL with the existing Supabase Auth project. Keep the `api_private` schema out
+Use the existing Supabase PostgreSQL schema; FastAPI no longer uses Supabase Auth. Keep the `api_private` schema out
 of the exposed Data API schema list. The schema holds JSON domain records, immutable question
 sets, job inputs/state, private lobbies, and quota counters. JSON records are typed/validated by the
 API; SQL primary keys, RLS, transactions, and room functions enforce storage boundaries.
 
 `DATABASE_URL` is server-only and must be able to switch to `authenticated`; the object owner also
 executes worker/usage functions. Never use it in a client. Normal record transactions set local role
-`authenticated` and verified `request.jwt.claims`, then apply owner RLS. Keep browser roles without
+`authenticated` and caller-selected player UUID in `request.jwt.claims`, then apply owner RLS.
+This preserves storage partitions only; it does not authenticate callers or protect against a caller
+selecting another player ID. Keep browser roles without
 permission to execute worker/quota functions. Do not grant extra access as a workaround.
 
 Migrations are ordered under `supabase/migrations/`. Apply them explicitly with the Supabase CLI
@@ -78,3 +80,25 @@ requires a reviewed database procedure. Destructive down migrations are not run 
 Minimal usage counters and expired lobby rows need periodic maintenance; no retention schedule has
 been silently chosen for schoolwork. Explicit deletion is implemented. Age-appropriate output policy,
 reviewer authority, guardian consent, gameplay, rewards, and hosted deployment remain separate work.
+
+
+## Diagram game storage — migration 008 addition
+
+Migration 008 creates private frozen templates, races, participant state and request receipts.
+The source-lesson foreign key cascades deletion to matches; a caller-bound function also removes
+the deleting user from other owners’ matches. Public/anon/authenticated table access is revoked.
+Controller authorization checks current room membership and captured participants. Read paths are
+projected/read-only; mutations lock room then race, with no DB lock held during browser rendering.
+See [diagram assembly](DIAGRAM_ASSEMBLY.md). Apply migrations explicitly; no hosted change was made.
+
+
+## Diagram lifecycle migration 009 — 25 October 2026 addition
+
+`20261025000900_diagram_lifecycle.sql` adds `diagram_races_template` and the private
+`diagram_source_changed` trigger/function. Lesson data updates lock affected active races and
+atomically persist source cancellation, preserving finished/expired outcomes. Existing deletion
+cascades remain intact; no public schema access is granted. Apply after 008 explicitly.
+Preflight checks tables, indexes, cleanup/invalidation functions and an origin-enabled trigger.
+The migration has no historical repair sweep. Drain/cancel previously stale matches before
+enabling an existing deployment; see [rollout and readiness](DIAGRAM_LIFECYCLE_READINESS.md).
+No hosted database was migrated as part of implementation.

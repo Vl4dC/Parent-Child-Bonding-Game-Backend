@@ -54,8 +54,9 @@ TAGS = [
 ]
 
 DESCRIPTION = """
-Authenticated learn -> quiz -> flashcards API. Data persists in Supabase PostgreSQL; only the
-explicit offline demo uses ephemeral storage. Authorize with a Bearer access token before trying data routes.
+Public learn -> quiz -> flashcards API. No login or access token is required. Data persists in
+PostgreSQL; the explicit offline demo uses ephemeral storage. Optional X-Player-ID selects separate
+player state; absent headers share one default player. Player IDs are unverified and provide no privacy.
 Model generation is opt-in. The full contract is documented in docs/API_PLATFORM.md.
 
 ## Try it in this order
@@ -84,7 +85,7 @@ Model generation is opt-in. The full contract is documented in docs/API_PLATFORM
 ## Good to know
 - **Slow calls:** anything that writes with the model takes 10-40 seconds. Swagger shows a spinner, then the duration.
 - **Pictures:** diagrams come back as complete HTML pages inside JSON (`html`, `visual_html`, `*_visual_html`),
-  which Swagger can't render. Fetch **`/view`** endpoints with your Authorization header and render the response in a sandbox. Never put tokens in URLs.
+  which Swagger can't render. Fetch **`/view`** endpoints and render the response in a sandbox. Include X-Player-ID only when selecting a nondefault player.
 - **Child safety:** the learners are school students (10-18). Everything the model writes is written to rules
   for the learner's age, then checked by a separate safety check before it is kept; what a learner types as a
   topic or picture request is checked first. Anything unsuitable for the age is a friendly `422` that never

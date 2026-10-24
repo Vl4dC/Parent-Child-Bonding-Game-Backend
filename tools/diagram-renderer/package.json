@@ -1,0 +1,11 @@
+{
+  "name": "questnest-diagram-renderer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Offline server-side snapshot renderer for existing harness flowcharts",
+  "dependencies": {
+    "mermaid": "12.2.0",
+    "playwright-core": "1.64.1"
+  }
+}

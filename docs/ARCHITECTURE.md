@@ -1,12 +1,13 @@
 # Architecture
 
-One FastAPI factory, one Python 3.13+ dependency lock, and one authenticated data boundary.
+One FastAPI factory, one Python 3.13+ dependency lock, and a public API with player-scoped data partitions.
 Frontend source remains in the main repository and is not modified here.
 
 | Module | Responsibility |
 | --- | --- |
-| app/main.py | Factory, Supabase/demo auth, middleware, health/readiness, router composition |
-| app/context.py | Verified identity and request-local transaction/context |
+| app/main.py | Factory, middleware, health/readiness, router composition |
+| app/player.py | Optional unverified X-Player-ID selector with a shared default UUID |
+| app/context.py | Selected player and request-local transaction/context |
 | app/repository.py | Owned typed records, immutable question snapshots, PostgreSQL/memory adapters |
 | app/platform.py | Profiles, extraction confirmation, lesson revisions/review, progress/deletion |
 | app/generation.py | Concurrency permits, durable attempt/request limits, model runtime context |
@@ -17,11 +18,13 @@ Frontend source remains in the main repository and is not modified here.
 | learning_service/image_chat.py | `POST /api/chat/image`: the model looks at 1-4 pictures; re-encoded, checked for age, never stored |
 | learning_service/materials.py, embeddings.py | Upload reading, chapters, BM25 + meaning-based page selection, per-book vector index |
 | supabase/migrations/ | Private schema, RLS, transactional room commands, worker/usage functions |
-| tests/ | Authentication, engine regression, HTTP, PostgreSQL policy/concurrency/worker verification |
+| tests/ | Public API, engine regression, HTTP, PostgreSQL policy/concurrency/worker verification |
 
-API requests verify Supabase identity, then switch the database transaction to the authenticated role
-with that identity. Records are owned; account metadata is never permission. The private schema is
-not a browser API. Read [database boundaries](DATABASE.md) and [contracts](API_PLATFORM.md).
+FastAPI has no account/session endpoints, token dependencies, provider identity calls or security
+schemes. The optional player UUID selects data/game state. PostgreSQL still uses its existing SQL
+role/claims and partition rules, but these do not verify caller identity. Anyone can choose another
+player UUID. Learner-approval receipts, proofs and state rules are separate workflow checks, with
+caller-supplied guardian mailbox context. Read [current API](../API.md) and [storage](DATABASE.md).
 
 Generated learning content starts as draft. Approval is explicit owner confirmation, not an
 independent correctness guarantee. Edits create new lesson IDs. Immutable question sets are stored

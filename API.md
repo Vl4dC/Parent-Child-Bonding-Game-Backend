@@ -1,185 +1,84 @@
 # Backend API reference
 
-The authentication reference below is retained. The unified application also exposes learning,
-review, profiles, attempts, progress, jobs, and private rooms: see [Platform API](docs/API_PLATFORM.md).
-Python 3.13+ and the root environment are now required. All data routes use verified Bearer identity.
+The backend exposes owned learning, review, profiles, attempts, progress, jobs, and private rooms:
+see [Platform API](docs/API_PLATFORM.md). Python 3.13+ and the root environment are required.
 
-Source of truth: `app/main.py`, `app/models.py`, and the running `/openapi.json`.
-Base URL in the documented local command: `http://127.0.0.1:8000`.
-Swagger docs: `/docs`; ReDoc: `/redoc`. All requests below use JSON unless noted.
+Base URL for local development: `http://127.0.0.1:8000`. Swagger: `/docs`; ReDoc: `/redoc`.
+The running `/openapi.json` is generated from the actual routes and typed models.
 
-## Modes and endpoint availability
+## Public API and player state
 
-| Method | Path | Success | Supabase mode | Demo mode |
-| --- | --- | --- | --- | --- |
-| GET | `/health` | 200 | Process/mode health | Process/mode health |
-| GET | `/auth/demo-accounts` | 200 | Route absent (404) | Lists synthetic users, no passwords |
-| POST | `/auth/register` | 202 | Request registration/confirmation | Unavailable (409) |
-| POST | `/auth/login` | 200 | Password login | Seeded-account login |
-| POST | `/auth/verify` | 200 | Verify signup/recovery code or hash | Unavailable (409) |
-| POST | `/auth/resend` | 202 | Request signup confirmation again | Unavailable (409) |
-| POST | `/auth/refresh` | 200 | Refresh Supabase session | Rotate demo tokens |
-| GET | `/auth/me` | 200 | Verified current user | Current demo user |
-| POST | `/auth/logout` | 204, empty body | Revoke current refresh session | Revoke both current tokens |
-| POST | `/auth/forgot-password` | 202 | Request recovery email | Unavailable (409) |
-| PUT | `/auth/password` | 200 | Update authenticated user's password | Unavailable (409) |
+All FastAPI endpoints are available without account login, passwords, Bearer tokens or auth cookies.
+There are no authentication provider calls or required Supabase Auth settings. Swagger/OpenAPI
+contains no security schemes, Authorize button or padlocks. Former login/signup/session routes
+remain removed (404). An obsolete Authorization header is ignored.
 
-Unavailable demo actions return 409 for otherwise valid requests; invalid input still returns 422,
-and protected routes require a Bearer token. No demo endpoint creates real users or sends emails.
+An optional `X-Player-ID` UUID selects the state partition for profiles, learning, jobs, rooms and
+diagram races. Omitting it selects `00000000-0000-4000-8000-000000000001`. Use a different UUID per
+player to retain independent progress and multiplayer membership. Invalid UUIDs return 422.
+The ID is public, caller-selected context: anyone may select another player's ID. It supplies no
+identity verification, privacy or protection against reading, changing or deleting that data.
 
-## Request bodies
+Requests retain transactions, idempotency, quotas, resource partitioning and gameplay state rules.
+Game host/membership checks use the selected player ID. Generation and optional features still
+need explicit enablement. Removing authentication does not change model calls or database schema.
 
-Registration:
+The separate learner-approval workflow keeps its receipt/proof and request-authority rules.
+Its former /auth/registration routes are now /api/registration routes; there are no /auth endpoints.
+Guardian list/decision routes accept the required `guardian_email` query filter and optional
+`X-Player-ID`; neither is verified. No account session or confirmed-email check is required.
+This workflow cannot establish verified guardian identity or legal consent.
 
-```json
-{
-  "email": "learner@example.com",
-  "password": "ExamplePassword123!",
-  "display_name": "Sam",
-  "account_type": "learner"
-}
-```
+## Health, errors and transport
 
-`account_type` accepts `learner` or `parent`. The child demo uses `learner`.
-Display names are 1–60 characters, require non-whitespace content, and are trimmed on registration.
-Registration/update passwords are 8–128 characters; provider policies may impose more constraints.
-Login accepts existing passwords of 1–128 characters. Password whitespace is preserved.
-Unknown JSON properties are rejected. Metadata is not an authorization role.
+`GET /health` returns `{"status":"ok"}`. `GET /ready` checks application storage and reports
+whether it is durable. Neither calls an authentication provider.
 
-Login (published offline demo credentials; only when demo mode is enabled):
+403: gameplay or approval-workflow rule rejected. 404: absent record or wrong player partition.
+409: stale state or conflicting replay. 422: invalid input. 429: quota/concurrency limit.
+502: generation failure. 503: storage unavailable, generation or an optional feature disabled.
+There are no account-authentication 401 responses. Errors omit raw submitted values and secrets.
 
-```json
-{"email": "parent@demo.example.com", "password": "DemoParent123!"}
-```
+All `/api/` responses retain no-store/no-cache and no-referrer headers. CORS keeps
+exact origins and allows Content-Type, X-Player-ID, Idempotency-Key and workflow receipt headers;
+legacy Authorization headers remain allowed but ignored. Cookie credentials remain disabled.
 
-Refresh:
+## Non-AI quiz lifecycle — 24 October 2026 addition
 
-```json
-{"refresh_token": "REPLACE_WITH_CURRENT_REFRESH_TOKEN"}
-```
+Eleven deterministic operations now supplement existing quiz contracts: resume/results, strict
+idempotent answers, finish/review, all/missed retries, snapshot history, idempotent review cards,
+author review, question revisions and snapshot-bound approval. See
+[QUIZ_PRACTICE_API.md](docs/QUIZ_PRACTICE_API.md) and the additive
+[OpenAPI supplement](docs/quiz-practice.openapi.json). AI generation/safety code is unchanged.
 
-`refresh_token` must be 1–4096 characters. Serialize refresh operations per session and replace
-both returned tokens; never reuse a rotated token.
 
-Verification accepts exactly one of these forms:
+## Learner approval addition — 24 October 2026
 
-```json
-{"email": "learner@example.com", "token": "123456", "type": "signup"}
-```
+Five opt-in request/status/resend/guardian-decision routes have been added. See
+[LEARNER_APPROVAL.md](docs/LEARNER_APPROVAL.md) and the additive
+[OpenAPI schema](docs/learner-approval.openapi.json). The feature defaults off; approval does not
+activate a learner or grant family access. This workflow is independent of the removed login/signup
+and session endpoints. Creation requests require a private random 32–128 character Idempotency-Key.
 
-```json
-{"token_hash": "REPLACE_WITH_EMAIL_TOKEN_HASH", "type": "recovery"}
-```
 
-`type` is `signup` or `recovery`. Email+token must be supplied together, without `token_hash`;
-otherwise supply `token_hash` without email or token. Tokens are 6–10 characters; hashes are
-1–512 characters. These endpoints do not provide an email sender or frontend callback.
+## Diagram assembly race — 24 October 2026 addition
 
-Resend and forgot-password:
+Fourteen public operations reuse saved lesson flowcharts as frozen SVG label puzzles for
+simultaneous private-room play. See [DIAGRAM_ASSEMBLY.md](docs/DIAGRAM_ASSEMBLY.md) and the
+[additive OpenAPI](docs/diagram-assembly.openapi.json). Model source is unchanged; game grading
+and timing are deterministic/server-owned. Feature defaults off; frontend and deployment are pending.
 
-```json
-{"email": "learner@example.com"}
-```
 
-Password update (also requires the authenticated session's access token):
+## Diagram lifecycle/readiness supplement — 25 October 2026
 
-```json
-{"password": "DifferentExamplePassword123!"}
-```
-
-## Responses and authentication
-
-Protected routes use `Authorization: Bearer <access_token>`: `/auth/me`, `/auth/logout`, and
-`/auth/password`. No auth cookies are set; a future browser UI still needs a secure storage/session
-strategy. Identity is established by the token, never by a caller-supplied user ID or metadata.
-
-Login, verification, and refresh return the same session shape:
-
-```json
-{
-  "access_token": "OPAQUE_ACCESS_TOKEN",
-  "refresh_token": "OPAQUE_REFRESH_TOKEN",
-  "token_type": "bearer",
-  "expires_in": 3600,
-  "expires_at": 1800000000,
-  "user": {
-    "id": "00000000-0000-4000-8000-000000000001",
-    "email": "parent@demo.example.com",
-    "email_confirmed_at": null,
-    "user_metadata": {
-      "display_name": "Alex (Demo Parent)",
-      "account_type": "parent",
-      "demo": true,
-      "demo_family_id": "demo-family"
-    }
-  }
-}
-```
-
-Token/expiry values above are illustrative. `expires_at` can be null when absent upstream.
-`/auth/me` and `/auth/password` return the `user` object alone. User `email` and
-`email_confirmed_at` are nullable. `user_metadata` defaults to an empty object and may contain
-other untrusted values in Supabase mode. The demo does not claim verified email addresses.
-
-Register/resend/forgot-password return `{"message": "..."}` with generic wording; 202 is not
-proof an email reached a recipient. Duplicate-registration and missing-user mail responses are
-sanitised. `/auth/logout` returns an empty 204 response; do not try to parse it as JSON.
-
-Health example:
-
-```json
-{"status": "ok", "auth_mode": "demo"}
-```
-
-The other mode value is `supabase`. Health does not call the upstream service.
-All `/auth/` responses carry no-store/no-cache and no-referrer headers, including error responses.
-
-## Session lifecycle differences
-
-| Behaviour | Demo | Supabase |
-| --- | --- | --- |
-| Identity storage | Two synthetic fixtures | Supabase-managed users |
-| Token validation | Random tokens looked up in current process | Supabase verifies access token via `/auth/v1/user` |
-| Access expiry | One hour from issuance | Provider session response |
-| Refresh expiry | 24 hours from latest issuance | Provider configuration |
-| Refresh effect | Immediately invalidates both old tokens | Provider-managed refresh rotation; old access JWT may remain valid |
-| Logout | Immediately removes the current demo session | Local-scope provider logout; access JWT may remain valid until expiry |
-| Restart/reload | All sessions disappear | Real sessions remain provider-managed |
-| Multiple workers | Unsupported | Independent requests share only an HTTP pool per process |
-
-A new demo login is a separate session. Logout does not log out the other demo account or all
-sessions for the same user. At most 1,000 non-expired refresh sessions are retained per demo process.
-Supabase mode rejects demo access/refresh prefixes; demo mode never falls back to Supabase.
-
-## Errors
-
-Typical error response:
-
-```json
-{"detail": "Invalid demo credentials or expired demo session."}
-```
-
-Validation response (submitted values and secret contexts are omitted):
-
-```json
-{"detail": [{"loc": ["body", "email"], "msg": "Invalid email", "type": "value_error"}]}
-```
-
-Wording above is illustrative; clients should primarily handle status and response shape.
-
-| Status | Meaning |
-| --- | --- |
-| 400 | Provider rejected a request/password update; public message is sanitised |
-| 401 | Missing/invalid credentials, expired token/code, refresh replay, or demo token in Supabase mode |
-| 403 | Provider reports email not confirmed |
-| 404 | Demo account-list route does not exist in Supabase mode |
-| 409 | Email/account mutation unavailable in demo mode |
-| 422 | Invalid JSON/body fields or unsupported verification combination |
-| 429 | Provider rate limit or maximum active demo sessions reached |
-| 502 | Successful upstream response could not be parsed as JSON |
-| 503 | Upstream transport failure or provider server error |
-
-CORS permits configured exact origins, GET/POST/PUT/PATCH/DELETE, Authorization and Content-Type headers;
-it does not enable cookie credentials or replace authentication. Upstream Supabase rate limits
-exist; application/edge per-client limiting has not been implemented. Never log real passwords,
-Bearer/refresh tokens, email hashes, or request bodies containing them.
+Added verified-session `GET /api/diagram-assembly/rooms/{room_id}/management`: current room host
+only, returning latest `room_id`, `race_id`, `version`, `status`, `reason`. A late host may cancel
+without participant content access. Cancel now returns 409 for finished/expired races; cancelled
+retries stay stable. Active source withdrawal/change persists cancellation through migration 009.
+Race snapshots add `reason` and `source`; results add `source: {available, reason}`. Finished
+summaries remain readable when source invalid, while diagram review/board remain blocked.
+`GET /ready` retains `ready`/`durable` and adds `features.diagram_assembly`; enabled dependency
+failure returns 503. Disabled features do not require Node/Chromium. Responses are no-store.
+See [exact rules and examples](docs/DIAGRAM_LIFECYCLE_READINESS.md) and the additive
+[15-operation diagram/readiness OpenAPI snapshot](docs/diagram-lifecycle-readiness.openapi.json).
+Earlier API descriptions and snapshots are preserved as historical records.

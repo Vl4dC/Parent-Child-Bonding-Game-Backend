@@ -1,6 +1,6 @@
 # Parent–Child Bonding Game API
 
-Backend-only FastAPI API for authentication, owned learning data, reviewed content, generation jobs,
+Backend-only FastAPI API for owned learning data, reviewed content, generation jobs,
 and private lobbies. Frontend context lives in the
 [main repository](https://github.com/RahulRohidasPatil/Parent-Child-Bonding-Game).
 
@@ -15,22 +15,21 @@ uv run uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000 --no-a
 ```
 
 Generation defaults off, so this command makes no model calls. Demo storage is in memory, resets
-on restart, and cannot be used in production. Parent login: `parent@demo.example.com` /
-`DemoParent123!`; child login: `child@demo.example.com` / `DemoChild123!`. These are synthetic fixtures.
+on restart, and cannot be used in production. API calls need no login, token or auth configuration.
 
 ```sh
-curl http://127.0.0.1:8000/auth/login \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"parent@demo.example.com","password":"DemoParent123!"}'
+curl http://127.0.0.1:8000/api/me/profile
 ```
 
-Use the returned access token in `Authorization: Bearer <access_token>`. The API sets no auth cookies.
+Optional `X-Player-ID: <UUID>` selects separate player state for profiles, practice and multiplayer.
+Without it, requests share player `00000000-0000-4000-8000-000000000001`. The ID is caller-selected
+and unverified: anyone can select the same ID and access or delete that partition's data.
 
 ## Supabase and durable storage
 
 ```sh
 cp .env.example .env
-# Configure Supabase Auth, DATABASE_URL, and exact CORS origins.
+# Configure DATABASE_URL and exact CORS origins. No Supabase Auth keys are needed.
 uv sync --locked
 uv run uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000 --no-access-log
 ```
@@ -40,19 +39,21 @@ starting data routes. Migration/hosted database changes are explicit operator ac
 startup never applies migrations. See [database setup and tests](docs/DATABASE.md).
 
 `DATABASE_URL` is a private, server-only PostgreSQL credential with ownership of the migration
-objects. Request transactions switch to `authenticated` and set verified identity claims so RLS
-applies. Job claiming and quota reservation use server-only database functions. No service-role API
-key is added to the authentication flow. Never put the database credential in browser configuration.
+objects. Request transactions retain the existing `authenticated` SQL role and player-ID claims
+for partitioned storage; this does not authenticate callers. Job claiming and quota reservation
+use server-only database functions. Never put the database credential in browser configuration.
 
 **Keep `api_private` outside Supabase's exposed Data API schemas.** It stores private text and
-answer keys. Application data is accessed through the authenticated FastAPI routes.
+answer keys. Application data is accessed through the public FastAPI routes.
 
-Real registration/recovery delivery still needs a configured email sender and confirmation flow.
-Email confirmation stays enabled; SMTP work and live email verification are not part of this change.
+FastAPI has no password login, registration, session management, Bearer checks or authentication
+provider calls. Swagger has no Authorize button or security locks. Frontend login/register remains
+outside this repository and is unchanged. Learner approval keeps its request receipts and decision
+proofs as a separate workflow; guardian mailbox filters are supplied by the caller and unverified.
 
 ## API and documentation
 
-- [API.md](API.md): authentication reference plus links to the full platform contract.
+- [API.md](API.md): public API and player-state contract plus links to the full platform contract.
 - [Platform API](docs/API_PLATFORM.md): learning, review, attempts, profiles, jobs, progress, rooms.
 - [Game backend roadmap](docs/GAME_BACKEND_ROADMAP.md): pending Forbidden Clues/heads-up actions and tests.
 - [Server performance](docs/SERVER_PERFORMANCE.md): pools, query optimization, worker resource use, and local measurements.
@@ -129,3 +130,41 @@ access to another person's learning data. There is no deployment or frontend cha
 The old `learning-service/static/` files are retained unchanged as historical development artifacts;
 the unified API does not serve them. The old Python project has been consolidated into
 `learning_service/`, with one root dependency lock and one test suite.
+
+
+## Deterministic quiz backend — 24 October 2026 addition
+
+Existing private quizzes now support saved lifecycle/results, idempotent first-answer recording,
+finish/review, independent all/missed retries, exact-snapshot history and review-card creation.
+Owning authors can review, correct into a new immutable version, and confirm that snapshot.
+See [non-AI quiz API](docs/QUIZ_PRACTICE_API.md). This adds no model calls, AI changes, frontend
+changes, rewards, ranking or multiplayer. Existing production/generation contracts remain intact.
+
+
+## Learner approval workflow — 24 October 2026 addition
+
+An opt-in pending-request workflow now supports private status receipts, bounded notification
+resends and request-specific guardian decisions with caller-selected player/mailbox context. See
+[learner approval](docs/LEARNER_APPROVAL.md) for the five endpoints, migration 006, explicit mail
+worker and authority-review bridge. This records decisions only; it does not activate accounts,
+create Supabase accounts or establish mandatory app-wide guardian consent. Feature defaults
+off. No frontend or hosted service was changed.
+
+
+## Rebuild the diagram — 24 October 2026 addition
+
+A new backend can freeze an existing reviewed lesson flowchart, remove its labels without
+rerunning layout, and run a simultaneous room race with shuffled label trays and independent
+submissions. Study/review and repeat rounds reuse the same snapshot with no model call.
+See [diagram assembly](docs/DIAGRAM_ASSEMBLY.md) for fourteen routes, migration 008, Node/Chromium
+setup and limits. This feature defaults off; no frontend, AI harness or hosted service was changed.
+
+
+## Diagram lifecycle and readiness — 25 October 2026 addition
+
+The first fix batch protects finished/expired results, atomically cancels active races when their
+approved source changes, adds minimal current-host management, and makes `/ready` check enabled
+diagram dependencies. Apply migration 009 after 008; nothing applies migrations automatically.
+Use `uv run python -m app.diagram_preflight --probe` to check before enabling.
+See [lifecycle, API, rollout and remaining work](docs/DIAGRAM_LIFECYCLE_READINESS.md).
+This entry is append-only; no frontend or AI changes or hosted deployment are included.
