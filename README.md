@@ -60,6 +60,7 @@ Email confirmation stays enabled; SMTP work and live email verification are not 
 - [Frontend integration](docs/FRONTEND_INTEGRATION.md): frontend source locations and integration boundary.
 - [Architecture](docs/ARCHITECTURE.md): current module responsibilities and invariants.
 - [Contributor instructions](AGENTS.md): backend scope and continuation workflow.
+- [End-to-end edge-case report](docs/E2E_TEST_REPORT.md): implemented features, the `tests/e2e` suite, bugs found and proposed fixes.
 
 Swagger: http://127.0.0.1:8000/docs. OpenAPI: http://127.0.0.1:8000/openapi.json.
 `GET /health` is process health; `GET /ready` verifies application storage and reports whether it is durable.
