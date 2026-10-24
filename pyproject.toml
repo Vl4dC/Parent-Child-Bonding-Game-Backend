@@ -1,0 +1,16 @@
+[project]
+name = "bonding-game-api"
+version = "0.1.0"
+description = "FastAPI authentication backend for the family learning game"
+requires-python = ">=3.12"
+dependencies = ["fastapi>=0.115,<1", "uvicorn[standard]>=0.34,<1", "httpx>=0.28,<1", "pydantic-settings>=2.7,<3", "email-validator>=2.2,<3"]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "ruff>=0.11,<1"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
