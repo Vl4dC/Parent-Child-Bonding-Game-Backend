@@ -237,3 +237,12 @@ was used. Existing frontend and AI/harness source files are unchanged.
 
 The renderer targets a managed Linux/macOS backend with POSIX process supervision. Hosted
 sandbox/runtime and real multi-phone UI acceptance remain required before enabling it.
+
+## Backend gap review and next-step plan — 25 October 2026
+
+A documentation-only follow-up records four reproduced lifecycle/readiness gaps, current
+release requirements and a prioritized backend plan. See
+[DIAGRAM_ASSEMBLY_NEXT_STEPS_2026-10-25.md](DIAGRAM_ASSEMBLY_NEXT_STEPS_2026-10-25.md).
+The first proposed implementation batch covers terminal/source/host recovery and feature-aware
+preflight. No runtime, frontend, AI, migration, deployment or feature flag changed in this review.
+Earlier implementation/test records above remain intact as dated evidence.
