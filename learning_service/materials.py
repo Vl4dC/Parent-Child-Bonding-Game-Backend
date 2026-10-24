@@ -87,6 +87,7 @@ class Material(BaseModel):
     revision: int = 1
     kind: Literal["pdf", "photos"]
     pages: list[Page]
+    images_b64: list[str] = []  # base64 JPEG images; only populated for "photos" kind
     chapters: list[Chapter] = []
     contents: list[
         int
@@ -157,7 +158,7 @@ def read_files(files: list[tuple[str, bytes]], vision: VisionReader) -> Material
         if len(files) > 1:
             raise BadUpload("Upload one PDF at a time, or photos only")
         return read_pdf(pdfs[0][0], pdfs[0][1], vision)
-    return read_photos(files, vision)
+    return read_photos_as_b64(files)
 
 
 def clean(text: str) -> str:
@@ -312,6 +313,41 @@ def read_photos(files: list[tuple[str, bytes]], vision: VisionReader) -> Materia
     )
     name = files[0][0] if len(files) == 1 else f"{len(files)} photos ({files[0][0]}, ...)"
     return finish(Material(name=name, kind="photos", pages=pages, warnings=warnings))
+
+
+def read_photos_as_b64(files: list[tuple[str, bytes]]) -> Material:
+    """Store uploaded images as base64 JPEG for direct multimodal LLM consumption.
+
+    Unlike read_photos(), this path does NOT call the vision model: the raw images are
+    preserved and passed to the LLM at lesson-creation time so it can see them directly.
+    """
+    jpegs: dict[int, bytes] = {}
+    for n, (name, data) in enumerate(files, 1):
+        try:
+            img = Image.open(io.BytesIO(data))
+            if img.width * img.height > MAX_PIXELS:
+                raise BadUpload(
+                    f"{name} is too large a picture ({img.width}x{img.height}); resize it first",
+                    413,
+                )
+            img.load()
+        except Image.DecompressionBombError as exc:
+            raise BadUpload(f"{name} is too large a picture; resize it first", 413) from exc
+        except (UnidentifiedImageError, OSError) as exc:
+            hint = (
+                " HEIC photos aren't supported; export them as JPG."
+                if name.lower().endswith((".heic", ".heif"))
+                else ""
+            )
+            raise BadUpload(
+                f"{name} isn't a PDF or a picture I can read (use PDF, JPG, PNG or WebP).{hint}",
+                415,
+            ) from exc
+        jpegs[n] = to_jpeg(img)
+    images_b64 = [base64.b64encode(jpeg).decode() for jpeg in jpegs.values()]
+    pages = [Page(number=n, text="", via="none") for n in jpegs]
+    name = files[0][0] if len(files) == 1 else f"{len(files)} photos ({files[0][0]}, ...)"
+    return Material(name=name, kind="photos", pages=pages, images_b64=images_b64)
 
 
 def finish(material: Material) -> Material:

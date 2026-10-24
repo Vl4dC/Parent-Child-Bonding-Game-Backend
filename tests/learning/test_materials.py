@@ -119,27 +119,38 @@ def test_when_vision_fails_everywhere_the_upload_is_refused_with_a_502():
 
 
 def test_photos_become_pages_in_upload_order():
+    import base64
+    from io import BytesIO
+
+    from PIL import Image
+
     files = [("a.png", make_png(600, 800)), ("b.png", make_png(601, 800))]
-    m = mt.read_files(files, by_width)
+    m = mt.read_files(files, no_vision)  # vision is never called for photos
     assert m.kind == "photos" and m.name.startswith("2 photos (a.png")
-    assert [p.text for p in m.pages] == [
-        "Scanned page 1 about volcanoes and lava flows",
-        "Scanned page 2 about volcanoes and lava flows",
-    ]
+    assert len(m.pages) == 2 and all(p.via == "none" for p in m.pages)
+    assert len(m.images_b64) == 2
+    # Images are stored as JPEG bytes
+    for b64 in m.images_b64:
+        assert Image.open(BytesIO(base64.b64decode(b64))).format == "JPEG"
 
 
-def test_large_photos_are_shrunk_before_they_reach_the_model():
-    seen = []
-    mt.read_files(
-        [("big.png", make_png(4000, 3000))],
-        lambda jpeg: seen.append(page_width(jpeg)) or "Text on the picture",
-    )
-    assert seen == [mt.IMAGE_MAX_SIDE]
+def test_large_photos_are_resized_before_storage():
+    import base64
+    from io import BytesIO
+
+    from PIL import Image
+
+    m = mt.read_files([("big.png", make_png(4000, 3000))], no_vision)
+    assert len(m.images_b64) == 1
+    img = Image.open(BytesIO(base64.b64decode(m.images_b64[0])))
+    assert max(img.width, img.height) == mt.IMAGE_MAX_SIDE
 
 
-def test_blank_pages_make_no_text_and_an_all_blank_upload_is_refused():
-    with pytest.raises(mt.BadUpload, match="readable text"):
-        mt.read_files([("blank.png", make_png())], lambda _j: "")
+def test_photo_upload_succeeds_even_without_readable_text():
+    # Photos are stored as base64 for multimodal LLM use — blank images are fine.
+    m = mt.read_files([("blank.png", make_png())], no_vision)
+    assert m.kind == "photos" and len(m.images_b64) == 1
+    assert m.pages[0].via == "none"
 
 
 # ---------------------------------------------------------------- refusing bad uploads

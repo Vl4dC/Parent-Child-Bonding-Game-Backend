@@ -2,6 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import learning_service.materials as materials
+import learning_service.rag as rag
 import learning_service.routes as app_module
 import learning_service.safety as safety
 import learning_service.store as store
@@ -131,9 +132,22 @@ def client(monkeypatch, repository):
         seen.setdefault("safety_checks", []).append((kind, age, text))
         return safety.Verdict(ok=True)
 
+    def fake_rag_index(_material_id, _pages):
+        pass  # no-op: tests fall back to BM25 retrieval for PDF lessons
+
+    def fake_rag_retrieve(_material_id, _query, k=8):
+        return []  # empty triggers BM25 fallback in create_lesson
+
+    def fake_make_lesson_from_images(request, _images_b64):
+        seen["image_lesson_request"] = request
+        return FAKE_LESSON.model_copy(deep=True)
+
     monkeypatch.setattr(safety, "check", fake_check)
     monkeypatch.setattr(app_module, "make_lesson_from_pages", fake_make_lesson_from_pages)
+    monkeypatch.setattr(app_module, "make_lesson_from_images", fake_make_lesson_from_images)
     monkeypatch.setattr(materials, "model_vision_reader", fake_vision_reader)
+    monkeypatch.setattr(rag, "index", fake_rag_index)
+    monkeypatch.setattr(rag, "retrieve", fake_rag_retrieve)
     monkeypatch.setattr(store, "make_remedial", fake_make_remedial)
     monkeypatch.setattr(store, "make_cards", fake_make_cards)
     monkeypatch.setattr(store, "make_blank_items", fake_make_blank_items)

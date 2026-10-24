@@ -73,7 +73,9 @@ Edits create new lesson IDs; historical attempts retain their original immutable
 Approval records **owner confirmation**, not verified guardian/teacher authority or independent fact checking.
 Scored solo submissions also require an explicit question-set review/approval step.
 
-Set `GENERATION_ENABLED=true` only after configuring the model provider and budget. Direct generation
+Set `GENERATION_ENABLED=true` only after configuring the model provider and budget. PDF lessons pick
+pages by meaning with `EMBEDDING_MODEL` (default `openrouter:google/gemini-embedding-2`, same
+`OPENROUTER_API_KEY`); if embeddings are unavailable they fall back to keyword search. Direct generation
 routes remain available for compatibility. Durable jobs are preferred for long operations:
 
 ```sh

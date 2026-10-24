@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     job_attempt_limit: int = Field(2, ge=1, le=5)
     quiz_model: str = "anthropic:claude-sonnet-5-5"
     visual_model: str | None = None
+    embedding_model: str = "openrouter:google/gemini-embedding-2"
     model_timeout_seconds: int = Field(60, ge=1, le=300)
 
     @field_validator("supabase_publishable_key")

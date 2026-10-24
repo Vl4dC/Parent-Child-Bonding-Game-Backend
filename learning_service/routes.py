@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, StringConstraints
 
 import learning_service.flashcards as flashcards
 import learning_service.materials as materials
+import learning_service.rag as rag
 import learning_service.safety as safety
 import learning_service.tournament as tournament
 from app.context import api_context
@@ -32,6 +33,7 @@ from learning_service.lesson import (
     LessonSource,
     NotCovered,
     make_lesson,
+    make_lesson_from_images,
     make_lesson_from_pages,
 )
 from learning_service.materials import MaterialInfo, NotInMaterial, select_pages
@@ -298,7 +300,13 @@ def upload_material(
         material = materials.read_files(named, materials.model_vision_reader())
     except materials.BadUpload as exc:
         raise HTTPException(exc.status, str(exc)) from exc
-    return remember_material(material).info()
+    if material.kind == "photos":
+        # Images need no text confirmation — auto-confirm so lessons can be created immediately.
+        material.confirmed = True
+    stored = remember_material(material)
+    if stored.kind == "pdf":
+        rag.index(stored.id, stored.pages)
+    return stored.info()
 
 
 @app.get(
@@ -361,6 +369,7 @@ def delete_material(material_id: MaterialId) -> None:
     from app.platform import delete_material_data
 
     delete_material_data(material_id)
+    rag.drop(material_id)
 
 
 # --------------------------------------------------------------------------
@@ -405,10 +414,10 @@ def create_lesson(body: LessonBody) -> PublicLesson:
             lesson = ensure_safe(
                 lambda: make_lesson(body), Lesson.safety_text, body.age, body.topic
             )
-        else:
-            picked = select_pages(material, body.topic)
+        elif material.kind == "photos":
+            # Image material: pass images directly to a multimodal LLM — no text extraction.
             lesson = ensure_safe(
-                lambda: make_lesson_from_pages(body, picked.text),
+                lambda: make_lesson_from_images(body, material.images_b64),
                 Lesson.safety_text,
                 body.age,
                 body.topic,
@@ -417,9 +426,40 @@ def create_lesson(body: LessonBody) -> PublicLesson:
                 material_id=material.id,
                 material_revision=material.revision,
                 title=material.name,
-                pages=picked.pages,
-                label=picked.label,
-                truncated=picked.truncated,
+                pages=list(range(1, len(material.images_b64) + 1)),
+                label=f"from {len(material.images_b64)} uploaded image(s)",
+                truncated=False,
+            )
+        else:
+            # PDF material: Chroma vector retrieval, falling back to BM25 if uncached.
+            rag_results = rag.retrieve(material.id, body.topic)
+            if rag_results:
+                pages_text = "\n\n".join(f"[Page {n}]\n{text}" for text, n in rag_results)
+                page_nums = sorted(n for _, n in rag_results)
+                label = (
+                    f"pages matching '{body.topic}' ({', '.join(str(n) for n in page_nums)})"
+                )
+                truncated = False
+            else:
+                # Fall back to BM25 (Chroma collection absent, e.g. after an in-memory restart).
+                picked = select_pages(material, body.topic)
+                pages_text = picked.text
+                page_nums = picked.pages
+                label = picked.label
+                truncated = picked.truncated
+            lesson = ensure_safe(
+                lambda: make_lesson_from_pages(body, pages_text),
+                Lesson.safety_text,
+                body.age,
+                body.topic,
+            )
+            source = LessonSource(
+                material_id=material.id,
+                material_revision=material.revision,
+                title=material.name,
+                pages=page_nums,
+                label=label,
+                truncated=truncated,
             )
     except (NotInMaterial, NotCovered) as exc:
         raise HTTPException(422, str(exc)) from exc

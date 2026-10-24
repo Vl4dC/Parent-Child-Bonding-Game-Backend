@@ -30,6 +30,7 @@ dependencies = [
     'python-multipart>=0.0.32',
     'tiktoken>=0.14.0',
     'psycopg[binary,pool]>=3.2,<4',
+    'chromadb>=0.6,<2',
 ]
 
 [dependency-groups]

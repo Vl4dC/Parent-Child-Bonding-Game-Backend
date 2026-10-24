@@ -40,14 +40,15 @@ def test_upload_a_text_pdf(client):
     assert client.get(f"/api/materials/{info['id']}").json() == info
 
 
-def test_upload_photos_are_read_by_the_vision_model(client):
+def test_upload_photos_stored_as_base64_without_vision_call(client):
     r = upload(
         client, ("p1.png", make_png(), "image/png"), ("p2.png", make_png(610, 800), "image/png")
     )
     assert r.status_code == 201
     info = r.json()
-    assert info["kind"] == "photos" and info["page_count"] == 2 and info["vision_pages"] == 2
-    assert client.seen["vision_calls"] == 2
+    assert info["kind"] == "photos" and info["page_count"] == 2
+    assert info["vision_pages"] == 0  # images are not OCR'd at upload time
+    assert "vision_calls" not in client.seen  # no vision model call during upload
 
 
 def test_upload_a_scanned_pdf(client):
@@ -87,7 +88,7 @@ def test_oversized_uploads_are_refused_before_and_while_reading(client, monkeypa
     assert r.status_code == 413 and "too big" in r.json()["detail"]
 
 
-def test_when_vision_is_down_a_scanned_upload_is_a_502(client, monkeypatch):
+def test_when_vision_is_down_a_scanned_pdf_is_a_502(client, monkeypatch):
     def down():
         def read(_jpeg):
             raise RuntimeError("no network")
@@ -95,7 +96,19 @@ def test_when_vision_is_down_a_scanned_upload_is_a_502(client, monkeypatch):
         return read
 
     monkeypatch.setattr(materials, "model_vision_reader", down)
-    assert upload(client, ("p.png", make_png(), "image/png")).status_code == 502
+    assert upload(client, ("scan.pdf", make_scanned_pdf(1), "application/pdf")).status_code == 502
+
+
+def test_when_vision_is_down_photo_upload_still_succeeds(client, monkeypatch):
+    def down():
+        def read(_jpeg):
+            raise RuntimeError("no network")
+
+        return read
+
+    monkeypatch.setattr(materials, "model_vision_reader", down)
+    # Photos no longer call the vision model at upload time — they are stored as base64
+    assert upload(client, ("p.png", make_png(), "image/png")).status_code == 201
 
 
 def test_persistent_uploads_are_not_silently_evicted(client):
