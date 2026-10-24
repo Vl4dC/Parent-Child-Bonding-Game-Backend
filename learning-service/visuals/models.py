@@ -17,6 +17,7 @@ class VisualRequest(BaseModel):
     ask: str | None = Field(None, description="Learner's own request, e.g. 'show me the light reactions'. "
                                               "None = draw the visuals the lesson planned")
     max_visuals: int = Field(MAX_VISUALS, ge=1, le=MAX_VISUALS)
+    note: str = Field("", description="On a rewrite: what a reviewer found unsuitable for the age (safety.py)")
 
 
 class VisualPlanItem(SectionVisual):

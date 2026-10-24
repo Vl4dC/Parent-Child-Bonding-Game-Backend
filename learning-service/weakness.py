@@ -32,6 +32,7 @@ from pydantic import BaseModel, Field
 
 from lesson import reading_level
 from quiz_graph import Question, QuestionType, _llm
+from safety import guidance
 from visual_recall import IllustratedQuestion, make_blank_items, to_mcq, to_true_false
 
 log = logging.getLogger("weakness")
@@ -91,6 +92,7 @@ class RemedialRequest(BaseModel):
     misses: list[Miss] = Field(..., min_length=1)
     num_questions: int | None = Field(None, ge=1, le=MAX_QUESTIONS, description="None = decide from the weaknesses")
     seed: int | None = None
+    note: str = Field("", description="On a rewrite: what a reviewer found unsuitable for the age (safety.py)")
 
 
 class Slot(BaseModel):
@@ -221,6 +223,7 @@ def diagnose_prompt(req: RemedialRequest) -> str:
         "misses). For each: `concept` (a few words in the learner's vocabulary, e.g. \"How clouds form\"), "
         "`misconception` (one sentence: what their wrong choice suggests they believe; leave empty if it looks "
         "like a guess) and `misses` (the [numbers] it explains). Every missed question belongs to exactly one weakness."
+        + guidance(req.age, req.note)
     )
 
 
@@ -246,6 +249,7 @@ def variant_prompt(req: RemedialRequest, slot: Slot, weakness: Weakness, origina
         "Exactly one correct answer; the explanation is 1-2 sentences that clear up the misunderstanding.\n"
         f"Write for them: {reading_level(req.age)}\n"
         f"Only test what this lesson teaches:\n<lesson>\n{req.lesson_text[:LESSON_CHARS]}\n</lesson>"
+        + guidance(req.age, req.note)
         + (f"\n\n{feedback}" if feedback else "")
     )
 

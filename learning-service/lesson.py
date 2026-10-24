@@ -26,6 +26,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, Field, StringConstraints
 
 from quiz_graph import _llm
+from safety import guidance
 from visuals.skillbook import menu
 
 VisualKind = Literal["diagram", "chart", "interactive"]
@@ -138,8 +139,9 @@ GROUNDING_RULES = (
 )
 
 
-def lesson_prompt(request: LessonRequest, pages: str | None = None) -> str:
-    """`pages`: text from the learner's own book. When given, the lesson may use only that."""
+def lesson_prompt(request: LessonRequest, pages: str | None = None, note: str = "") -> str:
+    """`pages`: text from the learner's own book. When given, the lesson may use only that.
+    `note`: on a rewrite, what a reviewer found unsuitable for the learner's age (safety.py)."""
     if pages is None:
         intro = (f"Teach this topic to a {request.age}-year-old learner.\n"
                  f"Topic: {request.topic}\n")
@@ -164,6 +166,7 @@ def lesson_prompt(request: LessonRequest, pages: str | None = None) -> str:
         "section that only describes a picture in words. The brief must say exactly what to draw: the "
         "elements, their labels in the learner's words, and for an interactive the control and what it changes.\n"
         f"Visual kinds (pick the one whose description fits the section best):\n{menu()}"
+        + guidance(request.age, note)
     )
     if pages is not None:
         safe = pages.replace("</pages", "< /pages")  # the book can't close the tag and start giving orders
@@ -178,13 +181,13 @@ def cap_visuals(lesson: Lesson) -> Lesson:
     return lesson
 
 
-def make_lesson(request: LessonRequest) -> Lesson:
-    return cap_visuals(_llm().with_structured_output(Lesson).invoke(lesson_prompt(request)))
+def make_lesson(request: LessonRequest, note: str = "") -> Lesson:
+    return cap_visuals(_llm().with_structured_output(Lesson).invoke(lesson_prompt(request, note=note)))
 
 
-def make_lesson_from_pages(request: LessonRequest, pages: str) -> Lesson:
+def make_lesson_from_pages(request: LessonRequest, pages: str, note: str = "") -> Lesson:
     """A lesson built only from the learner's own pages. Raises NotCovered if the pages don't teach the topic."""
-    out = _llm().with_structured_output(GroundedLesson).invoke(lesson_prompt(request, pages))
+    out = _llm().with_structured_output(GroundedLesson).invoke(lesson_prompt(request, pages, note))
     if not out.covered or not out.sections:
         raise NotCovered(out.missing.strip() or "The pages I found don't teach that topic.")
     return cap_visuals(Lesson(**out.model_dump(exclude={"covered", "missing"})))

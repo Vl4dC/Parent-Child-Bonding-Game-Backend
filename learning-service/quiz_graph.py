@@ -29,6 +29,8 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 from pydantic import BaseModel, Field, model_validator
 
+from safety import guidance
+
 QuestionType = Literal["multiple_choice", "true_false", "short_answer"]
 Difficulty = Literal["easy", "medium", "hard"]
 
@@ -46,6 +48,7 @@ class QuizRequest(BaseModel):
     allowed_types: list[QuestionType] | None = Field(None, description="Restrict question types; None = any")
     age: int | None = Field(None, ge=5, le=99, description="Learner's age; questions match their level")
     source: str | None = Field(None, description="Lesson text the questions must be based on")
+    note: str = Field("", description="On a rewrite: what a reviewer found unsuitable for the age (safety.py)")
 
 
 class QuizSpec(BaseModel):
@@ -143,8 +146,9 @@ def _llm(model: str | None = None, temperature: float = 1.0):
     return init_chat_model(model, temperature=temperature)
 
 
-def _context(req: QuizRequest | None) -> str:
-    """Extra prompt lines when the quiz is tied to a learner's age and/or a lesson."""
+def _context(req: QuizRequest | None, with_note: bool = True) -> str:
+    """Extra prompt lines when the quiz is tied to a learner's age and/or a lesson: the audience, the age's content
+    rules (safety.py), and, for the writers, the note from a rewrite."""
     if req is None:
         return ""
     parts = []
@@ -152,7 +156,8 @@ def _context(req: QuizRequest | None) -> str:
         parts.append(f"Audience: a {req.age}-year-old learner. Match their vocabulary and reading level.")
     if req.source:
         parts.append("Only test what this lesson teaches:\n<lesson>\n" + req.source[:8000] + "\n</lesson>")
-    return "\n\n" + "\n".join(parts) if parts else ""
+    text = "\n\n" + "\n".join(parts) if parts else ""
+    return text + (guidance(req.age, req.note if with_note else "") if req.age else "")
 
 
 # --------------------------------------------------------------------------
@@ -225,7 +230,7 @@ def review(state: State) -> dict:
     req = state["request"]
     qs = [state["questions"][i] for i in sorted(state["questions"])]
     listing = "\n\n".join(f"[{q.index}] {q.model_dump_json()}" for q in qs)
-    extra = _context(req)
+    extra = _context(req, with_note=False)
     result = _llm().with_structured_output(Review).invoke(
         "You are checking quiz questions. Flag a question only if the marked answer is wrong, "
         "more than one option is correct, the question is ambiguous, or it duplicates another"

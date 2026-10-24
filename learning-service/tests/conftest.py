@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 
 import app as app_module
 import materials
+import safety
 import store
 from lesson import Lesson, LessonSection
 from quiz_graph import Question, Quiz
@@ -46,25 +47,38 @@ def _no_visual_model(monkeypatch):
     monkeypatch.delenv("VISUAL_MODEL", raising=False)
 
 
+@pytest.fixture(autouse=True)
+def _safety_check_passes(monkeypatch):
+    """No test reaches a real checker model. Content is suitable unless the test scripts the check
+    (tests/test_safety_api.py); SAFETY_MODEL / AUDIENCE_MAX_AGE in the developer's .env must not leak in."""
+    monkeypatch.delenv("SAFETY_MODEL", raising=False)
+    monkeypatch.delenv("AUDIENCE_MAX_AGE", raising=False)
+    monkeypatch.setattr(safety, "check", lambda text, age: safety.Verdict(ok=True))
+
+
 @pytest.fixture
 def client(monkeypatch):
     """TestClient with the model calls faked; `client.seen` records what the agents were asked."""
     seen = {}
 
-    def fake_make_lesson(request):
+    def fake_make_lesson(request, note=""):
         seen["lesson_request"] = request
+        seen.setdefault("lesson_notes", []).append(note)
         return FAKE_LESSON.model_copy(deep=True)
 
     def fake_make_quiz(request):
         seen["quiz_request"] = request
+        seen.setdefault("quiz_requests", []).append(request)
         return FAKE_QUIZ.model_copy(deep=True)
 
     def fake_make_visuals(request):
         seen["visual_request"] = request
+        seen.setdefault("visual_requests", []).append(request)
         return [FAKE_VISUAL.model_copy()]
 
-    def fake_make_cards(lesson, topic, age, n):
+    def fake_make_cards(lesson, topic, age, n, note=""):
         seen["cards_request"] = (topic, age, n)
+        seen.setdefault("cards_notes", []).append(note)
         return [Flashcard(kind="concept", front=f"Card {i}?", back=f"Answer {i}") for i in range(n)]
 
     def fake_make_blank_items(visual, topic, age, k=1):
@@ -74,14 +88,16 @@ def client(monkeypatch):
 
     def fake_make_remedial(request):
         seen["remedial_request"] = request
+        seen.setdefault("remedial_requests", []).append(request)
         questions = [IllustratedQuestion(index=i, type="multiple_choice", question=f"New question {i}?",
                                          options=[f"Right {i}", f"Wrong {i}a", f"Wrong {i}b", f"Wrong {i}c"],
                                          answer=f"Right {i}", explanation=f"Because {i}.") for i in range(2)]
         return RemedialQuiz(focus=["Firewalls"], questions=questions)
 
-    def fake_make_lesson_from_pages(request, pages):
+    def fake_make_lesson_from_pages(request, pages, note=""):
         seen["grounded_request"] = request
         seen["pages_text"] = pages
+        seen.setdefault("grounded_notes", []).append(note)
         return FAKE_LESSON.model_copy(deep=True)
 
     def fake_vision_reader():

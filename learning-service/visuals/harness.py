@@ -30,6 +30,7 @@ from langgraph.types import Send
 
 from lesson import reading_level
 from quiz_graph import _llm
+from safety import guidance
 from visuals import render
 from visuals.models import Visual, VisualDraft, VisualKind, VisualPlan, VisualPlanItem, VisualRequest
 from visuals.skillbook import SKILLS, menu
@@ -78,6 +79,7 @@ def plan_prompt(req: VisualRequest) -> str:
         f"Lesson sections (refer to them by number):\n{_sections(req)}\n\n"
         "`brief` must say exactly what to draw: the elements, their labels in the learner's words, "
         "and for an interactive, the control and what it changes."
+        + guidance(req.age, req.note)
     )
 
 
@@ -111,7 +113,9 @@ def draw_prompt(req: VisualRequest, item: VisualPlanItem, feedback: str = "") ->
         f"Topic: {req.topic}\n"
         f"Lesson section: {section.heading}\n{section.body}\n\n"
         f"Purpose: {item.purpose}\n"
-        f"What to draw: {item.brief}\n"
+        f"What to draw: {item.brief}"
+        + guidance(req.age, req.note)
+        + "\n"
         + (f"\n{feedback}\n" if feedback else "")
         + "\nReturn title, caption, alt and code."
     )
