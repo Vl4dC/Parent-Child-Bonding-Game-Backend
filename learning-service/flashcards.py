@@ -18,7 +18,6 @@ from pydantic import BaseModel, Field
 
 from lesson import Lesson, reading_level
 from quiz_graph import _llm
-from safety import guidance
 from visual_recall import BLANK, BlankItem, IllustratedQuestion, hidden
 from visuals.models import Visual
 from visuals.render import document
@@ -48,7 +47,7 @@ class DeckDraft(BaseModel):
     cards: list[CardDraft]
 
 
-def cards_prompt(lesson: Lesson, topic: str, age: int, n: int, note: str = "") -> str:
+def cards_prompt(lesson: Lesson, topic: str, age: int, n: int) -> str:
     return (
         f'Write {n} flashcards for a {age}-year-old who just studied "{topic}" with the lesson below.\n'
         f"Write for them: {reading_level(age)}\n"
@@ -57,12 +56,11 @@ def cards_prompt(lesson: Lesson, topic: str, age: int, n: int, note: str = "") -
         "(use ____ for the blank). Each card tests one idea; no two cards test the same thing. "
         "Only use facts the lesson teaches.\n\n"
         f"<lesson>\n{lesson.as_text()}\n</lesson>"
-        + guidance(age, note)
     )
 
 
-def make_cards(lesson: Lesson, topic: str, age: int, n: int, note: str = "") -> list[Flashcard]:
-    draft = _llm().with_structured_output(DeckDraft).invoke(cards_prompt(lesson, topic, age, n, note))
+def make_cards(lesson: Lesson, topic: str, age: int, n: int) -> list[Flashcard]:
+    draft = _llm().with_structured_output(DeckDraft).invoke(cards_prompt(lesson, topic, age, n))
     cards, fronts = [], set()
     for c in draft.cards:
         front, back = c.front.strip(), c.back.strip()
