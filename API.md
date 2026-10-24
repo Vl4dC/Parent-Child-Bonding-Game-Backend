@@ -39,7 +39,7 @@ whether it is durable. Neither calls an authentication provider.
 502: generation failure. 503: storage unavailable, generation or an optional feature disabled.
 There are no account-authentication 401 responses. Errors omit raw submitted values and secrets.
 
-All `/api/` and `/auth/` responses retain no-store/no-cache and no-referrer headers. CORS keeps
+All `/api/` responses retain no-store/no-cache and no-referrer headers. CORS keeps
 exact origins and allows Content-Type, X-Player-ID, Idempotency-Key and workflow receipt headers;
 legacy Authorization headers remain allowed but ignored. Cookie credentials remain disabled.
 

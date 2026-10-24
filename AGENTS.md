@@ -50,8 +50,9 @@ or the explicitly synthetic demo fixtures. Report implemented behavior, checks, 
 ## Unified platform
 
 Read docs/API_PLATFORM.md and docs/DATABASE.md. Generation engines live in learning_service/;
-there is one app factory, one root lockfile, and one test tree. Data routes use the selected player partition
-and a request-local unit of work; no caller identity is verified. Keep api_private out of exposed Supabase schemas; it contains answer keys.
+there is one app factory, one root lockfile, and one test tree. Data routes use the selected player
+partition and a request-local unit of work; no caller identity is verified. Keep api_private out of
+exposed Supabase schemas; it contains answer keys.
 Use new migrations rather than editing already-applied SQL. Never run destructive test fixtures
 against a hosted/shared database. TEST_DATABASE_URL must name a disposable database ending in _test.
 Keep the original learning-service/static artifacts unchanged under backend-only requests.

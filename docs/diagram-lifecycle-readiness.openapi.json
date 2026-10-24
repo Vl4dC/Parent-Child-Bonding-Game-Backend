@@ -28,11 +28,6 @@
         ],
         "summary": "Create Template",
         "operationId": "create_template_api_diagram_assembly_templates_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -44,6 +39,19 @@
               "maxLength": 128,
               "title": "Idempotency-Key"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -66,9 +74,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified session required"
           },
           "404": {
             "description": "Source/race absent or access denied"
@@ -95,11 +100,6 @@
         ],
         "summary": "Template",
         "operationId": "template_api_diagram_assembly_templates__template_id__get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "template_id",
@@ -111,6 +111,19 @@
               "maxLength": 128,
               "title": "Template Id"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -123,9 +136,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified session required"
           },
           "404": {
             "description": "Source/race absent or access denied"
@@ -152,11 +162,6 @@
         ],
         "summary": "Create Race",
         "operationId": "create_race_api_diagram_assembly_races_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -168,6 +173,19 @@
               "maxLength": 128,
               "title": "Idempotency-Key"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -190,9 +208,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified session required"
           },
           "404": {
             "description": "Source/race absent or access denied"
@@ -219,11 +234,6 @@
         ],
         "summary": "Race",
         "operationId": "race_api_diagram_assembly_races__race_id__get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "race_id",
@@ -235,6 +245,19 @@
               "maxLength": 128,
               "title": "Race Id"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -247,9 +270,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified session required"
           },
           "404": {
             "description": "Source/race absent or access denied"
@@ -276,11 +296,6 @@
         ],
         "summary": "Current Race",
         "operationId": "current_race_api_diagram_assembly_rooms__room_id__race_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "room_id",
@@ -292,6 +307,19 @@
               "maxLength": 128,
               "title": "Room Id"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -304,9 +332,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified session required"
           },
           "404": {
             "description": "Source/race absent or access denied"
@@ -333,11 +358,6 @@
         ],
         "summary": "Start",
         "operationId": "start_api_diagram_assembly_races__race_id__start_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "race_id",
@@ -360,6 +380,19 @@
               "maxLength": 128,
               "title": "Idempotency-Key"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -382,9 +415,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified session required"
           },
           "404": {
             "description": "Source/race absent or access denied"
@@ -411,11 +441,6 @@
         ],
         "summary": "Management",
         "operationId": "management_api_diagram_assembly_rooms__room_id__management_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "room_id",
@@ -427,6 +452,19 @@
               "maxLength": 128,
               "title": "Room Id"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -439,9 +477,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified session required"
           },
           "404": {
             "description": "Source/race absent or access denied"
@@ -468,11 +503,6 @@
         ],
         "summary": "Board",
         "operationId": "board_api_diagram_assembly_races__race_id__board_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "race_id",
@@ -484,6 +514,19 @@
               "maxLength": 128,
               "title": "Race Id"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -496,9 +539,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified session required"
           },
           "404": {
             "description": "Source/race absent or access denied"
@@ -525,11 +565,6 @@
         ],
         "summary": "Study",
         "operationId": "study_api_diagram_assembly_races__race_id__study_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "race_id",
@@ -541,6 +576,19 @@
               "maxLength": 128,
               "title": "Race Id"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -553,9 +601,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified session required"
           },
           "404": {
             "description": "Source/race absent or access denied"
@@ -582,11 +627,6 @@
         ],
         "summary": "Placements",
         "operationId": "placements_api_diagram_assembly_races__race_id__placements_put",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "race_id",
@@ -609,6 +649,19 @@
               "maxLength": 128,
               "title": "Idempotency-Key"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -631,9 +684,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified session required"
           },
           "404": {
             "description": "Source/race absent or access denied"
@@ -660,11 +710,6 @@
         ],
         "summary": "Finish",
         "operationId": "finish_api_diagram_assembly_races__race_id__finish_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "race_id",
@@ -687,6 +732,19 @@
               "maxLength": 128,
               "title": "Idempotency-Key"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -709,9 +767,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified session required"
           },
           "404": {
             "description": "Source/race absent or access denied"
@@ -738,11 +793,6 @@
         ],
         "summary": "Forfeit",
         "operationId": "forfeit_api_diagram_assembly_races__race_id__forfeit_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "race_id",
@@ -765,6 +815,19 @@
               "maxLength": 128,
               "title": "Idempotency-Key"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -787,9 +850,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified session required"
           },
           "404": {
             "description": "Source/race absent or access denied"
@@ -816,11 +876,6 @@
         ],
         "summary": "Results",
         "operationId": "results_api_diagram_assembly_races__race_id__results_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "race_id",
@@ -832,6 +887,19 @@
               "maxLength": 128,
               "title": "Race Id"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -844,9 +912,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified session required"
           },
           "404": {
             "description": "Source/race absent or access denied"
@@ -873,11 +938,6 @@
         ],
         "summary": "Review",
         "operationId": "review_api_diagram_assembly_races__race_id__review_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "race_id",
@@ -889,6 +949,19 @@
               "maxLength": 128,
               "title": "Race Id"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -901,9 +974,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified session required"
           },
           "404": {
             "description": "Source/race absent or access denied"
@@ -930,11 +1000,6 @@
         ],
         "summary": "Cancel",
         "operationId": "cancel_api_diagram_assembly_races__race_id__cancel_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "race_id",
@@ -957,6 +1022,19 @@
               "maxLength": 128,
               "title": "Idempotency-Key"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -979,9 +1057,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified session required"
           },
           "404": {
             "description": "Source/race absent or access denied"
@@ -1881,12 +1956,6 @@
           "solution"
         ],
         "title": "Review"
-      }
-    },
-    "securitySchemes": {
-      "HTTPBearer": {
-        "type": "http",
-        "scheme": "bearer"
       }
     }
   }

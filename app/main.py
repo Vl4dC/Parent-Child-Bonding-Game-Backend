@@ -93,10 +93,10 @@ def create_app(
         )
 
     @app.middleware("http")
-    async def no_auth_cache(request: Request, call_next):
+    async def no_api_cache(request: Request, call_next):
         response = await call_next(request)
         response.headers["X-Request-ID"] = secrets.token_hex(12)
-        if request.url.path.startswith(("/auth/", "/api/")):
+        if request.url.path.startswith("/api/"):
             response.headers["Cache-Control"] = "no-store"
             response.headers["Pragma"] = "no-cache"
             response.headers["Referrer-Policy"] = "no-referrer"

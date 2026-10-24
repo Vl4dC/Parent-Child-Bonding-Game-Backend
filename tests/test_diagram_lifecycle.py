@@ -149,16 +149,8 @@ def test_late_host_has_cancel_only_management_not_content(game):
     client, _, app, _, tokens, _ = game
     _, race, room = setup(game)
     start(game, race)
-    original = app.state.verify_identity
     uid = "00000000-0000-4000-8000-000000000003"
-
-    async def identity(request, token):
-        if token == "synthetic-late-host":
-            return {"id": uid, "email": None, "user_metadata": {}}
-        return await original(request, token)
-
-    app.state.verify_identity = identity
-    third = {"Authorization": "Bearer synthetic-late-host"}
+    third = {"X-Player-ID": uid}
     current = client.post(
         "/api/rooms/join",
         json={"code": room["code"], "display_name": "Later player"},
