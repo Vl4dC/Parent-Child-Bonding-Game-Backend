@@ -15,8 +15,9 @@ appendices and a separate OpenAPI supplement. Learner approval remains a separat
 
 ## Added endpoints
 
-All paths below start with `/api/quiz/{quiz_id}` and require a verified Bearer session. Passing
-another account's ID returns 404; rooms, account labels and family display names grant no access.
+All paths below start with `/api/quiz/{quiz_id}` and work without login or tokens. Optional
+X-Player-ID selects the state partition; a mismatched partition returns 404, but callers can freely
+select another UUID. Player selection is not authentication or account privacy.
 
 | Method | Suffix | Behavior |
 | --- | --- | --- |
@@ -38,7 +39,7 @@ follow-ups remain in the separate AI workflow; `/retry` deliberately reuses exis
 
 ## Identity, storage and HTTP behavior
 
-Routes use the existing verified `api_context` and owner-scoped PostgreSQL unit of work. The
+Routes use the existing player-scoped `api_context` and owner-scoped PostgreSQL unit of work. The
 in-memory adapter remains explicit development/test behavior. Private keys remain in the private
 schema; it must not be exposed through the Supabase Data API. No cookie session or new credential
 store is introduced. All responses use the existing no-store/no-referrer headers.
@@ -172,7 +173,7 @@ is retained, not independently fact-validated. Revision counts track the correct
 question-set ID is the authoritative immutable version reference.
 
 Approve with `{"expected_question_set_id":"CURRENT_SNAPSHOT_ID","confirmed":true}`. A stale
-snapshot returns 409. Approval records verified owner ID, server time and snapshot ID; repeated
+snapshot returns 409. Approval records selected player ID, server time and snapshot ID; repeated
 approval is stable. A correction resets approval. This is owner confirmation only, not automated
 fact checking, child-safety verification or an independent assessor. Practice remains formative even
 when approved; the separate solo tournament review/scoring contract is unchanged.

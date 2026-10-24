@@ -6,17 +6,15 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, SecretStr, field_validator
 
 from app.approval_service import ApprovalService
-from app.models import User
+from app.player import player_id
 
 router = APIRouter(
     tags=["Learner approval"],
     responses={
-        401: {"description": "Verified session required"},
-        403: {"description": "Email, request-specific authority, or proof rejected"},
+        403: {"description": "Request-specific authority or decision proof rejected"},
         404: {"description": "Request not found or not authorized"},
         409: {"description": "Stale state or conflicting retry"},
         410: {"description": "Request receipt expired"},
@@ -24,7 +22,6 @@ router = APIRouter(
         503: {"description": "Approval disabled or storage unavailable"},
     },
 )
-security = HTTPBearer(auto_error=False)
 Key = Annotated[str, Header(alias="Idempotency-Key", min_length=8, max_length=128)]
 CreationKey = Annotated[str, Header(alias="Idempotency-Key", min_length=32, max_length=128)]
 Receipt = Annotated[
@@ -109,26 +106,25 @@ async def public_service(request: Request):
 
 async def guardian(
     request: Request,
-    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)],
+    owner: Annotated[str, Depends(player_id)],
+    guardian_email: Annotated[
+        EmailStr, Query(description="Mailbox filter; supplied by the caller, not verified.")
+    ],
 ):
     result = service(request)
     client = request.client.host if request.client else "unknown"
     await asyncio.to_thread(result.reserve, "guardian-client:" + client)
-    if credentials is None or credentials.scheme.lower() != "bearer":
-        raise HTTPException(401, "Sign in to continue.")
-    raw = await request.app.state.verify_identity(request, credentials.credentials)
-    try:
-        user = User.model_validate(raw)
-    except ValueError:
-        raise HTTPException(502, "Authentication returned an invalid identity.") from None
-    if not user.email or not user.email_confirmed_at:
-        raise HTTPException(403, "A verified guardian email is required.")
-    await asyncio.to_thread(result.reserve, "guardian:" + str(user.id), 60)
-    return result, str(user.id), user.email.casefold()
+    await asyncio.to_thread(result.reserve, "guardian:" + owner, 60)
+    return result, owner, str(guardian_email).casefold()
 
 
-@router.post("/auth/registration/learners", response_model=RegistrationAccepted, status_code=202)
-async def register(
+@router.post(
+    "/api/registration/learners",
+    response_model=RegistrationAccepted,
+    status_code=202,
+    summary="Request learner approval",
+)
+async def request_approval(
     body: RegistrationInput,
     request: Request,
     key: CreationKey,
@@ -139,7 +135,7 @@ async def register(
     return await asyncio.to_thread(approval.create, payload, key, request.state.approval_client)
 
 
-@router.get("/auth/registration/requests/{request_id}", response_model=RegistrationStatus)
+@router.get("/api/registration/requests/{request_id}", response_model=RegistrationStatus)
 async def status(
     request_id: UUID,
     receipt: Receipt,
@@ -149,7 +145,7 @@ async def status(
 
 
 @router.post(
-    "/auth/registration/requests/{request_id}/resend",
+    "/api/registration/requests/{request_id}/resend",
     response_model=ApprovalMessage,
     status_code=202,
 )

@@ -19,7 +19,7 @@ from tests.learning.test_visual_recall import LEAF, visual
 from tests.learning.test_visuals import request as visual_request
 from tests.learning.test_weakness import request as remedial_request
 
-PARENT = "00000000-0000-4000-8000-000000000001"  # the demo parent's id (app/demo.py)
+PARENT = "00000000-0000-4000-8000-000000000001"  # default player partition
 OK = Verdict(ok=True)
 BAD = Verdict(ok=False, category="violence", reason="graphic")
 BLOCKED = AgeBlocked("violence").message

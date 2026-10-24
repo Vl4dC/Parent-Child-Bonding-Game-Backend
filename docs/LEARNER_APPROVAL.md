@@ -5,6 +5,10 @@ learning safety changes). No frontend file is changed. This document supplements
 contracts; it does not replace their text. These routes record a pending request and a guardian
 decision. **They never create or activate a learner, assign a family link, or grant learning access.**
 
+The API no longer authenticates callers. Guardian mailbox and player UUID are caller-selected,
+so this workflow does not establish verified identity or legal consent. Request receipts, email
+proofs and operator-issued decision grants remain workflow checks, not login/session authentication.
+
 ## Availability and configuration
 
 The feature is disabled by default. All five routes return 503 while disabled. To enable it in a
@@ -23,18 +27,18 @@ configured only for the explicit worker, separately from Supabase confirmation e
 
 ## Routes
 
-| Method and path | Authorization | Result |
+| Method and path | Workflow inputs | Result |
 | --- | --- | --- |
-| POST `/auth/registration/learners` | Public intake; creation idempotency key required | 202 with request ID, private status receipt and queued-request message |
-| GET `/auth/registration/requests/{id}` | `X-Registration-Receipt` | Minimal state/version/expiry; no guardian identity, proof or learner Auth ID |
-| POST `/auth/registration/requests/{id}/resend` | Receipt plus idempotency key | 202; queues a replacement notification and supersedes earlier proofs |
-| GET `/api/guardian/registration-requests` | Verified Supabase Bearer session and confirmed email | Paginated requests addressed to that verified email |
-| POST `/api/guardian/registration-requests/{id}/decision` | Same verified identity, request-specific authority grant, current proof and idempotency key | Approved/declined record, always `activated: false` |
+| POST `/api/registration/learners` | Public intake; creation idempotency key required | 202 with request ID, private status receipt and queued-request message |
+| GET `/api/registration/requests/{id}` | `X-Registration-Receipt` | Minimal state/version/expiry; no guardian identity, proof or learner Auth ID |
+| POST `/api/registration/requests/{id}/resend` | Receipt plus idempotency key | 202; queues a replacement notification and supersedes earlier proofs |
+| GET `/api/guardian/registration-requests` | guardian_email query filter; optional X-Player-ID | Paginated requests matching the unverified email filter |
+| POST `/api/guardian/registration-requests/{id}/decision` | guardian_email query filter, selected player, request authority grant, proof and idempotency key | Approved/declined record, always `activated: false` |
 
 All responses use existing no-store/no-referrer behavior. Errors omit submitted secrets. New
 headers are added to the existing exact-origin CORS policy without enabling cookies or wildcard
 origins. `Retry-After` and `X-Request-ID` are exposed to clients. Status receipts are not Auth
-sessions and cannot authorize `/api/me/profile` or any other owned-data route.
+sessions; all learning/profile routes now work without account authentication.
 
 ### Create a request
 
@@ -91,10 +95,10 @@ are not interpreted directly by this module. Limits are not proof against distri
 
 ### Guardian review and decision
 
-List with `after` and `limit` (1–50, default 20). Only the verified session's confirmed email can
-match a request. Results contain learner display name/year and `can_decide`, but never proofs.
+List with `guardian_email`, `after` and `limit` (1–50, default 20). The email is a caller-supplied
+filter and is not verified. Optional X-Player-ID selects the player for request-authority checks. Results contain learner display name/year and `can_decide`, but never proofs.
 Knowing a request ID, selecting a parent label, or controlling the destination mailbox alone does
-not authorize approval. `user_metadata.account_type` is deliberately ignored for authorization.
+not authorize approval. There is no account metadata or confirmed-email check.
 
 The decision body is:
 
@@ -107,13 +111,14 @@ The decision body is:
 ```
 
 `decline` is also accepted. The worker's actual proof is a 64-character private value. Submit it in
-the POST body, not the URL. Require a Bearer session, an 8–128 character `Idempotency-Key`, and
+the POST body, not the URL. Supply guardian_email as a query filter, optional X-Player-ID,
+an 8–128 character `Idempotency-Key`, and
 a trusted, unexpired authority grant bound to this request and guardian UUID. Version changes,
 terminal/expired state and conflicting replays return 409; wrong/superseded proof or absent authority
 returns 403; another recipient's request returns 404. A successful exact retry returns the saved
 response while the guardian remains authorized. Concurrent approve/decline produces one winner.
 
-Approval records the decision and verified actor, increments version and returns `activated: false`.
+Approval records the decision and selected player UUID, increments version and returns `activated: false`.
 No password, Auth account, session, family membership or permission is produced. There is no
 activation endpoint yet. A GET or email link never approves a request.
 
@@ -126,7 +131,7 @@ can record an expiring grant (default one hour, maximum remaining request lifeti
 
 ```sh
 uv run python -m app.approval_admin \
-  --request-id REQUEST_UUID --guardian-id VERIFIED_GUARDIAN_UUID \
+  --request-id REQUEST_UUID --guardian-id SELECTED_PLAYER_UUID \
   --evidence-reference OPAQUE_REVIEW_CASE_ID --lifetime-seconds 3600
 ```
 
@@ -182,11 +187,11 @@ part of this implementation.
 
 ## Verification
 
-The added tests cover verified-email isolation, request-specific authority, forged-role rejection,
+The tests cover unverified mailbox filtering, request-specific authority, receipt/proof rejection,
 receipt isolation/expiry, unknown-field/secret-safe validation, idempotent and conflicting retries,
 resend cooldown/proof rotation, guardian pagination, concurrent create/approve/decline, PostgreSQL
 permissions and restart persistence, SMTP retry/lease recovery, stale mail cancellation and database
-availability during sender execution. Supabase identity replies and email delivery are faked.
+availability during sender execution. Email delivery is faked; there are no Supabase identity calls.
 
 See `learner-approval.openapi.json` for the additive five-route schema. The existing OpenAPI snapshot
 excludes the removed login/signup/session routes; runtime `/openapi.json` includes approval routes.

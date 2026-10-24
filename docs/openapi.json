@@ -1850,16 +1850,10 @@
         "title": "VisualsOut",
         "type": "object"
       }
-    },
-    "securitySchemes": {
-      "HTTPBearer": {
-        "scheme": "bearer",
-        "type": "http"
-      }
     }
   },
   "info": {
-    "description": "\nAuthenticated learn -> quiz -> flashcards API. Data persists in Supabase PostgreSQL; only the\nexplicit offline demo uses ephemeral storage. Authorize with a Bearer access token before trying data routes.\nModel generation is opt-in. The full contract is documented in docs/API_PLATFORM.md.\n\n## Try it in this order\n0. *(optional)* **Your book** - `POST /api/materials` with a PDF, or several photos of pages. Copy the material `id`.\n   Correct extracted text with `GET/PUT /api/materials/{id}/pages`, then confirm its revision with\n   `POST /api/materials/{id}/confirm`. In step 1 add `material_id` and say which part to study (a topic, `chapter 3`, or `pages 40-55`);\n   everything after that uses only what your pages say. `GET /api/materials/{material_id}/find` shows which\n   pages a request would use, without spending anything.\n1. **Learn** - `POST /api/lessons` with a topic and an age. Copy the lesson `id` from the response.\n2. *(optional)* `POST /api/lessons/{lesson_id}/visuals` draws the diagrams the lesson planned (once per lesson).\n   Send `ask` to get a picture of your own request.\n3. **Quiz** - `POST /api/lessons/{lesson_id}/quiz`. Copy the quiz `id`. Questions arrive *without* answers.\n4. `POST /api/quiz/{quiz_id}/check` once per question: `index` is the question number (from 0) and `choice`\n   the option number (from 0). The answer is revealed after you commit, and **only your first answer to a\n   question counts**.\n5. **Weak spots** - once you have at least one wrong answer:\n   `POST /api/quiz/{quiz_id}/followup` writes *different* questions on the same weak ideas, and\n   `POST /api/quiz/{quiz_id}/flashcards` makes cards of your mistakes.\n6. **Flashcards** - `POST /api/lessons/{lesson_id}/flashcards` (or the mistakes deck above), then\n   `POST /api/flashcards/{deck_id}/review` with `know` or `again` for the `next` card.\n\n## Good to know\n- **Slow calls:** anything that writes with the model takes 10-40 seconds. Swagger shows a spinner, then the duration.\n- **Pictures:** diagrams come back as complete HTML pages inside JSON (`html`, `visual_html`, `*_visual_html`),\n  which Swagger can't render. Fetch **`/view`** endpoints with your Authorization header and render the response in a sandbox. Never put tokens in URLs.\n- **Errors:** `404` unknown or unowned id, `409` nothing to practise yet (no wrong answers),\n  `413`/`415` upload too big or not a PDF/picture, `422` invalid input (or a request the book doesn't cover),\n  `502` the model call failed.\n- **Uploads:** PDFs are read locally for free; pictures (scans, photos) are read by the vision model,\n  with provider usage charges. Limits: 25 MB per file, 600 pages, 100 picture pages, 20 photos at once.\n- Long generation can use `/api/jobs` with an Idempotency-Key and a separately started worker.\n- Scored solo sets require explicit lesson and question review; no multiplayer tournament is claimed.\n",
+    "description": "\nPublic learn -> quiz -> flashcards API. No login or access token is required. Data persists in\nPostgreSQL; the explicit offline demo uses ephemeral storage. Optional X-Player-ID selects separate\nplayer state; absent headers share one default player. Player IDs are unverified and provide no privacy.\nModel generation is opt-in. The full contract is documented in docs/API_PLATFORM.md.\n\n## Try it in this order\n0. *(optional)* **Your book** - `POST /api/materials` with a PDF, or several photos of pages. Copy the material `id`.\n   Correct extracted text with `GET/PUT /api/materials/{id}/pages`, then confirm its revision with\n   `POST /api/materials/{id}/confirm`. In step 1 add `material_id` and say which part to study (a topic, `chapter 3`, or `pages 40-55`);\n   everything after that uses only what your pages say. `GET /api/materials/{material_id}/find` shows which\n   pages a request would use, without spending anything.\n1. **Learn** - `POST /api/lessons` with a topic and an age. Copy the lesson `id` from the response.\n2. *(optional)* `POST /api/lessons/{lesson_id}/visuals` draws the diagrams the lesson planned (once per lesson).\n   Send `ask` to get a picture of your own request.\n3. **Quiz** - `POST /api/lessons/{lesson_id}/quiz`. Copy the quiz `id`. Questions arrive *without* answers.\n4. `POST /api/quiz/{quiz_id}/check` once per question: `index` is the question number (from 0) and `choice`\n   the option number (from 0). The answer is revealed after you commit, and **only your first answer to a\n   question counts**.\n5. **Weak spots** - once you have at least one wrong answer:\n   `POST /api/quiz/{quiz_id}/followup` writes *different* questions on the same weak ideas, and\n   `POST /api/quiz/{quiz_id}/flashcards` makes cards of your mistakes.\n6. **Flashcards** - `POST /api/lessons/{lesson_id}/flashcards` (or the mistakes deck above), then\n   `POST /api/flashcards/{deck_id}/review` with `know` or `again` for the `next` card.\n\n## Good to know\n- **Slow calls:** anything that writes with the model takes 10-40 seconds. Swagger shows a spinner, then the duration.\n- **Pictures:** diagrams come back as complete HTML pages inside JSON (`html`, `visual_html`, `*_visual_html`),\n  which Swagger can't render. Fetch **`/view`** endpoints and render the response in a sandbox. Include X-Player-ID only when selecting a nondefault player.\n- **Child safety:** the learners are school students (10-18). Everything the model writes is written to rules\n  for the learner's age, then checked by a separate safety check before it is kept; what a learner types as a\n  topic or picture request is checked first. Anything unsuitable for the age is a friendly `422` that never\n  repeats it. A learner older than `AUDIENCE_MAX_AGE` (default 18) still gets the 18-and-under rules, because the\n  backend can't verify age. If the check itself can't run, young learners get a `502` and nothing is made.\n- **Errors:** `404` unknown or unowned id, `409` nothing to practise yet (no wrong answers),\n  `413`/`415` upload too big or not a PDF/picture, `422` invalid input (or a request the book doesn't cover,\n  or content held back as unsuitable for the learner's age), `502` the model call or the safety check failed\n  (safe to try again; the message never contains the provider's error text).\n- **Uploads:** PDFs are read locally for free; pictures (scans, photos) are read by the vision model,\n  with provider usage charges. Limits: 25 MB per file, 600 pages, 100 picture pages, 20 photos at once.\n- Long generation can use `/api/jobs` with an Idempotency-Key and a separately started worker.\n- Scored solo sets require explicit lesson and question review; no multiplayer tournament is claimed.\n",
     "title": "Family Learning API",
     "version": "0.2.0"
   },
@@ -1880,6 +1874,19 @@
               "title": "Deck Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -1892,9 +1899,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "401": {
-            "description": "Authentication required"
           },
           "404": {
             "content": {
@@ -1923,11 +1927,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Get a deck and its progress",
         "tags": [
           "Flashcards"
@@ -1974,6 +1973,19 @@
               "title": "Side",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -1986,9 +1998,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "401": {
-            "description": "Authentication required"
           },
           "404": {
             "content": {
@@ -2017,11 +2026,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "View a diagram card as a web page",
         "tags": [
           "Flashcards"
@@ -2061,6 +2065,19 @@
               ],
               "title": "Idempotency-Key"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -2100,9 +2117,6 @@
             },
             "description": "Successful Response"
           },
-          "401": {
-            "description": "Authentication required"
-          },
           "404": {
             "content": {
               "application/json": {
@@ -2130,11 +2144,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Mark a card known or still learning",
         "tags": [
           "Flashcards"
@@ -2156,6 +2165,19 @@
               "title": "Idempotency-Key",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -2179,9 +2201,6 @@
             },
             "description": "Successful Response"
           },
-          "401": {
-            "description": "Authentication required"
-          },
           "422": {
             "content": {
               "application/json": {
@@ -2199,11 +2218,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Submit Job",
         "tags": [
           "Generation jobs"
@@ -2223,14 +2237,24 @@
               "title": "Job Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
           "204": {
             "description": "Successful Response"
-          },
-          "401": {
-            "description": "Authentication required"
           },
           "422": {
             "content": {
@@ -2249,11 +2273,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Cancel Job",
         "tags": [
           "Generation jobs"
@@ -2271,6 +2290,19 @@
               "title": "Job Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -2283,9 +2315,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "401": {
-            "description": "Authentication required"
           },
           "422": {
             "content": {
@@ -2304,11 +2333,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Get Job",
         "tags": [
           "Generation jobs"
@@ -2372,9 +2396,6 @@
             },
             "description": "Successful Response"
           },
-          "401": {
-            "description": "Authentication required"
-          },
           "422": {
             "content": {
               "application/json": {
@@ -2402,14 +2423,24 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Explain a topic for an age",
         "tags": [
           "Learn"
+        ],
+        "parameters": [
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
         ]
       }
     },
@@ -2428,6 +2459,19 @@
               "title": "Lesson Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -2440,9 +2484,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "401": {
-            "description": "Authentication required"
           },
           "404": {
             "content": {
@@ -2471,11 +2512,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Get a lesson",
         "tags": [
           "Learn"
@@ -2494,6 +2530,19 @@
               "title": "Lesson Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -2517,9 +2566,6 @@
             },
             "description": "Successful Response"
           },
-          "401": {
-            "description": "Authentication required"
-          },
           "422": {
             "content": {
               "application/json": {
@@ -2537,11 +2583,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Approve Lesson",
         "tags": [
           "Review"
@@ -2560,6 +2601,19 @@
               "title": "Lesson Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -2572,9 +2626,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "401": {
-            "description": "Authentication required"
           },
           "422": {
             "content": {
@@ -2593,11 +2644,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Complete Lesson",
         "tags": [
           "Progress"
@@ -2619,6 +2665,19 @@
               "title": "Lesson Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -2650,9 +2709,6 @@
             },
             "description": "Successful Response"
           },
-          "401": {
-            "description": "Authentication required"
-          },
           "404": {
             "content": {
               "application/json": {
@@ -2690,11 +2746,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Create flashcards from a lesson",
         "tags": [
           "Flashcards"
@@ -2716,6 +2767,19 @@
               "title": "Lesson Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -2747,9 +2811,6 @@
             },
             "description": "Successful Response"
           },
-          "401": {
-            "description": "Authentication required"
-          },
           "404": {
             "content": {
               "application/json": {
@@ -2787,11 +2848,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Create a quiz from a lesson",
         "tags": [
           "Quiz"
@@ -2810,6 +2866,19 @@
               "title": "Lesson Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -2833,9 +2902,6 @@
             },
             "description": "Successful Response"
           },
-          "401": {
-            "description": "Authentication required"
-          },
           "422": {
             "content": {
               "application/json": {
@@ -2853,11 +2919,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Revise Lesson",
         "tags": [
           "Review"
@@ -2879,6 +2940,19 @@
               "title": "Lesson Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -2914,9 +2988,6 @@
             },
             "description": "Successful Response"
           },
-          "401": {
-            "description": "Authentication required"
-          },
           "404": {
             "content": {
               "application/json": {
@@ -2954,11 +3025,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Draw the lesson's visuals",
         "tags": [
           "Learn"
@@ -2989,6 +3055,19 @@
               "title": "Visual Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -3001,9 +3080,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "401": {
-            "description": "Authentication required"
           },
           "404": {
             "content": {
@@ -3032,11 +3108,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "View a lesson visual as a web page",
         "tags": [
           "Learn"
@@ -3063,6 +3134,19 @@
               ],
               "title": "Content-Length"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -3085,9 +3169,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "401": {
-            "description": "Authentication required"
           },
           "413": {
             "content": {
@@ -3136,11 +3217,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Upload a book or photos of pages",
         "tags": [
           "Your book"
@@ -3162,14 +3238,24 @@
               "title": "Material Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
           "204": {
             "description": "Successful Response"
-          },
-          "401": {
-            "description": "Authentication required"
           },
           "404": {
             "content": {
@@ -3198,11 +3284,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Remove an upload",
         "tags": [
           "Your book"
@@ -3222,6 +3303,19 @@
               "title": "Material Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -3234,9 +3328,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "401": {
-            "description": "Authentication required"
           },
           "404": {
             "content": {
@@ -3265,11 +3356,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Get an upload's details",
         "tags": [
           "Your book"
@@ -3288,6 +3374,19 @@
               "title": "Material Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -3311,9 +3410,6 @@
             },
             "description": "Successful Response"
           },
-          "401": {
-            "description": "Authentication required"
-          },
           "422": {
             "content": {
               "application/json": {
@@ -3331,11 +3427,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Confirm Material",
         "tags": [
           "Materials"
@@ -3370,6 +3461,19 @@
               "title": "Topic",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -3382,9 +3486,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "401": {
-            "description": "Authentication required"
           },
           "404": {
             "content": {
@@ -3413,11 +3514,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Which pages would a request use?",
         "tags": [
           "Your book"
@@ -3436,6 +3532,19 @@
               "title": "Material Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -3448,9 +3557,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "401": {
-            "description": "Authentication required"
           },
           "422": {
             "content": {
@@ -3469,11 +3575,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Material Pages",
         "tags": [
           "Materials"
@@ -3490,6 +3591,19 @@
               "title": "Material Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -3513,9 +3627,6 @@
             },
             "description": "Successful Response"
           },
-          "401": {
-            "description": "Authentication required"
-          },
           "422": {
             "content": {
               "application/json": {
@@ -3533,11 +3644,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Edit Pages",
         "tags": [
           "Materials"
@@ -3566,6 +3672,19 @@
               "title": "Revision",
               "type": "integer"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -3578,9 +3697,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "401": {
-            "description": "Authentication required"
           },
           "422": {
             "content": {
@@ -3599,11 +3715,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Material Revision",
         "tags": [
           "Materials"
@@ -3618,9 +3729,6 @@
           "204": {
             "description": "Successful Response"
           },
-          "401": {
-            "description": "Authentication required"
-          },
           "429": {
             "description": "Request or generation limit reached"
           },
@@ -3628,14 +3736,24 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Delete Own Data",
         "tags": [
           "Profile"
+        ],
+        "parameters": [
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
         ]
       }
     },
@@ -3653,9 +3771,6 @@
             },
             "description": "Successful Response"
           },
-          "401": {
-            "description": "Authentication required"
-          },
           "429": {
             "description": "Request or generation limit reached"
           },
@@ -3663,14 +3778,24 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Get Profile",
         "tags": [
           "Profile"
+        ],
+        "parameters": [
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
         ]
       },
       "put": {
@@ -3696,9 +3821,6 @@
             },
             "description": "Successful Response"
           },
-          "401": {
-            "description": "Authentication required"
-          },
           "422": {
             "content": {
               "application/json": {
@@ -3716,14 +3838,24 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Put Profile",
         "tags": [
           "Profile"
+        ],
+        "parameters": [
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
         ]
       }
     },
@@ -3741,9 +3873,6 @@
             },
             "description": "Successful Response"
           },
-          "401": {
-            "description": "Authentication required"
-          },
           "429": {
             "description": "Request or generation limit reached"
           },
@@ -3751,14 +3880,24 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Progress",
         "tags": [
           "Progress"
+        ],
+        "parameters": [
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
         ]
       }
     },
@@ -3777,6 +3916,19 @@
               "title": "Quiz Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -3789,9 +3941,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "401": {
-            "description": "Authentication required"
           },
           "404": {
             "content": {
@@ -3820,11 +3969,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Get a quiz",
         "tags": [
           "Quiz"
@@ -3843,6 +3987,19 @@
               "title": "Quiz Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -3853,9 +4010,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "401": {
-            "description": "Authentication required"
           },
           "422": {
             "content": {
@@ -3874,11 +4028,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "New Attempt",
         "tags": [
           "Quiz"
@@ -3900,6 +4049,19 @@
               "title": "Quiz Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -3939,9 +4101,6 @@
             },
             "description": "Successful Response"
           },
-          "401": {
-            "description": "Authentication required"
-          },
           "404": {
             "content": {
               "application/json": {
@@ -3969,11 +4128,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Answer a question",
         "tags": [
           "Quiz"
@@ -3995,6 +4149,19 @@
               "title": "Quiz Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -4031,9 +4198,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "401": {
-            "description": "Authentication required"
           },
           "404": {
             "content": {
@@ -4072,11 +4236,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Flashcards of my mistakes",
         "tags": [
           "Weak spots"
@@ -4098,6 +4257,19 @@
               "title": "Quiz Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -4132,9 +4304,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "401": {
-            "description": "Authentication required"
           },
           "404": {
             "content": {
@@ -4183,11 +4352,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "New quiz on my weak spots",
         "tags": [
           "Weak spots"
@@ -4234,6 +4398,19 @@
               "title": "Show",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -4246,9 +4423,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "401": {
-            "description": "Authentication required"
           },
           "404": {
             "content": {
@@ -4287,11 +4461,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "View a diagram question as a web page",
         "tags": [
           "Quiz"
@@ -4341,6 +4510,19 @@
               "title": "Limit",
               "type": "integer"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -4353,9 +4535,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "401": {
-            "description": "Authentication required"
           },
           "422": {
             "content": {
@@ -4374,11 +4553,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Resources",
         "tags": [
           "Resources"
@@ -4410,9 +4584,6 @@
             },
             "description": "Successful Response"
           },
-          "401": {
-            "description": "Authentication required"
-          },
           "422": {
             "content": {
               "application/json": {
@@ -4430,14 +4601,24 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Create Room",
         "tags": [
           "Private rooms"
+        ],
+        "parameters": [
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
         ]
       }
     },
@@ -4466,9 +4647,6 @@
             },
             "description": "Successful Response"
           },
-          "401": {
-            "description": "Authentication required"
-          },
           "422": {
             "content": {
               "application/json": {
@@ -4486,14 +4664,24 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Join Room",
         "tags": [
           "Private rooms"
+        ],
+        "parameters": [
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
         ]
       }
     },
@@ -4510,6 +4698,19 @@
               "title": "Room Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -4522,9 +4723,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "401": {
-            "description": "Authentication required"
           },
           "422": {
             "content": {
@@ -4543,11 +4741,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Snapshot",
         "tags": [
           "Private rooms"
@@ -4567,6 +4760,19 @@
               "title": "Room Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -4598,9 +4804,6 @@
             },
             "description": "Successful Response"
           },
-          "401": {
-            "description": "Authentication required"
-          },
           "422": {
             "content": {
               "application/json": {
@@ -4618,11 +4821,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Room Command",
         "tags": [
           "Private rooms"
@@ -4663,9 +4861,6 @@
             },
             "description": "Successful Response"
           },
-          "401": {
-            "description": "Authentication required"
-          },
           "404": {
             "content": {
               "application/json": {
@@ -4703,14 +4898,24 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Create a tournament from a lesson",
         "tags": [
           "Tournament"
+        ],
+        "parameters": [
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
         ]
       }
     },
@@ -4729,6 +4934,19 @@
               "title": "Tournament Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -4741,9 +4959,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "401": {
-            "description": "Authentication required"
           },
           "404": {
             "content": {
@@ -4772,11 +4987,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Get a tournament",
         "tags": [
           "Tournament"
@@ -4795,6 +5005,19 @@
               "title": "Tournament Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -4816,9 +5039,6 @@
             },
             "description": "Successful Response"
           },
-          "401": {
-            "description": "Authentication required"
-          },
           "422": {
             "content": {
               "application/json": {
@@ -4836,11 +5056,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Approve Tournament",
         "tags": [
           "Review"
@@ -4859,6 +5074,19 @@
               "title": "Tournament Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -4869,9 +5097,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "401": {
-            "description": "Authentication required"
           },
           "422": {
             "content": {
@@ -4890,11 +5115,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Review Tournament",
         "tags": [
           "Review"
@@ -4916,6 +5136,19 @@
               "title": "Tournament Id",
               "type": "string"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -4953,9 +5186,6 @@
             },
             "description": "Successful Response"
           },
-          "401": {
-            "description": "Authentication required"
-          },
           "404": {
             "content": {
               "application/json": {
@@ -4983,11 +5213,6 @@
             "description": "Storage or generation unavailable"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Submit all answers and get the score",
         "tags": [
           "Tournament"

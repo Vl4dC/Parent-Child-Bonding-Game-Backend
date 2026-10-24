@@ -1,9 +1,10 @@
 # Platform API contract
 
-All `/api/` endpoints require a verified Bearer access token. Objects belong to that verified user;
-passing another user's resource ID returns 404. No frontend or family relationship is inferred from
-account labels. Authenticated requests are limited per account per minute, including failed requests.
-All API responses are non-cacheable and carry an `X-Request-ID`.
+All `/api/` endpoints work without authentication. Optional `X-Player-ID` selects a UUID data
+partition; no header uses `00000000-0000-4000-8000-000000000001`. Requests are limited per selected
+player per minute. This is unverified state selection, not account isolation: anyone can choose
+another player's UUID. Gameplay membership, host actions, review and idempotency rules remain.
+All API responses are non-cacheable and carry an `X-Request-ID`. See [API.md](../API.md).
 
 Existing learning paths remain compatible except the explicit changes below. OpenAPI is generated
 from the actual routes and typed models at `/openapi.json`.
@@ -84,7 +85,7 @@ display preferences and grant no cosmetic ownership or purchases.
 
 The initial `/quiz` ID is an attempt with an immutable question-set reference. `/attempts` creates
 another attempt with the same questions and no answers recorded. Attempts are private to their owner;
-sharing an ID grants no access. Practice `/check` can be repeated for feedback, but later choices never
+selecting the same player UUID accesses the same state. Practice `/check` can be repeated for feedback, but later choices never
 replace the recorded first choice. Flashcard reviews should send `Idempotency-Key` and `expected_reviews` (the current review counter).
 Identical retries return their saved response; changed payloads or stale counters return 409. Each
 deck retains up to 1,000 review receipts. Legacy reviews without these fields remain accepted and
@@ -150,7 +151,7 @@ JSON bodies: 4 MiB. Multipart bodies: 61 MiB, including framing; each file 25 Mi
 including chunked or falsely declared requests. The generation workflow can return fewer reviewed
 questions than requested; inspect the returned count and dropped count.
 
-401: invalid/missing session. 403: forbidden host action. 404: absent or unowned record. 409: stale state,
+403: forbidden host action. 404: absent or unowned record. 409: stale state,
 review required, or conflicting replay. 413/415: size/type. 422: invalid request. 429: request, attempt,
 or concurrency limit. 502: sanitized provider failure. 503: storage unavailable or generation disabled.
 
@@ -158,7 +159,7 @@ or concurrency limit. 502: sanitized provider failure. 503: storage unavailable 
 
 Deleting material removes its derived lessons/revisions, quizzes, question sets, decks, completions,
 and associated jobs. `/me/data` removes owned application records and lobby membership without
-removing the Supabase Auth account. Minimal anti-abuse counters remain; no raw provider prompts,
+changing any external account. Minimal anti-abuse counters remain; no raw provider prompts,
 images, or extracted pages are retained in those counters. Original uploads/images are not retained
 by this API after extraction; extracted text persists until explicit deletion.
 

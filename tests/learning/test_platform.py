@@ -10,24 +10,24 @@ PARENT = "00000000-0000-4000-8000-000000000001"
 
 
 def child_headers(client):
-    return {"Authorization": "Bearer demo_child"}
+    return {"X-Player-ID": "00000000-0000-4000-8000-000000000002"}
 
 
 def approval():
     return {"expected_revision": 1, "confirmed": True}
 
 
-def test_every_data_route_needs_verified_identity(client):
-    client.headers.pop("Authorization")
-    for method, url, body in [
-        ("get", "/api/me/profile", None),
-        ("get", "/api/me/progress", None),
-        ("get", "/api/resources/lessons", None),
-        ("post", "/api/lessons", {"topic": "x", "age": 10}),
-        ("post", "/api/rooms", {"display_name": "A"}),
+def test_data_routes_work_without_authentication(client):
+    client.headers.pop("X-Player-ID")
+    for method, url, body, expected in [
+        ("get", "/api/me/profile", None, 200),
+        ("get", "/api/me/progress", None, 200),
+        ("get", "/api/resources/lessons", None, 200),
+        ("post", "/api/lessons", {"topic": "networks", "age": 10}, 201),
+        ("post", "/api/rooms", {"display_name": "A"}, 201),
     ]:
         response = getattr(client, method)(url, **({"json": body} if body else {}))
-        assert response.status_code == 401
+        assert response.status_code == expected, response.text
 
 
 def test_profile_validation_and_ownership(client):
@@ -413,12 +413,12 @@ def test_closed_rooms_reject_readiness_but_can_be_left(client):
     assert client.get(f"/api/rooms/{room['id']}").status_code == 404
 
 
-def test_api_schema_declares_bearer_auth_for_every_data_operation(client):
+def test_api_schema_has_no_auth_requirement_for_data_operations(client):
     spec = client.get("/openapi.json").json()
     for path, operations in spec["paths"].items():
         if path.startswith("/api/"):
             for operation in operations.values():
-                assert operation.get("security"), path
+                assert not operation.get("security"), path
 
 
 def test_ready_reports_adapter_durability(client, repository):

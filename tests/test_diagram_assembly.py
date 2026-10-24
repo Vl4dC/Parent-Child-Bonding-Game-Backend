@@ -77,8 +77,8 @@ def game(repository, monkeypatch):
     app.state.diagram_clock_ms = lambda: now[0]
     with TestClient(app) as client:
         tokens = {
-            "parent": {"Authorization": "Bearer demo_parent"},
-            "child": {"Authorization": "Bearer demo_child"},
+            "parent": {"X-Player-ID": "00000000-0000-4000-8000-000000000001"},
+            "child": {"X-Player-ID": "00000000-0000-4000-8000-000000000002"},
         }
         yield client, repository, app, now, tokens, calls
 
@@ -481,10 +481,10 @@ def test_raw_database_access_and_restart(game):
         restarted.close()
 
 
-def test_feature_defaults_off_and_unauthenticated_requests_fail():
+def test_feature_defaults_off_without_authentication():
     app = create_app(Settings(app_env="test", demo_mode=True, _env_file=None))
     with TestClient(app) as client:
-        assert client.get("/api/diagram-assembly/races/missing").status_code == 401
+        assert client.get("/api/diagram-assembly/races/missing").status_code == 503
         assert (
             client.get(
                 "/api/diagram-assembly/races/missing", headers={"Authorization": "Bearer bogus"}
@@ -587,19 +587,7 @@ def test_equal_label_cards_are_interchangeable(game):
 def test_late_joiner_is_not_added_to_captured_race(game):
     client, _, app, _, tokens, _ = game
     _, race, room = setup(game)
-    original = app.state.verify_identity
-
-    async def verified(request, token):
-        if token == "synthetic-third-player":
-            return {
-                "id": "00000000-0000-4000-8000-000000000003",
-                "email": None,
-                "user_metadata": {},
-            }
-        return await original(request, token)
-
-    app.state.verify_identity = verified
-    third = {"Authorization": "Bearer synthetic-third-player"}
+    third = {"X-Player-ID": "00000000-0000-4000-8000-000000000003"}
     assert (
         client.post(
             "/api/rooms/join", json={"code": room["code"], "display_name": "Third"}, headers=third

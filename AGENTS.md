@@ -18,16 +18,16 @@ The product plan is a backlog, not proof of implemented features. Keep changes t
 ## Invariants
 
 - Use the `create_app` factory and run commands from this repository's root.
-- Supabase verifies identity; never trust an unverified decoded JWT or account-type metadata.
-- Pass each user's Bearer token explicitly; the shared HTTP pool must not hold shared user sessions.
-- Demo mode stays off by default and cannot start in production. It uses fixed synthetic actors
-  and process-local data, without passwords or session management.
-- Login/signup and session lifecycle belong to the client/provider integration. Keep backend
-  identity verification and ownership checks; do not reintroduce account/session endpoints.
+- The FastAPI API has no login/signup or authentication requirement, by explicit product request.
+- Optional X-Player-ID selects a UUID data partition; absent headers use the shared default player.
+  This is not a verified identity or an access-control boundary. Never describe it as one.
+- Preserve request-local transactions, gameplay membership/host rules, expiry and idempotency.
+- Demo mode stays off by default and cannot start in production. It controls ephemeral storage only.
+- Do not reintroduce account/session endpoints, token checks, or Supabase Auth configuration.
 - `learner` is the child account label. Neither this label nor a parent label proves consent or linkage.
-- Every future data endpoint needs its own ownership/authorization rules.
+- Keep data grouped by the selected player and preserve existing gameplay rules.
 - Keep secret values out of validation errors, logs, examples, commits, and URLs.
-- Preserve no-store auth responses, exact CORS origins, and rejection of service-role keys.
+- Preserve no-store API responses and exact CORS origins.
 - Do not configure SMTP, paid services, deploy, or merge other repos merely because a plan lists them.
 
 ## Delivery
@@ -50,8 +50,8 @@ or the explicitly synthetic demo fixtures. Report implemented behavior, checks, 
 ## Unified platform
 
 Read docs/API_PLATFORM.md and docs/DATABASE.md. Generation engines live in learning_service/;
-there is one app factory, one root lockfile, and one test tree. All /api routes use verified identity
-and an owned unit of work. Keep api_private out of exposed Supabase schemas; it contains answer keys.
+there is one app factory, one root lockfile, and one test tree. Data routes use the selected player partition
+and a request-local unit of work; no caller identity is verified. Keep api_private out of exposed Supabase schemas; it contains answer keys.
 Use new migrations rather than editing already-applied SQL. Never run destructive test fixtures
 against a hosted/shared database. TEST_DATABASE_URL must name a disposable database ending in _test.
 Keep the original learning-service/static artifacts unchanged under backend-only requests.

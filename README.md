@@ -15,20 +15,21 @@ uv run uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000 --no-a
 ```
 
 Generation defaults off, so this command makes no model calls. Demo storage is in memory, resets
-on restart, and cannot be used in production. Select a fixed synthetic actor with the local-only
-Bearer token `demo_parent` or `demo_child`; no login, password, or session endpoint is involved.
-These tokens are public demo fixtures, never real credentials, and are rejected in Supabase mode.
+on restart, and cannot be used in production. API calls need no login, token or auth configuration.
 
 ```sh
-curl http://127.0.0.1:8000/api/me/profile \
-  -H 'Authorization: Bearer demo_parent'
+curl http://127.0.0.1:8000/api/me/profile
 ```
+
+Optional `X-Player-ID: <UUID>` selects separate player state for profiles, practice and multiplayer.
+Without it, requests share player `00000000-0000-4000-8000-000000000001`. The ID is caller-selected
+and unverified: anyone can select the same ID and access or delete that partition's data.
 
 ## Supabase and durable storage
 
 ```sh
 cp .env.example .env
-# Configure Supabase identity verification, DATABASE_URL, and exact CORS origins.
+# Configure DATABASE_URL and exact CORS origins. No Supabase Auth keys are needed.
 uv sync --locked
 uv run uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000 --no-access-log
 ```
@@ -38,21 +39,21 @@ starting data routes. Migration/hosted database changes are explicit operator ac
 startup never applies migrations. See [database setup and tests](docs/DATABASE.md).
 
 `DATABASE_URL` is a private, server-only PostgreSQL credential with ownership of the migration
-objects. Request transactions switch to `authenticated` and set verified identity claims so RLS
-applies. Job claiming and quota reservation use server-only database functions. No service-role API
-key is added to the authentication flow. Never put the database credential in browser configuration.
+objects. Request transactions retain the existing `authenticated` SQL role and player-ID claims
+for partitioned storage; this does not authenticate callers. Job claiming and quota reservation
+use server-only database functions. Never put the database credential in browser configuration.
 
 **Keep `api_private` outside Supabase's exposed Data API schemas.** It stores private text and
-answer keys. Application data is accessed through the authenticated FastAPI routes.
+answer keys. Application data is accessed through the public FastAPI routes.
 
-Login, signup, email verification, password recovery, refresh and logout belong to the client
-integration with Supabase; this backend no longer exposes account/session endpoints. Send the
-provider-issued access token as `Authorization: Bearer <access_token>` to protected data routes.
-Supabase still verifies each real identity; ownership and access controls are unchanged.
+FastAPI has no password login, registration, session management, Bearer checks or authentication
+provider calls. Swagger has no Authorize button or security locks. Frontend login/register remains
+outside this repository and is unchanged. Learner approval keeps its request receipts and decision
+proofs as a separate workflow; guardian mailbox filters are supplied by the caller and unverified.
 
 ## API and documentation
 
-- [API.md](API.md): identity boundary plus links to the full platform contract.
+- [API.md](API.md): public API and player-state contract plus links to the full platform contract.
 - [Platform API](docs/API_PLATFORM.md): learning, review, attempts, profiles, jobs, progress, rooms.
 - [Game backend roadmap](docs/GAME_BACKEND_ROADMAP.md): pending Forbidden Clues/heads-up actions and tests.
 - [Server performance](docs/SERVER_PERFORMANCE.md): pools, query optimization, worker resource use, and local measurements.
@@ -134,7 +135,7 @@ changes, rewards, ranking or multiplayer. Existing production/generation contrac
 ## Learner approval workflow — 24 October 2026 addition
 
 An opt-in pending-request workflow now supports private status receipts, bounded notification
-resends and verified, request-authorized guardian decisions. See
+resends and request-specific guardian decisions with caller-selected player/mailbox context. See
 [learner approval](docs/LEARNER_APPROVAL.md) for the five endpoints, migration 006, explicit mail
 worker and authority-review bridge. This records decisions only; it does not activate accounts,
 create Supabase accounts or establish mandatory app-wide guardian consent. Feature defaults

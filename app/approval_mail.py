@@ -37,7 +37,7 @@ class SMTPSender:
             "A learner registration request is waiting for review.\n"
             f"Request ID: {message['request_id']}\n"
             f"One-time approval proof: {message['proof']}\n\n"
-            "Sign in with your verified guardian account to review it. "
+            "Review using the request ID, recipient email and current approval proof. "
             "Mailbox access alone does not establish guardian authority. "
             "Ignore this email if you did not expect it. "
             "Approval does not activate a learner account.\n"

@@ -3,22 +3,19 @@ import secrets
 import threading
 from contextlib import asynccontextmanager
 
-import httpx
 import psycopg
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import Settings
-from app.demo import verify_demo_identity
 from app.http_limits import BodyLimit
 from app.repository import MemoryRepository, PostgresRepository
 
 
 def create_app(
     settings: Settings | None = None,
-    transport: httpx.AsyncBaseTransport | None = None,
     repository=None,
 ):
     settings = settings or Settings()
@@ -38,18 +35,7 @@ def create_app(
         if settings.app_env == "production" and not repository.durable:
             raise RuntimeError("Production requires PostgreSQL persistence")
         try:
-            if settings.demo_mode:
-                yield
-                return
-            # No shared user sessions: each call explicitly supplies its own bearer token.
-            async with httpx.AsyncClient(
-                base_url=f"{str(settings.supabase_url).rstrip('/')}/auth/v1/",
-                headers={"apikey": settings.supabase_publishable_key.get_secret_value()},
-                timeout=15,
-                transport=transport,
-            ) as client:
-                app.state.auth = client
-                yield
+            yield
         finally:
             if owns_repository and hasattr(repository, "close"):
                 await asyncio.to_thread(repository.close)
@@ -74,7 +60,7 @@ def create_app(
         allow_origins=settings.cors_origins,
         allow_credentials=False,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
-        allow_headers=["Authorization", "Content-Type"],
+        allow_headers=["Content-Type", "X-Player-ID", "Authorization"],
     )
 
     @app.exception_handler(RequestValidationError)
@@ -116,37 +102,9 @@ def create_app(
             response.headers["Referrer-Policy"] = "no-referrer"
         return response
 
-    async def verify_identity(request: Request, token: str) -> dict:
-        if settings.demo_mode:
-            return verify_demo_identity(token)
-        if token.startswith("demo_"):
-            raise HTTPException(401, "Demo identities are not accepted in Supabase mode.")
-        # Verify only: login, signup and session management belong to the identity provider.
-        # Pass identity per request; the shared pool never stores a user's session.
-        try:
-            result = await request.app.state.auth.get(
-                "user", headers={"Authorization": f"Bearer {token}"}
-            )
-        except httpx.RequestError:
-            raise HTTPException(
-                503, "Authentication is temporarily unavailable. Try again."
-            ) from None
-        if result.is_error:
-            if result.status_code == 429:
-                raise HTTPException(429, "Too many attempts. Please wait before trying again.")
-            if result.status_code >= 500:
-                raise HTTPException(503, "Authentication is temporarily unavailable. Try again.")
-            raise HTTPException(401, "Invalid or expired access token.")
-        try:
-            return result.json()
-        except ValueError:
-            raise HTTPException(502, "Unexpected authentication response.") from None
-
-    app.state.verify_identity = verify_identity
-
     @app.get("/health")
     async def health():
-        return {"status": "ok", "auth_mode": "demo" if settings.demo_mode else "supabase"}
+        return {"status": "ok"}
 
     @app.get("/ready")
     async def ready():
@@ -170,7 +128,6 @@ def create_app(
     install_diagram_assembly(app)
 
     common_errors = {
-        401: {"description": "Authentication required"},
         429: {"description": "Request or generation limit reached"},
         503: {"description": "Storage or generation unavailable"},
     }

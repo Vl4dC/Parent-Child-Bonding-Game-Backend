@@ -1,17 +1,17 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Learner approval API — additive schema",
+    "title": "Learner approval API \u2014 additive schema",
     "version": "0.1.0"
   },
   "paths": {
-    "/auth/registration/learners": {
+    "/api/registration/learners": {
       "post": {
         "tags": [
           "Learner approval"
         ],
-        "summary": "Register",
-        "operationId": "register_auth_registration_learners_post",
+        "summary": "Request learner approval",
+        "operationId": "request_approval_api_registration_learners_post",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -46,9 +46,6 @@
               }
             }
           },
-          "401": {
-            "description": "Verified session required"
-          },
           "403": {
             "description": "Email, request-specific authority, or proof rejected"
           },
@@ -80,13 +77,13 @@
         }
       }
     },
-    "/auth/registration/requests/{request_id}": {
+    "/api/registration/requests/{request_id}": {
       "get": {
         "tags": [
           "Learner approval"
         ],
         "summary": "Status",
-        "operationId": "status_auth_registration_requests__request_id__get",
+        "operationId": "status_api_registration_requests__request_id__get",
         "parameters": [
           {
             "name": "request_id",
@@ -123,9 +120,6 @@
               }
             }
           },
-          "401": {
-            "description": "Verified session required"
-          },
           "403": {
             "description": "Email, request-specific authority, or proof rejected"
           },
@@ -157,13 +151,13 @@
         }
       }
     },
-    "/auth/registration/requests/{request_id}/resend": {
+    "/api/registration/requests/{request_id}/resend": {
       "post": {
         "tags": [
           "Learner approval"
         ],
         "summary": "Resend",
-        "operationId": "resend_auth_registration_requests__request_id__resend_post",
+        "operationId": "resend_api_registration_requests__request_id__resend_post",
         "parameters": [
           {
             "name": "request_id",
@@ -211,9 +205,6 @@
               }
             }
           },
-          "401": {
-            "description": "Verified session required"
-          },
           "403": {
             "description": "Email, request-specific authority, or proof rejected"
           },
@@ -252,11 +243,6 @@
         ],
         "summary": "Requests",
         "operationId": "requests_api_guardian_registration_requests_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "after",
@@ -280,6 +266,31 @@
               "default": 20,
               "title": "Limit"
             }
+          },
+          {
+            "name": "guardian_email",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Mailbox filter; supplied by the caller, not verified.",
+              "format": "email",
+              "title": "Guardian Email"
+            },
+            "description": "Mailbox filter; supplied by the caller, not verified."
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -292,9 +303,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified session required"
           },
           "403": {
             "description": "Email, request-specific authority, or proof rejected"
@@ -334,11 +342,6 @@
         ],
         "summary": "Decision",
         "operationId": "decision_api_guardian_registration_requests__request_id__decision_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "request_id",
@@ -360,6 +363,31 @@
               "maxLength": 128,
               "title": "Idempotency-Key"
             }
+          },
+          {
+            "name": "guardian_email",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Mailbox filter; supplied by the caller, not verified.",
+              "format": "email",
+              "title": "Guardian Email"
+            },
+            "description": "Mailbox filter; supplied by the caller, not verified."
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -382,9 +410,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified session required"
           },
           "403": {
             "description": "Email, request-specific authority, or proof rejected"
@@ -721,12 +746,6 @@
           "type"
         ],
         "title": "ValidationError"
-      }
-    },
-    "securitySchemes": {
-      "HTTPBearer": {
-        "type": "http",
-        "scheme": "bearer"
       }
     }
   }

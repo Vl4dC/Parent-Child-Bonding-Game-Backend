@@ -38,8 +38,7 @@ router = APIRouter(
     tags=["Quiz practice"],
     dependencies=[Depends(api_context, scope="function")],
     responses={
-        401: {"description": "Verified identity required"},
-        404: {"description": "Quiz absent or owned by another account"},
+        404: {"description": "Quiz absent or in another player partition"},
         409: {"description": "Stale state, conflicting retry, or incomplete attempt"},
         429: {"description": "Request limit reached"},
         503: {"description": "Storage unavailable"},

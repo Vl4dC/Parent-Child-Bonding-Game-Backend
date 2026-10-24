@@ -6,41 +6,42 @@ see [Platform API](docs/API_PLATFORM.md). Python 3.13+ and the root environment 
 Base URL for local development: `http://127.0.0.1:8000`. Swagger: `/docs`; ReDoc: `/redoc`.
 The running `/openapi.json` is generated from the actual routes and typed models.
 
-## Identity boundary
+## Public API and player state
 
-Login, signup and session management are handled through the client's Supabase integration.
-The backend no longer accepts passwords, issues access/refresh tokens, sends account confirmation
-or recovery emails, or exposes account/session endpoints. The former `/auth/register`, `/auth/login`,
-`/auth/verify`, `/auth/resend`, `/auth/refresh`, `/auth/me`, `/auth/logout`, `/auth/forgot-password`,
-`/auth/password` and demo account-list routes return 404 and are absent from OpenAPI.
+All FastAPI endpoints are available without account login, passwords, Bearer tokens or auth cookies.
+There are no authentication provider calls or required Supabase Auth settings. Swagger/OpenAPI
+contains no security schemes, Authorize button or padlocks. Former login/signup/session routes
+remain removed (404). An obsolete Authorization header is ignored.
 
-Protected data routes still require `Authorization: Bearer <access_token>`. In Supabase mode,
-the backend verifies each supplied token using Supabase's `/auth/v1/user`; it never trusts an
-unverified JWT, caller-supplied user ID or account-type metadata. The shared HTTP pool does not
-store user sessions. No auth cookies are set. Client login/signup, token refresh, sign-out and
-recovery must use the identity provider directly.
+An optional `X-Player-ID` UUID selects the state partition for profiles, learning, jobs, rooms and
+diagram races. Omitting it selects `00000000-0000-4000-8000-000000000001`. Use a different UUID per
+player to retain independent progress and multiplayer membership. Invalid UUIDs return 422.
+The ID is public, caller-selected context: anyone may select another player's ID. It supplies no
+identity verification, privacy or protection against reading, changing or deleting that data.
 
-Explicit local demo mode accepts only the fixed synthetic tokens `demo_parent` and `demo_child`.
-It has no passwords or session lifecycle, uses ephemeral data and cannot start in production.
-Supabase mode rejects every `demo_` token before contacting the provider.
+Requests retain transactions, idempotency, quotas, resource partitioning and gameplay state rules.
+Game host/membership checks use the selected player ID. Generation and optional features still
+need explicit enablement. Removing authentication does not change model calls or database schema.
 
-Learner approval remains a separate opt-in pending-request/guardian-decision workflow, including
-its `/auth/registration/*` routes. It does not create accounts or establish a login session.
+The separate learner-approval workflow keeps its receipt/proof and request-authority rules.
+Its former /auth/registration routes are now /api/registration routes; there are no /auth endpoints.
+Guardian list/decision routes accept the required `guardian_email` query filter and optional
+`X-Player-ID`; neither is verified. No account session or confirmed-email check is required.
+This workflow cannot establish verified guardian identity or legal consent.
 
 ## Health, errors and transport
 
-`GET /health` returns `{"status":"ok","auth_mode":"supabase"}` (or `"demo"`) without
-calling the provider. `GET /ready` checks storage and reports whether it is durable.
+`GET /health` returns `{"status":"ok"}`. `GET /ready` checks application storage and reports
+whether it is durable. Neither calls an authentication provider.
 
-Missing/invalid/expired data-route credentials return 401. Provider rate limits return 429;
-transport or provider server failures return 503; malformed provider identity responses return 502.
-Errors omit raw provider messages and submitted values. Validation errors return 422 without
-submitted-value or sensitive-context fields.
+403: gameplay or approval-workflow rule rejected. 404: absent record or wrong player partition.
+409: stale state or conflicting replay. 422: invalid input. 429: quota/concurrency limit.
+502: generation failure. 503: storage unavailable, generation or an optional feature disabled.
+There are no account-authentication 401 responses. Errors omit raw submitted values and secrets.
 
-All `/api/` and `/auth/` responses carry no-store/no-cache and no-referrer headers, including errors.
-CORS permits configured exact origins, GET/POST/PUT/PATCH/DELETE, Authorization and Content-Type
-headers. It does not enable cookie credentials or replace identity verification. Data remains
-isolated by verified owner. Never log Bearer tokens or include them in URLs.
+All `/api/` and `/auth/` responses retain no-store/no-cache and no-referrer headers. CORS keeps
+exact origins and allows Content-Type, X-Player-ID, Idempotency-Key and workflow receipt headers;
+legacy Authorization headers remain allowed but ignored. Cookie credentials remain disabled.
 
 ## Non-AI quiz lifecycle — 24 October 2026 addition
 
@@ -62,7 +63,7 @@ and session endpoints. Creation requests require a private random 32–128 chara
 
 ## Diagram assembly race — 24 October 2026 addition
 
-Fourteen authenticated operations reuse saved lesson flowcharts as frozen SVG label puzzles for
+Fourteen public operations reuse saved lesson flowcharts as frozen SVG label puzzles for
 simultaneous private-room play. See [DIAGRAM_ASSEMBLY.md](docs/DIAGRAM_ASSEMBLY.md) and the
 [additive OpenAPI](docs/diagram-assembly.openapi.json). Model source is unchanged; game grading
 and timing are deterministic/server-owned. Feature defaults off; frontend and deployment are pending.

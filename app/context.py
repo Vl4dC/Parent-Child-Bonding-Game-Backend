@@ -1,29 +1,15 @@
 import asyncio
 from contextlib import ExitStack
 from typing import Annotated
-from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.generation import model_settings, reserve_request
-from app.models import User
+from app.player import player_id
 from app.repository import current_session
 
-security = HTTPBearer(auto_error=False)
 
-
-async def api_context(
-    request: Request, credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)]
-):
-    if credentials is None or credentials.scheme.lower() != "bearer":
-        raise HTTPException(401, "Sign in to continue.", headers={"WWW-Authenticate": "Bearer"})
-    user = await request.app.state.verify_identity(request, credentials.credentials)
-    try:
-        identity = User.model_validate(user)
-        owner = str(UUID(str(identity.id)))
-    except ValueError:
-        raise HTTPException(502, "Authentication returned an invalid identity.") from None
+async def api_context(request: Request, owner: Annotated[str, Depends(player_id)]):
     repository = request.app.state.repository
     if repository is None:
         raise HTTPException(503, "Application storage is not configured.")

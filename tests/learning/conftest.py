@@ -154,7 +154,7 @@ def client(monkeypatch, repository):
         repository=repository,
     )
     with TestClient(application) as c:
-        c.headers["Authorization"] = "Bearer demo_parent"
+        c.headers["X-Player-ID"] = "00000000-0000-4000-8000-000000000001"
         c.seen = seen
         yield c
 

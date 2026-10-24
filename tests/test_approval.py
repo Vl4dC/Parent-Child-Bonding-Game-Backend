@@ -2,7 +2,6 @@ import json
 from concurrent.futures import ThreadPoolExecutor
 from uuid import uuid4
 
-import httpx
 import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
@@ -37,50 +36,25 @@ def approval(repository):
     service = ApprovalService(repository, SECRET, clock=lambda: now[0])
     user_id = str(uuid4())
     identities = {
-        "guardian": {
-            "id": user_id,
-            "email": "guardian@example.com",
-            "email_confirmed_at": "2026-10-24T12:00:00Z",
-            "user_metadata": {"account_type": "learner"},
-        },
-        "other": {
-            "id": str(uuid4()),
-            "email": "other@example.com",
-            "email_confirmed_at": "2026-10-24T12:00:00Z",
-            "user_metadata": {"account_type": "parent"},
-        },
-        "unverified": {
-            "id": str(uuid4()),
-            "email": "guardian@example.com",
-            "email_confirmed_at": None,
-            "user_metadata": {"account_type": "parent"},
-        },
+        "guardian": {"id": user_id, "email": "guardian@example.com"},
+        "other": {"id": str(uuid4()), "email": "other@example.com"},
     }
-
-    def upstream(request):
-        token = request.headers.get("authorization", "").removeprefix("Bearer ")
-        if token not in identities:
-            return httpx.Response(401, json={"error_code": "bad_jwt"})
-        return httpx.Response(200, json=identities[token])
 
     settings = Settings(
         app_env="test",
-        supabase_url="https://supabase.example.com",
-        supabase_publishable_key="sb_publishable_synthetic_test",
         learner_approval_enabled=True,
         learner_approval_secret=SECRET,
         _env_file=None,
     )
-    application = create_app(
-        settings, transport=httpx.MockTransport(upstream), repository=repository
-    )
-    # Freeze the route factory's service too, while leaving actual verified identity calls intact.
+    application = create_app(settings, repository=repository)
+    # Freeze the route factory's service while exercising real unauthenticated routes.
     import app.approval_api as routes
 
     original = routes.service
     routes.service = lambda request: service
     try:
         with TestClient(application) as client:
+            client.test_players = identities
             yield client, service, now, identities
     finally:
         routes.service = original
@@ -88,7 +62,7 @@ def approval(repository):
 
 def create(client, key="registration-key-1", payload=None):
     response = client.post(
-        "/auth/registration/learners",
+        "/api/registration/learners",
         json=payload or PAYLOAD,
         headers={"Idempotency-Key": key.ljust(32, "_")},
     )
@@ -109,12 +83,13 @@ def decision(
     version=1,
     action="approve",
     key="decision-key-1",
-    token="guardian",
+    player="guardian",
 ):
     return client.post(
         f"/api/guardian/registration-requests/{request_id}/decision",
         json={"decision": action, "expected_version": version, "proof": proof},
-        headers={"Authorization": "Bearer " + token, "Idempotency-Key": key},
+        headers={"X-Player-ID": client.test_players[player]["id"], "Idempotency-Key": key},
+        params={"guardian_email": client.test_players[player]["email"]},
     )
 
 
@@ -129,16 +104,16 @@ def test_request_retry_receipt_and_private_storage(approval):
     assert created["status"] == "pending" and created["activated"] is False
     rid = created["request_id"]
     response = client.get(
-        f"/auth/registration/requests/{rid}",
+        f"/api/registration/requests/{rid}",
         headers={"X-Registration-Receipt": created["receipt"]},
     )
     assert response.status_code == 200
     assert set(response.json()) == {"request_id", "status", "version", "expires_at", "activated"}
     assert "guardian@example.com" not in response.text
-    assert client.get(f"/auth/registration/requests/{rid}").status_code == 422
+    assert client.get(f"/api/registration/requests/{rid}").status_code == 422
     assert (
         client.get(
-            f"/auth/registration/requests/{rid}",
+            f"/api/registration/requests/{rid}",
             headers={"X-Registration-Receipt": "approval_status_" + "x" * 64},
         ).status_code
         == 404
@@ -161,7 +136,7 @@ def test_conflicting_creation_and_input_validation(approval):
     changed = PAYLOAD | {"learnerDisplayName": "Different"}
     assert (
         client.post(
-            "/auth/registration/learners",
+            "/api/registration/learners",
             json=changed,
             headers={"Idempotency-Key": "registration-key-1".ljust(32, "_")},
         ).status_code
@@ -177,7 +152,7 @@ def test_conflicting_creation_and_input_validation(approval):
         {"password": "NeverStoreThis123!"},
     ):
         result = client.post(
-            "/auth/registration/learners",
+            "/api/registration/learners",
             json=PAYLOAD | patch,
             headers={"Idempotency-Key": "another-create-key".ljust(32, "_")},
         )
@@ -185,32 +160,19 @@ def test_conflicting_creation_and_input_validation(approval):
         assert "NeverStoreThis123!" not in result.text
 
 
-def test_guardian_mailbox_is_not_authority_and_roles_are_ignored(approval):
+def test_guardian_routes_need_no_login_but_preserve_decision_workflow(approval):
     client, service, _, identities = approval
-    created = create(client)
-    rid = created["request_id"]
-    assert client.get("/api/guardian/registration-requests").status_code == 401
-    assert (
-        client.get(
-            "/api/guardian/registration-requests", headers={"Authorization": "Bearer unverified"}
-        ).status_code
-        == 403
-    )
-    own = client.get(
-        "/api/guardian/registration-requests", headers={"Authorization": "Bearer guardian"}
-    ).json()
+    rid = create(client)["request_id"]
+    url = "/api/guardian/registration-requests"
+    # The mailbox is an ordinary query filter, not a verified account identity.
+    assert client.get(url).status_code == 422
+    own = client.get(url, params={"guardian_email": "guardian@example.com"}).json()
     assert len(own["items"]) == 1 and own["items"][0]["can_decide"] is False
-    assert (
-        client.get(
-            "/api/guardian/registration-requests", headers={"Authorization": "Bearer other"}
-        ).json()["items"]
-        == []
-    )
+    assert client.get(url, params={"guardian_email": "other@example.com"}).json()["items"] == []
     proof = service.proof(record(service, rid))
     assert decision(client, rid, proof).status_code == 403
-    assert decision(client, rid, proof, token="other").status_code == 404
+    assert decision(client, rid, proof, player="other").status_code == 404
     authorize(service, rid, identities)
-    # A forged/untrusted account_type is irrelevant; the verified request-specific grant matters.
     assert decision(client, rid, proof).status_code == 200
 
 
@@ -233,7 +195,7 @@ def test_decision_is_idempotent_and_does_not_activate(approval, action, expected
         == 409
     )
     assert decision(client, rid, proof, action=action, key="new-decision-key").status_code == 409
-    assert client.post(f"/auth/registration/requests/{rid}/activate").status_code == 404
+    assert client.post(f"/api/registration/requests/{rid}/activate").status_code == 404
     with service.store.transaction() as tx:
         assert len(tx.list("decisions")) == 1
 
@@ -245,7 +207,7 @@ def test_resend_rotates_proof_has_cooldown_and_replay_protection(approval):
     authorize(service, rid, identities)
     old_proof = service.proof(record(service, rid))
     headers = {"X-Registration-Receipt": created["receipt"], "Idempotency-Key": "resend-key-1"}
-    url = f"/auth/registration/requests/{rid}/resend"
+    url = f"/api/registration/requests/{rid}/resend"
     assert client.post(url, headers=headers).status_code == 429
     now[0] += 61
     assert client.post(url, headers=headers).status_code == 202
@@ -269,12 +231,12 @@ def test_expired_requests_and_authority(approval):
     assert decision(client, rid, proof).status_code == 403
     now[0] += 7 * 86400
     status = client.get(
-        f"/auth/registration/requests/{rid}", headers={"X-Registration-Receipt": created["receipt"]}
+        f"/api/registration/requests/{rid}", headers={"X-Registration-Receipt": created["receipt"]}
     )
     assert status.status_code == 410
     assert (
         client.post(
-            f"/auth/registration/requests/{rid}/resend",
+            f"/api/registration/requests/{rid}/resend",
             headers={
                 "X-Registration-Receipt": created["receipt"],
                 "Idempotency-Key": "resend-expired",
@@ -284,7 +246,7 @@ def test_expired_requests_and_authority(approval):
     )
     assert (
         client.post(
-            "/auth/registration/learners",
+            "/api/registration/learners",
             json=PAYLOAD,
             headers={"Idempotency-Key": "registration-key-1".ljust(32, "_")},
         ).status_code
@@ -299,12 +261,12 @@ def test_recipient_and_bad_receipt_rate_limits(approval):
     create(client, "second-create-key")
     create(client, "third-create-key")
     response = client.post(
-        "/auth/registration/learners",
+        "/api/registration/learners",
         json=PAYLOAD,
         headers={"Idempotency-Key": "fourth-create-key".ljust(32, "_")},
     )
     assert response.status_code == 429 and "retry-after" in response.headers
-    url = f"/auth/registration/requests/{created['request_id']}"
+    url = f"/api/registration/requests/{created['request_id']}"
     statuses = [
         client.get(url, headers={"X-Registration-Receipt": "x" * 32}).status_code
         for _ in range(120)
@@ -312,11 +274,11 @@ def test_recipient_and_bad_receipt_rate_limits(approval):
     assert 404 in statuses and statuses[-1] == 429
 
 
-def test_cross_origin_headers_and_receipt_is_not_session(approval):
+def test_cross_origin_headers_and_obsolete_authorization_is_ignored(approval):
     client, _, _, _ = approval
     created = create(client)
     response = client.options(
-        "/auth/registration/learners",
+        "/api/registration/learners",
         headers={
             "Origin": "http://localhost:3000",
             "Access-Control-Request-Method": "POST",
@@ -330,7 +292,7 @@ def test_cross_origin_headers_and_receipt_is_not_session(approval):
         client.get(
             "/api/me/profile", headers={"Authorization": "Bearer " + created["receipt"]}
         ).status_code
-        == 401
+        == 200
     )
 
 
@@ -358,7 +320,7 @@ def test_worker_delivery_retry_bounds_and_no_plaintext_proofs(approval):
         assert mail["status"] == "failed"
         assert calls[0]["proof"] not in json.dumps(mail)
     response = client.get(
-        f"/auth/registration/requests/{created['request_id']}",
+        f"/api/registration/requests/{created['request_id']}",
         headers={"X-Registration-Receipt": created["receipt"]},
     )
     assert "provider failure" not in response.text and "proof" not in response.text
@@ -452,17 +414,21 @@ def test_receipt_cannot_read_another_request_and_guardian_pagination(approval):
     second = create(client, "second-request-key")
     assert (
         client.get(
-            f"/auth/registration/requests/{second['request_id']}",
+            f"/api/registration/requests/{second['request_id']}",
             headers={"X-Registration-Receipt": first["receipt"]},
         ).status_code
         == 404
     )
-    headers = {"Authorization": "Bearer guardian"}
-    page = client.get("/api/guardian/registration-requests?limit=1", headers=headers).json()
+    headers = {"X-Player-ID": client.test_players["guardian"]["id"]}
+    page = client.get(
+        "/api/guardian/registration-requests",
+        headers=headers,
+        params={"limit": 1, "guardian_email": "guardian@example.com"},
+    ).json()
     other = client.get(
         "/api/guardian/registration-requests",
         headers=headers,
-        params={"limit": 1, "after": page["next_cursor"]},
+        params={"limit": 1, "after": page["next_cursor"], "guardian_email": "guardian@example.com"},
     ).json()
     assert len(page["items"]) == len(other["items"]) == 1
     assert page["items"][0]["request_id"] != other["items"][0]["request_id"]
@@ -499,7 +465,7 @@ def test_superseded_mail_is_not_sent_and_sender_holds_no_database_lock(approval)
 def test_feature_defaults_off_and_requires_secret():
     settings = Settings(app_env="test", demo_mode=True, _env_file=None)
     with TestClient(create_app(settings)) as client:
-        response = client.post("/auth/registration/learners", json=PAYLOAD)
+        response = client.post("/api/registration/learners", json=PAYLOAD)
         assert response.status_code == 503
     with pytest.raises(ValidationError):
         Settings(app_env="test", demo_mode=True, learner_approval_enabled=True, _env_file=None)

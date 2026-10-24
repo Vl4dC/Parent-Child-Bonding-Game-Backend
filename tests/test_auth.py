@@ -1,4 +1,4 @@
-"""The backend consumes verified identities but no longer hosts account/session endpoints."""
+"""Public API regression checks after removing the application's login/auth layer."""
 
 import httpx
 import pytest
@@ -7,12 +7,6 @@ from fastapi.testclient import TestClient
 from app.config import Settings
 from app.main import create_app
 
-USER = {
-    "id": "b6371062-4a7b-4b1f-9c9d-e4189a21e325",
-    "email": "player@example.com",
-    "user_metadata": {"account_type": "learner"},
-    "email_confirmed_at": "2026-10-24T12:00:00Z",
-}
 REMOVED_ROUTES = [
     ("GET", "/auth/demo-accounts"),
     ("POST", "/auth/register"),
@@ -28,166 +22,104 @@ REMOVED_ROUTES = [
 PROFILE = "/api/me/profile"
 
 
-def make_client(handler):
-    settings = Settings(
-        app_env="test",
-        supabase_url="https://example.supabase.co",
-        supabase_publishable_key="sb_publishable_test",
-        _env_file=None,
-    )
-    return TestClient(create_app(settings, httpx.MockTransport(handler)))
+@pytest.fixture
+def public_client(monkeypatch):
+    def no_auth_client(*args, **kwargs):
+        pytest.fail("The API must not create an outbound authentication client")
+
+    monkeypatch.setattr(httpx, "AsyncClient", no_auth_client)
+    with TestClient(create_app(Settings(app_env="test", _env_file=None))) as client:
+        yield client
 
 
-@pytest.mark.parametrize("demo", [False, True])
-def test_auth_routes_and_models_are_removed_without_calling_provider(demo):
-    def no_network(request):
-        pytest.fail("Removed endpoints must never call Supabase")
-
-    client = (
-        TestClient(
-            create_app(
-                Settings(app_env="test", demo_mode=True, _env_file=None),
-                httpx.MockTransport(no_network),
-            )
-        )
-        if demo
-        else make_client(no_network)
-    )
-    with client:
-        schema = client.get("/openapi.json").json()
-        for method, path in REMOVED_ROUTES:
-            response = client.request(method, path, json={"password": "private-password"})
-            assert response.status_code == 404
-            assert "private-password" not in response.text
-            assert path not in schema["paths"]
+def test_auth_routes_and_security_schemes_are_absent(public_client):
+    schema = public_client.get("/openapi.json").json()
+    for method, path in REMOVED_ROUTES:
         assert (
-            not {
-                "Credentials",
-                "Register",
-                "EmailRequest",
-                "RefreshRequest",
-                "VerifyRequest",
-                "PasswordRequest",
-                "Session",
-                "Message",
-            }
-            & schema["components"]["schemas"].keys()
+            public_client.request(method, path, json={"password": "private-password"}).status_code
+            == 404
         )
-        # The separate guardian-approval workflow is preserved.
-        assert "/auth/registration/learners" in schema["paths"]
-
-
-def test_data_identity_is_verified_per_request_and_owners_remain_isolated():
-    calls = []
-    revoked = set()
-    other_user = USER | {"id": "00000000-0000-4000-8000-000000000002"}
-
-    def upstream(req):
-        assert req.method == "GET" and req.url.path == "/auth/v1/user"
-        assert req.headers["apikey"] == "sb_publishable_test"
-        assert not req.content
-        token = req.headers["authorization"]
-        calls.append(token)
-        if token in revoked or token not in ("Bearer first", "Bearer second"):
-            return httpx.Response(401, json={"message": "raw sensitive error"})
-        return httpx.Response(200, json=USER if token == "Bearer first" else other_user)
-
-    with make_client(upstream) as client:
-        first = {"Authorization": "Bearer first"}
-        second = {"Authorization": "Bearer second"}
-        assert client.put(PROFILE, headers=first, json={"display_name": "First"}).status_code == 200
-        assert client.get(PROFILE, headers=second).json()["display_name"] == "Learner"
-        assert client.get(PROFILE, headers=first).json()["display_name"] == "First"
-        revoked.add("Bearer first")
-        assert client.get(PROFILE, headers=first).status_code == 401
-        assert client.get(PROFILE, headers=second).status_code == 200
-        assert client.get(PROFILE).status_code == 401
-        assert calls == [
-            "Bearer first",
-            "Bearer second",
-            "Bearer first",
-            "Bearer first",
-            "Bearer second",
-        ]
-
-
-@pytest.mark.parametrize("authorization", [None, "Basic invalid", "Bearer demo_parent"])
-def test_missing_wrong_scheme_and_demo_identity_do_not_reach_supabase(authorization):
-    with make_client(lambda req: pytest.fail("Should not call Supabase")) as client:
-        response = client.get(
-            PROFILE, headers={"Authorization": authorization} if authorization else {}
-        )
-        assert response.status_code == 401
+        assert path not in schema["paths"]
+    assert not schema.get("security")
+    assert not schema.get("components", {}).get("securitySchemes")
+    for path in schema["paths"].values():
+        for operation in path.values():
+            if isinstance(operation, dict):
+                assert not operation.get("security")
+                assert "401" not in operation.get("responses", {})
+                assert not any(
+                    p.get("name", "").lower() == "authorization"
+                    for p in operation.get("parameters", [])
+                )
+    assert "/api/registration/learners" in schema["paths"]
+    assert not any(path.startswith("/auth/") for path in schema["paths"])
 
 
 @pytest.mark.parametrize(
-    "status,expected", [(400, 401), (401, 401), (403, 401), (429, 429), (500, 503)]
+    "authorization", [None, "Basic invalid", "Bearer expired", "Bearer demo_parent"]
 )
-def test_identity_errors_are_sanitized(status, expected):
-    with make_client(
-        lambda req: httpx.Response(status, json={"message": "private-debug-details"})
-    ) as client:
-        response = client.get(PROFILE, headers={"Authorization": "Bearer valid"})
-        assert response.status_code == expected
-        assert "private-debug-details" not in response.text
-        assert response.headers["cache-control"] == "no-store"
+def test_profile_works_without_credentials_and_ignores_old_auth_headers(
+    public_client, authorization
+):
+    headers = {"Authorization": authorization} if authorization else {}
+    assert (
+        public_client.put(
+            PROFILE, headers=headers, json={"display_name": "Public player"}
+        ).status_code
+        == 200
+    )
+    response = public_client.get(PROFILE)
+    assert response.status_code == 200
+    assert response.json()["display_name"] == "Public player"
+    assert response.headers["cache-control"] == "no-store"
+    assert public_client.get("/health").json() == {"status": "ok"}
 
 
-def test_network_failure_becomes_retryable_error():
-    def upstream(req):
-        raise httpx.ConnectError("secret-host-info")
-
-    with make_client(upstream) as client:
-        response = client.get(PROFILE, headers={"Authorization": "Bearer valid"})
-        assert response.status_code == 503
-        assert "secret-host-info" not in response.text
-
-
-@pytest.mark.parametrize("body", [b"not-json", b"{}", b'{"id":"invalid-private-id"}'])
-def test_invalid_provider_identity_is_rejected(body):
-    with make_client(lambda req: httpx.Response(200, content=body)) as client:
-        response = client.get(PROFILE, headers={"Authorization": "Bearer valid"})
-        assert response.status_code == 502
-        assert "invalid-private-id" not in response.text
+def test_player_ids_select_state_without_authentication(public_client):
+    first = {"X-Player-ID": "00000000-0000-4000-8000-000000000001"}
+    second = {"X-Player-ID": "00000000-0000-4000-8000-000000000002"}
+    assert (
+        public_client.put(PROFILE, headers=first, json={"display_name": "First"}).status_code == 200
+    )
+    assert public_client.get(PROFILE, headers=second).json()["display_name"] == "Learner"
+    assert public_client.get(PROFILE).json()["display_name"] == "First"
+    # The caller can freely choose another partition: player IDs confer no identity or privacy.
+    assert public_client.get(PROFILE, headers=first).json()["display_name"] == "First"
+    assert public_client.get(PROFILE, headers={"X-Player-ID": "invalid-id"}).status_code == 422
 
 
-def test_validation_redaction_remains_on_data_routes():
-    with make_client(lambda req: httpx.Response(200, json=USER)) as client:
-        response = client.put(
+def test_public_rooms_work_with_no_tokens(public_client):
+    room = public_client.post("/api/rooms", json={"display_name": "Alex"})
+    assert room.status_code == 201, room.text
+    room = room.json()
+    other = {"X-Player-ID": "00000000-0000-4000-8000-000000000002"}
+    joined = public_client.post(
+        "/api/rooms/join", headers=other, json={"code": room["code"], "display_name": "Sam"}
+    )
+    assert joined.status_code == 200, joined.text
+    assert len(joined.json()["members"]) == 2
+    assert public_client.get(f"/api/rooms/{room['id']}").status_code == 200
+
+
+def test_public_api_still_redacts_invalid_values(public_client):
+    response = public_client.put(
+        PROFILE, json={"display_name": "Alex", "password": "private-password"}
+    )
+    assert response.status_code == 422
+    assert "private-password" not in response.text
+    assert '"input"' not in response.text
+
+
+def test_cors_allows_player_header_for_exact_origins(public_client):
+    for origin, allowed in [("http://localhost:3000", True), ("https://evil.example", False)]:
+        response = public_client.options(
             PROFILE,
-            headers={"Authorization": "Bearer valid"},
-            json={"display_name": "Alex", "password": "private-password"},
+            headers={
+                "Origin": origin,
+                "Access-Control-Request-Method": "GET",
+                "Access-Control-Request-Headers": "X-Player-ID",
+            },
         )
-        assert response.status_code == 422
-        assert "private-password" not in response.text
-        assert '"input"' not in response.text
-
-
-def test_cors_only_allows_configured_origin():
-    with make_client(lambda req: httpx.Response(200, json=USER)) as client:
-        for origin, allowed in [("http://localhost:3000", True), ("https://evil.example", False)]:
-            response = client.options(
-                PROFILE,
-                headers={
-                    "Origin": origin,
-                    "Access-Control-Request-Method": "GET",
-                    "Access-Control-Request-Headers": "Authorization",
-                },
-            )
-            assert (response.headers.get("access-control-allow-origin") == origin) is allowed
-
-
-def test_secret_key_and_wildcard_origins_are_rejected():
+        assert (response.headers.get("access-control-allow-origin") == origin) is allowed
     with pytest.raises(ValueError):
-        Settings(
-            supabase_url="https://example.supabase.co",
-            supabase_publishable_key="sb_secret_no",
-            _env_file=None,
-        )
-    with pytest.raises(ValueError):
-        Settings(
-            supabase_url="https://example.supabase.co",
-            supabase_publishable_key="sb_publishable_test",
-            cors_origins=["*"],
-            _env_file=None,
-        )
+        Settings(cors_origins=["*"], _env_file=None)

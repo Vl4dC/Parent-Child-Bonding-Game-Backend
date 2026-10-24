@@ -2,14 +2,16 @@
 
 ## Runtime contract
 
-Use Supabase PostgreSQL with the existing Supabase Auth project. Keep the `api_private` schema out
+Use the existing Supabase PostgreSQL schema; FastAPI no longer uses Supabase Auth. Keep the `api_private` schema out
 of the exposed Data API schema list. The schema holds JSON domain records, immutable question
 sets, job inputs/state, private lobbies, and quota counters. JSON records are typed/validated by the
 API; SQL primary keys, RLS, transactions, and room functions enforce storage boundaries.
 
 `DATABASE_URL` is server-only and must be able to switch to `authenticated`; the object owner also
 executes worker/usage functions. Never use it in a client. Normal record transactions set local role
-`authenticated` and verified `request.jwt.claims`, then apply owner RLS. Keep browser roles without
+`authenticated` and caller-selected player UUID in `request.jwt.claims`, then apply owner RLS.
+This preserves storage partitions only; it does not authenticate callers or protect against a caller
+selecting another player ID. Keep browser roles without
 permission to execute worker/quota functions. Do not grant extra access as a workaround.
 
 Migrations are ordered under `supabase/migrations/`. Apply them explicitly with the Supabase CLI

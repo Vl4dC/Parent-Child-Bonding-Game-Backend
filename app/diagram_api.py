@@ -6,19 +6,17 @@ from dataclasses import dataclass
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Path, Request
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.diagram_game import DiagramGame
 from app.diagram_render import render_snapshot
 from app.generation import reserve_request
-from app.models import User
+from app.player import player_id
 
 router = APIRouter(
     prefix="/api/diagram-assembly",
     tags=["Diagram assembly"],
     responses={
-        401: {"description": "Verified session required"},
         404: {"description": "Source/race absent or access denied"},
         409: {"description": "Stale version, not ready, or incompatible race phase"},
         422: {"description": "Unsupported diagram or invalid placement"},
@@ -26,7 +24,6 @@ router = APIRouter(
         503: {"description": "Feature, renderer or storage unavailable"},
     },
 )
-security = HTTPBearer(auto_error=False)
 Key = Annotated[str, Header(alias="Idempotency-Key", min_length=8, max_length=128)]
 ItemId = Annotated[str, Path(min_length=1, max_length=128)]
 
@@ -187,23 +184,13 @@ class Actor:
     request: Request
 
 
-async def actor(
-    request: Request, credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)]
-):
-    if credentials is None or credentials.scheme.lower() != "bearer":
-        raise HTTPException(401, "Sign in to continue.")
+async def actor(request: Request, owner: Annotated[str, Depends(player_id)]):
     settings = request.app.state.settings
     if not settings.diagram_assembly_enabled:
         raise HTTPException(503, "Diagram assembly is not enabled.")
-    raw = await request.app.state.verify_identity(request, credentials.credentials)
-    try:
-        identity = User.model_validate(raw)
-    except ValueError:
-        raise HTTPException(502, "Authentication returned an invalid identity.") from None
     repository = request.app.state.repository
     if repository is None:
         raise HTTPException(503, "Application storage is unavailable.")
-    owner = str(identity.id)
     await asyncio.to_thread(reserve_request, repository, owner, settings.api_requests_per_minute)
     return Actor(
         owner,

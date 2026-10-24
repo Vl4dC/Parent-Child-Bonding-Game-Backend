@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Non-AI quiz practice API — additive contract",
+    "title": "Non-AI quiz practice API \u2014 additive contract",
     "version": "0.1.0"
   },
   "paths": {
@@ -13,11 +13,6 @@
         "summary": "Progress",
         "description": "Resume from saved first answers; never return unanswered keys or explanations.",
         "operationId": "progress_api_quiz__quiz_id__progress_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "quiz_id",
@@ -29,6 +24,19 @@
               "maxLength": 128,
               "title": "Quiz Id"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -41,9 +49,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified identity required"
           },
           "404": {
             "description": "Quiz absent or owned by another account"
@@ -78,11 +83,6 @@
         "summary": "Results",
         "description": "Factual partial/final counts, without rewards, pass thresholds or mastery claims.",
         "operationId": "results_api_quiz__quiz_id__results_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "quiz_id",
@@ -94,6 +94,19 @@
               "maxLength": 128,
               "title": "Quiz Id"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -106,9 +119,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified identity required"
           },
           "404": {
             "description": "Quiz absent or owned by another account"
@@ -142,11 +152,6 @@
         ],
         "summary": "Answer",
         "operationId": "answer_api_quiz__quiz_id__answers_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "quiz_id",
@@ -169,6 +174,19 @@
               "maxLength": 128,
               "title": "Idempotency-Key"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -191,9 +209,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified identity required"
           },
           "404": {
             "description": "Quiz absent or owned by another account"
@@ -227,11 +242,6 @@
         ],
         "summary": "Finish",
         "operationId": "finish_api_quiz__quiz_id__finish_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "quiz_id",
@@ -243,6 +253,19 @@
               "maxLength": 128,
               "title": "Quiz Id"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -265,9 +288,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified identity required"
           },
           "404": {
             "description": "Quiz absent or owned by another account"
@@ -301,11 +321,6 @@
         ],
         "summary": "Review",
         "operationId": "review_api_quiz__quiz_id__review_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "quiz_id",
@@ -317,6 +332,19 @@
               "maxLength": 128,
               "title": "Quiz Id"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -329,9 +357,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified identity required"
           },
           "404": {
             "description": "Quiz absent or owned by another account"
@@ -365,11 +390,6 @@
         ],
         "summary": "Retry",
         "operationId": "retry_api_quiz__quiz_id__retry_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "quiz_id",
@@ -392,6 +412,19 @@
               "maxLength": 128,
               "title": "Idempotency-Key"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -414,9 +447,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified identity required"
           },
           "404": {
             "description": "Quiz absent or owned by another account"
@@ -451,11 +481,6 @@
         "summary": "Attempts",
         "description": "Owned attempts sharing this exact question snapshot; no sibling answer payloads.",
         "operationId": "attempts_api_quiz__quiz_id__attempts_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "quiz_id",
@@ -490,6 +515,19 @@
               "default": 20,
               "title": "Limit"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -502,9 +540,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified identity required"
           },
           "404": {
             "description": "Quiz absent or owned by another account"
@@ -539,11 +574,6 @@
         "summary": "Review Deck",
         "description": "Reuse checked question answers as cards; never generate new content.",
         "operationId": "review_deck_api_quiz__quiz_id__review_deck_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "quiz_id",
@@ -566,6 +596,19 @@
               "maxLength": 128,
               "title": "Idempotency-Key"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -588,9 +631,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified identity required"
           },
           "404": {
             "description": "Quiz absent or owned by another account"
@@ -625,11 +665,6 @@
         "summary": "Author Review",
         "description": "Explicit answer-containing owner view, distinct from answer-free play and saved progress.",
         "operationId": "author_review_api_quiz__quiz_id__author_review_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "quiz_id",
@@ -641,6 +676,19 @@
               "maxLength": 128,
               "title": "Quiz Id"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "responses": {
@@ -653,9 +701,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified identity required"
           },
           "404": {
             "description": "Quiz absent or owned by another account"
@@ -689,11 +734,6 @@
         ],
         "summary": "Revise Questions",
         "operationId": "revise_questions_api_quiz__quiz_id__revisions_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "quiz_id",
@@ -716,6 +756,19 @@
               "maxLength": 128,
               "title": "Idempotency-Key"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -738,9 +791,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified identity required"
           },
           "404": {
             "description": "Quiz absent or owned by another account"
@@ -774,11 +824,6 @@
         ],
         "summary": "Approve Questions",
         "operationId": "approve_questions_api_quiz__quiz_id__approve_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "quiz_id",
@@ -790,6 +835,19 @@
               "maxLength": 128,
               "title": "Quiz Id"
             }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
           }
         ],
         "requestBody": {
@@ -812,9 +870,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Verified identity required"
           },
           "404": {
             "description": "Quiz absent or owned by another account"
@@ -1922,12 +1977,6 @@
           "answers"
         ],
         "title": "Progress"
-      }
-    },
-    "securitySchemes": {
-      "HTTPBearer": {
-        "type": "http",
-        "scheme": "bearer"
       }
     }
   }
