@@ -71,6 +71,14 @@ def test_followup_is_built_from_the_misses_and_the_lesson(client, lesson_id):
     assert client.get(f"/api/quiz/{body['id']}").json() == body
 
 
+def test_followup_title_is_neutral_not_shaming(client, lesson_id):
+    """The child-safety checker blocked "...: your weak spots" as shaming, which broke the whole feature."""
+    quiz = make_quiz(client, lesson_id)
+    answer(client, quiz["id"], 0, 0)
+    title = followup(client, quiz["id"]).json()["title"]
+    assert title == "How Networks Talk: practice round" and "weak" not in title.lower()
+
+
 def test_followup_is_a_normal_quiz_and_can_have_its_own_followup(client, lesson_id):
     quiz = make_quiz(client, lesson_id)
     answer(client, quiz["id"], 0, 0)

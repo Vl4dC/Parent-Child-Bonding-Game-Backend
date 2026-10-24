@@ -147,6 +147,10 @@ def delete_material_data(material_id):
             or body.get("parameters", {}).get("material_id") == material_id
         ):
             unit.delete("jobs", key)
+    material = unit.get("materials", material_id)  # a Material if the route already read it
+    revisions = getattr(material, "revision", None) or (material or {}).get("revision", 0)
+    for revision in range(1, revisions + 1):
+        unit.delete("material_vectors", f"{material_id}:{revision}")
     unit.delete("materials", material_id)
 
 
@@ -173,6 +177,9 @@ def put_profile(body: Profile):
 def delete_own_data():
     """Delete application data and leave rooms; the Supabase Auth account remains active."""
     unit = current_session.get()
+    for key, data in all_records(unit, "materials"):
+        for revision in range(1, data["revision"] + 1):
+            unit.delete("material_vectors", f"{key}:{revision}")
     for kind in (
         "profile",
         "materials",
@@ -222,6 +229,7 @@ def edit_pages(material_id: str, body: PagesUpdate):
         raise HTTPException(422, "Pages must be numbered consecutively from 1.")
     if sum(len(p.text) for p in body.pages) > 1_000_000:
         raise HTTPException(413, "Corrected text exceeds one million characters.")
+    current_session.get().delete("material_vectors", f"{material_id}:{material.revision}")
     material.pages = body.pages
     material.revision += 1
     material.confirmed = False

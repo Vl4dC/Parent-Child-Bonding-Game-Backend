@@ -50,6 +50,16 @@ Data IDs are owned. Sharing a quiz or material ID does not grant access. Separat
 currently share lesson content through these private learning routes. Private lobbies grant access
 to lobby snapshots only; they do not implicitly grant access to members' learning data.
 
+## Chat with a PDF
+
+`POST /api/chat` (see [API_PLATFORM.md](API_PLATFORM.md#chat-with-a-pdf)) is the contract for a chat screen with an
+attach-PDF button and an "only answer from the PDF" switch (`mode: "pdf_only"`). Show `label` under an answer when
+`used_pdf` is true. Upload with `POST /api/materials`, confirm the revision, then pass `material_id`; keep the
+conversation on the client and send the last turns in `history`. Pictures: `POST /api/chat/image` (multipart `message`, `age`, `images`, optional `history`) lets the model look at a
+photo, diagram or handwritten problem directly. Send the picture again with each follow-up, shrink large photos in
+the browser first (the server accepts up to 8 MiB each), and show `label` under the answer. Pictures that fail the
+child-safety check come back as the usual friendly 422. No frontend for this exists in this repository.
+
 ## Visuals and rooms
 
 Visual HTML belongs inside a sandboxed frame with scripts allowed and no same-origin permission.

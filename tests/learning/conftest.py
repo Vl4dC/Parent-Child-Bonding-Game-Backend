@@ -1,6 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
+import learning_service.embeddings as embeddings
 import learning_service.materials as materials
 import learning_service.routes as app_module
 import learning_service.safety as safety
@@ -11,6 +12,7 @@ from learning_service.quiz_graph import Question, Quiz
 from learning_service.visual_recall import BlankItem, IllustratedQuestion
 from learning_service.visuals.models import Visual
 from learning_service.weakness import RemedialQuiz
+from tests.learning.fakes import FakeEmbedder
 
 FAKE_VISUAL = Visual(
     kind="diagram",
@@ -57,6 +59,12 @@ FAKE_QUIZ = Quiz(
     ],
     unresolved=[1],
 )
+
+
+@pytest.fixture(autouse=True)
+def _fresh_image_approvals():
+    """Approved pictures are remembered by fingerprint; one test's approval must not carry into the next."""
+    safety.APPROVED_IMAGES.clear()
 
 
 @pytest.fixture(autouse=True)
@@ -131,7 +139,13 @@ def client(monkeypatch, repository):
         seen.setdefault("safety_checks", []).append((kind, age, text))
         return safety.Verdict(ok=True)
 
+    def fake_check_images(jpegs, age):
+        """Pictures are approved; tests of the image guardrails swap it for a scripted one."""
+        seen.setdefault("image_checks", []).append((len(jpegs), age))
+        return safety.Verdict(ok=True)
+
     monkeypatch.setattr(safety, "check", fake_check)
+    monkeypatch.setattr(safety, "check_images", fake_check_images)
     monkeypatch.setattr(app_module, "make_lesson_from_pages", fake_make_lesson_from_pages)
     monkeypatch.setattr(materials, "model_vision_reader", fake_vision_reader)
     monkeypatch.setattr(store, "make_remedial", fake_make_remedial)
@@ -174,3 +188,11 @@ def lesson_id(client):
         == 200
     )
     return key
+
+
+@pytest.fixture
+def embedder(monkeypatch):
+    """Switch search by meaning on, with a fake provider (tests/learning/fakes.py)."""
+    fake = FakeEmbedder()
+    monkeypatch.setattr(embeddings, "model_embedder", lambda: fake)
+    return fake

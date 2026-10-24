@@ -15,6 +15,8 @@ MODEL_CALLS = {
     ("post", "/api/quiz/{quiz_id}/followup"),
     ("post", "/api/lessons/{lesson_id}/flashcards"),
     ("post", "/api/tournament"),
+    ("post", "/api/chat"),
+    ("post", "/api/chat/image"),
 }
 
 
@@ -45,7 +47,7 @@ def test_the_page_has_a_walkthrough_and_ordered_tags(spec):
     assert (
         [t["name"] for t in spec["tags"]]
         == [t["name"] for t in TAGS]
-        == ["Your book", "Learn", "Quiz", "Flashcards", "Weak spots", "Tournament"]
+        == ["Your book", "Chat", "Learn", "Quiz", "Flashcards", "Weak spots", "Tournament"]
     )
     assert all(t["description"] for t in spec["tags"])
 
@@ -69,6 +71,13 @@ def test_every_request_body_has_examples_to_try(spec):
         elif body:
             examples = body["content"]["application/json"].get("examples")
             assert examples, f"{method.upper()} {path} has no example to try"
+
+
+def test_upload_fields_get_a_file_picker_in_swagger(spec):
+    """Swagger UI draws a file picker only for `format: binary`; the default schema made it a text box."""
+    schema = spec["components"]["schemas"]["Body_upload_material_api_materials_post"]
+    assert schema["properties"]["files"]["items"] == {"type": "string", "format": "binary"}
+    assert "contentMediaType" not in str(spec)
 
 
 def test_error_codes_are_documented(spec):

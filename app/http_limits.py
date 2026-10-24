@@ -1,5 +1,11 @@
 from fastapi import HTTPException
 
+MIB = 2**20
+LIMITS = {
+    "/api/materials": 61 * MIB,
+    "/api/chat/image": 36 * MIB,  # up to four 8 MiB pictures plus the form fields
+}
+
 
 class BodyLimit:
     """Bound actual received bytes, even without an honest Content-Length header."""
@@ -10,7 +16,7 @@ class BodyLimit:
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
-        limit = 61 * 2**20 if scope["path"] == "/api/materials" else 4 * 2**20
+        limit = LIMITS.get(scope["path"], 4 * MIB)
         consumed = 0
 
         async def bounded_receive():

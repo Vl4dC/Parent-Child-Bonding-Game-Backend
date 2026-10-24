@@ -66,11 +66,20 @@ Swagger: http://127.0.0.1:8000/docs. OpenAPI: http://127.0.0.1:8000/openapi.json
 
 ## Learning and generation
 
-Upload PDF/photos → correct extracted pages → confirm material → generate a draft lesson → review
+Upload PDF/photos → text is extracted and embedded for search by meaning → correct extracted pages →
+confirm material → generate a draft lesson → review
 and approve it → generate private practice quizzes or flashcards → record individual results.
 Edits create new lesson IDs; historical attempts retain their original immutable question set.
 Approval records **owner confirmation**, not verified guardian/teacher authority or independent fact checking.
 Scored solo submissions also require an explicit question-set review/approval step.
+
+Uploaded books are also embedded (`EMBEDDING_MODEL`, default `openrouter:openai/text-embedding-3-small`, using the same
+`OPENROUTER_API_KEY`; a few cents at most per book) so a topic is found by meaning as well as by words. Leave
+`EMBEDDING_MODEL` empty for keyword search only. See [Platform API](docs/API_PLATFORM.md#search-by-meaning-embeddings).
+
+`POST /api/chat/image` answers questions about 1-4 pictures (the model looks at them directly, nothing is stored, each picture is
+checked for the learner's age first). `POST /api/chat` chats with an uploaded PDF (or without one): it answers from the book when that helps and reports `used_pdf` and the pages,
+or, in `pdf_only` mode, only from the book. See [Platform API](docs/API_PLATFORM.md#chat-with-a-pdf).
 
 Set `GENERATION_ENABLED=true` only after configuring the model provider and budget. Direct generation
 routes remain available for compatibility. Durable jobs are preferred for long operations:

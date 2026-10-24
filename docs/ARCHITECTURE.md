@@ -13,6 +13,9 @@ Frontend source remains in the main repository and is not modified here.
 | app/jobs.py, app/worker.py | Validated idempotent jobs, leasing, bounded retries, durable results |
 | app/rooms.py | Private lobby creation, membership, readiness, snapshots, host transfer |
 | learning_service/ | Existing lesson/quiz/flashcard/visual/weakness engines and integrated routers |
+| learning_service/chat.py | `POST /api/chat`: retrieval-augmented answers from an upload, with `used_pdf` and cited pages |
+| learning_service/image_chat.py | `POST /api/chat/image`: the model looks at 1-4 pictures; re-encoded, checked for age, never stored |
+| learning_service/materials.py, embeddings.py | Upload reading, chapters, BM25 + meaning-based page selection, per-book vector index |
 | supabase/migrations/ | Private schema, RLS, transactional room commands, worker/usage functions |
 | tests/ | Authentication, engine regression, HTTP, PostgreSQL policy/concurrency/worker verification |
 

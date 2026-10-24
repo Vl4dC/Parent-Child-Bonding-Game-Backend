@@ -16,13 +16,15 @@ from the actual routes and typed models at `/openapi.json`.
 | DELETE | `/api/me/data` | Delete owned application content/jobs/progress and leave all rooms; auth account remains active |
 | GET | `/api/me/progress` | Factual completion, first quiz-answer, correct-answer, card-review, and submission totals |
 | GET | `/api/resources/{kind}` | Owned metadata summaries; `after` cursor and `limit` 1–100; no text or answer keys |
-| POST | `/api/materials` | Upload one PDF or 1–20 JPG/PNG/WebP photos and extract text |
+| POST | `/api/materials` | Upload one PDF or 1–20 JPG/PNG/WebP photos; extract text, then embed it for search by meaning |
 | GET / DELETE | `/api/materials/{id}` | Read metadata or delete material and its derived learning records |
 | GET | `/api/materials/{id}/pages` | Read extracted pages, revision, and confirmation state |
 | PUT | `/api/materials/{id}/pages` | Replace corrected pages with an expected revision; clears confirmation |
 | GET | `/api/materials/{id}/revisions/{revision}` | Read the immutable extracted-text revision referenced by an older lesson |
 | POST | `/api/materials/{id}/confirm` | Explicitly confirm the current extracted-text revision |
-| GET | `/api/materials/{id}/find?topic=…` | Preview selected pages/chapter/source text without a model call |
+| POST | `/api/chat` | Chat, optionally with a confirmed upload: answers from the PDF when it helps and says so (`used_pdf`, `pages`, `label`) |
+| POST | `/api/chat/image` | Chat about 1-4 pictures (multipart): the model looks at the picture itself; nothing is stored |
+| GET | `/api/materials/{id}/find?topic=…` | Preview selected pages/chapter/source text; no lesson is written (`by_meaning` says whether embeddings took part) |
 | POST / GET | `/api/lessons`, `/api/lessons/{id}` | Generate draft lesson / read owned lesson |
 | POST | `/api/lessons/{id}/revisions` | Create a new draft lesson ID with edited lesson content |
 | POST | `/api/lessons/{id}/approve` | Record owner confirmation of a nonempty revision |
@@ -124,6 +126,69 @@ have explicit timeouts and no automatic SDK retries; workflow retries are bounde
 Uploads currently run synchronously because file streams are not retained. Text PDFs are extracted
 locally; photo/scanned extraction can call a vision provider. Generation enablement/budgets apply to
 uploads conservatively even when a particular PDF needs no model call.
+
+### Search by meaning (embeddings)
+
+After extraction, `POST /api/materials` cuts the text into pieces of at most 1,000 characters (never across
+a page; contents/index pages are skipped), embeds them with `EMBEDDING_MODEL` (default
+`openrouter:openai/text-embedding-3-small`, `EMBEDDING_DIMENSIONS` 512; `openai:<model>` also works) and stores
+one unit vector per piece as an owned `material_vectors` record keyed `<material id>:<revision>`. The response's
+`indexed_chunks` is the number of pieces; 0 means keyword search only. No extra database extension or
+migration is needed: the index is per book, so a plain cosine scan over a few thousand vectors is the search.
+
+A topic request (not `pages 40-55`, not `chapter 3`) runs two searches and merges them by reciprocal rank
+fusion: BM25 words and the pages whose best piece has cosine similarity of at least 0.25 to the topic. A topic
+the words miss ("how do plants make food") or misspell ("photosynthsis") is found by meaning; a topic neither
+search finds still returns 422 before any lesson is written. The selected pages' full text, not the pieces,
+is what the lesson sees, so `source.pages` and truncation behave as before.
+
+Embedding is best effort and never blocks anything. With no model, key, or a provider outage, the upload still
+succeeds (`warnings` explains an outage) and topic search uses keywords. Correcting pages (`PUT .../pages`)
+deletes the stored vectors; the next lesson from the confirmed text embeds it again, as does the first lesson
+from a book that was uploaded while embeddings were off. `GET .../find` only uses an existing index (it costs
+one tiny embedding call for the topic, only when generation is enabled) and never builds one. Vectors are deleted
+with the material and by `DELETE /api/me/data`, and are never returned by any endpoint.
+
+## Chat with a PDF
+
+`POST /api/chat` takes `{"message", "age", "material_id"?, "mode", "history"}` and returns
+`{"answer", "used_pdf", "pages", "label", "mode"}`. It is stateless: send the recent turns in `history`
+(`{"role":"user"|"assistant","content"}`, the last 10 are used). Without `material_id` it is an ordinary chat.
+With one (a confirmed upload, else 409) the question is searched in the book by words and by meaning at the
+level of 1,000-character pieces, and the best few pieces plus a short outline of the whole file (name, chapters,
+samples from across it) go to the model, so "what is on the PDF?" works as well as a specific question.
+
+- `mode: "auto"` (default): the model uses the PDF when it helps and otherwise answers from general knowledge.
+- `mode: "pdf_only"`: answers only from the PDF. If the PDF does not contain the answer the reply is a fixed
+  "I couldn't find that in your PDF" with `used_pdf: false`; outside knowledge never leaks through. Needs a
+  `material_id` (422 otherwise).
+
+`used_pdf` says whether the answer drew on the PDF, `pages` which pages (only pages the model was actually
+shown can be cited) and `label` is ready-to-show text ("Used the PDF for this answer (pages 2-3)"), null when the
+PDF was not used. The same child-safety rules as lessons apply: the question is screened, the answer is checked for
+the age, and a blocked one is a friendly 422. Each message is one generation attempt against
+`GENERATION_DAILY_LIMIT`, so raise that limit for a chat-heavy demo. The PDF text, history and message are data,
+never instructions to the model. The first chat with a book that was uploaded before embeddings were on embeds it.
+
+## Chat about an image
+
+`POST /api/chat/image` is multipart: `message`, `age`, `images` (1-4 files: JPG, PNG or WebP, up to 8 MiB each) and
+optional `history` (a JSON string of `{"role","content"}` turns, as for `/api/chat`). It returns
+`{"answer", "used_image", "images", "label"}` (`label`: "Looked at your image for this answer"). The model is shown the
+picture itself, with no text extraction and no search index: a labelled diagram, a graph or a handwritten problem
+keeps what matters. A scanned book is different and still goes through `POST /api/materials` and `/api/chat`.
+
+- **Nothing is stored.** Each picture is re-encoded (upright, flat, at most 1600 px; camera location and other
+  metadata are dropped), used for that request and discarded. For a follow-up the client sends the picture again; the
+  conversation is kept by the client in `history`. A PDF here is a 415 pointing to `/api/materials`.
+- **Child safety, before anything is written:** the question is screened, then the picture(s) are checked for the
+  learner's age with the checker model (nudity, graphic violence, drugs, self-harm, hate symbols, identity documents,
+  bank cards or private addresses; ordinary schoolwork and everyday pictures pass). A blocked picture is the same
+  friendly 422 as other guardrails and never repeats what was in it. If the checker cannot run, young learners get a
+  502 and nothing is answered. The answer is then checked like every other generated text. A picture already approved
+  for the same age policy is remembered by its fingerprint only (never the picture, bounded, in memory) so follow-ups
+  about it are not checked again. Text written inside a picture is treated as data, never instructions.
+- One generation attempt per message against `GENERATION_DAILY_LIMIT`; the request body limit for this route is 36 MiB.
 
 ## Private room contract
 

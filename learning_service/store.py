@@ -410,7 +410,8 @@ def followup_quiz(
         return StoredQuiz(
             id=new_id(),
             lesson_id=lesson.id,
-            title=f"{lesson.lesson.title}: your weak spots",
+            # Neutral wording on purpose: the child-safety checker blocked "your weak spots" as shaming.
+            title=f"{lesson.lesson.title}: practice round",
             dropped=0,
             questions=result.questions,
             focus=result.focus,

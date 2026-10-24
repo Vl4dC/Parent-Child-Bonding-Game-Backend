@@ -8,11 +8,12 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import Path
+from fastapi import FastAPI, Path
 from pydantic import BaseModel
 
-UPLOAD, LEARN, QUIZ, CARDS, WEAK, TOURNAMENT = (
+UPLOAD, CHAT, LEARN, QUIZ, CARDS, WEAK, TOURNAMENT = (
     "Your book",
+    "Chat",
     "Learn",
     "Quiz",
     "Flashcards",
@@ -25,6 +26,10 @@ TAGS = [
     {
         "name": UPLOAD,
         "description": "Optional: upload a digital book (PDF) or photos of pages, then study a part of it.",
+    },
+    {
+        "name": CHAT,
+        "description": "Ask questions in a chat. With an uploaded PDF the answer can come from it, and says so; with a picture, the model looks at the picture itself.",
     },
     {
         "name": LEARN,
@@ -58,7 +63,11 @@ Model generation is opt-in. The full contract is documented in docs/API_PLATFORM
    Correct extracted text with `GET/PUT /api/materials/{id}/pages`, then confirm its revision with
    `POST /api/materials/{id}/confirm`. In step 1 add `material_id` and say which part to study (a topic, `chapter 3`, or `pages 40-55`);
    everything after that uses only what your pages say. `GET /api/materials/{material_id}/find` shows which
-   pages a request would use, without spending anything.
+   pages a request would use (no lesson is written; a topic costs one tiny embedding call, a chapter or page range is free).
+   The upload is also embedded, so a topic in other words ("how do plants make food") finds the page that says "photosynthesis".
+0b. *(optional)* **Chat** - `POST /api/chat` with a `message` and an `age`; add `material_id` to chat with your PDF.
+   `mode: pdf_only` answers only from the PDF. The reply says whether it `used_pdf` and which `pages`. Send the earlier
+   turns in `history` for follow-ups. For a photo or diagram use `POST /api/chat/image`: the model looks at the picture itself.
 1. **Learn** - `POST /api/lessons` with a topic and an age. Copy the lesson `id` from the response.
 2. *(optional)* `POST /api/lessons/{lesson_id}/visuals` draws the diagrams the lesson planned (once per lesson).
    Send `ask` to get a picture of your own request.
@@ -97,6 +106,35 @@ SWAGGER_UI = {
     "defaultModelsExpandDepth": -1,  # hide the long Schemas list
     "docExpansion": "list",
 }
+
+
+def mark_files_binary(node) -> None:
+    """FastAPI describes an uploaded file as `contentMediaType: application/octet-stream`, which Swagger UI draws
+    as a plain text box. Swagger only shows a file picker for `format: binary`, so rewrite those in place."""
+    if isinstance(node, dict):
+        if (
+            node.get("type") == "string"
+            and node.get("contentMediaType") == "application/octet-stream"
+        ):
+            del node["contentMediaType"]
+            node["format"] = "binary"
+        for value in node.values():
+            mark_files_binary(value)
+    elif isinstance(node, list):
+        for value in node:
+            mark_files_binary(value)
+
+
+def use_file_pickers(app: FastAPI) -> None:
+    """Make /docs show a file picker for every upload field (call once, after the routes are added)."""
+    generate = app.openapi
+
+    def openapi() -> dict:
+        schema = generate()
+        mark_files_binary(schema)  # idempotent, and the schema is cached by FastAPI
+        return schema
+
+    app.openapi = openapi
 
 
 class Error(BaseModel):

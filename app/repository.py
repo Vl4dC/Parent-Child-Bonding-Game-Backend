@@ -234,7 +234,10 @@ class MemoryRepository:
                     proposed = {
                         k: v for k, v in (proposed or {}).items() if k != "questions"
                     } or None
-                if actual != original and proposed != actual:
+                # Only a record this request changed can conflict. One it merely read (a lesson, while
+                # its diagrams are drawn in another request) must not fail the request over someone
+                # else's write.
+                if proposed != original and actual != original and proposed != actual:
                     raise HTTPException(409, "Concurrent update. Read the resource again.")
             unit.flush()
 

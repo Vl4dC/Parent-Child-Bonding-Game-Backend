@@ -8,12 +8,15 @@ from fastapi import APIRouter, Body, Depends, File, Header, HTTPException, Query
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field, StringConstraints
 
+import learning_service.chat as chat
+import learning_service.embeddings as embeddings
 import learning_service.flashcards as flashcards
+import learning_service.image_chat as image_chat
 import learning_service.materials as materials
 import learning_service.safety as safety
 import learning_service.tournament as tournament
 from app.context import api_context
-from app.generation import generation_permit
+from app.generation import generation_permit, model_settings
 from learning_service.api_docs import (
     CARDS,
     LEARN,
@@ -66,6 +69,12 @@ from learning_service.visuals.render import document
 SANDBOXED = {"Content-Security-Policy": "sandbox allow-scripts"}
 
 
+def generation_on() -> bool:
+    """Model calls are allowed at all (routes without a generation permit check this before spending)."""
+    settings = model_settings.get()
+    return bool(settings and settings.generation_enabled)
+
+
 class PublicLesson(Lesson):
     id: str
     topic: str
@@ -85,6 +94,11 @@ class FoundPages(BaseModel):
     how: Literal["pages", "chapter", "search"]
     label: str
     characters: int = Field(..., description="Size of the text that would go into the lesson")
+    by_meaning: bool = Field(
+        False,
+        description="Whether the search by meaning (embeddings) took part. False for page ranges and "
+        "chapters, when no embedding model is configured, or when the upload isn't embedded yet",
+    )
     truncated: bool
     preview: str = Field(..., description="The start of that text")
 
@@ -246,6 +260,8 @@ def _public_lesson(stored: StoredLesson) -> PublicLesson:
 
 app = APIRouter(dependencies=[Depends(api_context, scope="function")])
 app.include_router(tournament.router)
+app.include_router(chat.router)
+app.include_router(image_chat.router)
 
 
 # --------------------------------------------------------------------------
@@ -284,7 +300,12 @@ def upload_material(
 
     The response says how many pages were read each way, lists the chapter headings found (ask for one with
     `chapter 3`) and warns about pages that couldn't be read. Only extracted text is persisted in owned application storage; original images are not retained.
-    Authentication and explicit material confirmation are required before generating from it."""
+    Authentication and explicit material confirmation are required before generating from it.
+
+    **Search by meaning:** the extracted text is also cut into short pieces and embedded (a few cents at most for a
+    whole book), so a topic like "how plants make food" finds the page that says "photosynthesis". `indexed_chunks` in
+    the response says how many pieces were embedded; 0 means topic search uses keywords only. If embedding fails the
+    upload still succeeds and says so in `warnings`."""
     if not 1 <= len(files) <= materials.MAX_FILES:
         raise HTTPException(422, "Upload between 1 and 20 files.")
     named, total = [], 0
@@ -298,7 +319,12 @@ def upload_material(
         material = materials.read_files(named, materials.model_vision_reader())
     except materials.BadUpload as exc:
         raise HTTPException(exc.status, str(exc)) from exc
-    return remember_material(material).info()
+    remember_material(material)
+    if embeddings.index_material(material) == "failed":
+        material.warnings.append(
+            "Search by meaning isn't available for this upload right now; topic search will use keywords."
+        )
+    return material.info()
 
 
 @app.get(
@@ -331,11 +357,13 @@ def find_pages(
         ),
     ],
 ) -> FoundPages:
-    """Preview which pages a lesson request would be built from. Searches locally: no model call, no cost.
-    422 if the book doesn't contain it."""
+    """Preview which pages a lesson request would be built from. No lesson is written. Page ranges and chapters are
+    found locally for free. A topic is also searched by meaning when the upload is embedded (`by_meaning`): that
+    costs one tiny embedding call for the topic. Never embeds the upload itself. 422 if the book doesn't contain it."""
     material = get_or_404(MATERIALS, material_id, "Material")
+    meaning = embeddings.semantic_search(material, build=False) if generation_on() else None
     try:
-        picked = select_pages(material, topic)
+        picked = select_pages(material, topic, meaning)
     except NotInMaterial as exc:
         raise HTTPException(422, str(exc)) from exc
     return FoundPages(
@@ -343,6 +371,7 @@ def find_pages(
         how=picked.how,
         label=picked.label,
         characters=len(picked.text),
+        by_meaning=bool(meaning and meaning.used),
         truncated=picked.truncated,
         preview=picked.text[:600],
     )
@@ -406,7 +435,7 @@ def create_lesson(body: LessonBody) -> PublicLesson:
                 lambda: make_lesson(body), Lesson.safety_text, body.age, body.topic
             )
         else:
-            picked = select_pages(material, body.topic)
+            picked = select_pages(material, body.topic, embeddings.semantic_search(material))
             lesson = ensure_safe(
                 lambda: make_lesson_from_pages(body, picked.text),
                 Lesson.safety_text,

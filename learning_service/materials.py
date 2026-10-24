@@ -4,10 +4,11 @@ Study material uploaded by a learner: a digital book (PDF) or photos of its page
   read_files()   upload -> Material: one text per page.
                    - text PDFs are read locally with PDFium: free and fast
                    - pages that are pictures (scans, photos) are rendered and read by a vision model
-  select_pages() what the learner asks to study -> the pages to build the lesson from, found locally:
+  select_pages() what the learner asks to study -> the pages to build the lesson from:
                    "pages 40-55"      those pages
                    "chapter 3"        that chapter, using the headings found in the book
-                   "photosynthesis"   the best-matching pages (BM25 word search) and their neighbours
+                   "photosynthesis"   the best-matching pages and their neighbours: BM25 word search, merged
+                                      with a search by meaning (see embeddings.py) when one is available
                  A topic the book doesn't mention raises NotInMaterial instead of guessing.
 
 Extracted page text is persisted in owned storage; page images are not retained.
@@ -49,8 +50,12 @@ EXCERPT_CHARS = 30_000  # how much of the book goes into one lesson prompt
 EXCERPT_PAGES = 12
 SEARCH_SEEDS = 6
 RANGE_PAGES = 30
+# Reciprocal rank fusion: a page's score is the sum of 1 / (RRF_K + rank) over the searches that found it.
+RRF_K = 60
 
 VisionReader = Callable[[bytes], str]  # JPEG bytes -> the text on that page
+# words -> {page number: similarity of that page's best text}
+MeaningSearch = Callable[[str], dict[int, float]]
 
 
 class BadUpload(ValueError):
@@ -92,6 +97,9 @@ class Material(BaseModel):
         int
     ] = []  # contents/index pages: they name every topic without teaching it, so search skips them
     warnings: list[str] = []
+    # the revision whose text was embedded for search by meaning; 0 = none
+    index_revision: int = 0
+    index_chunks: int = 0
 
     def info(self) -> MaterialInfo:
         count = Counter(p.via for p in self.pages)
@@ -103,6 +111,7 @@ class Material(BaseModel):
             text_pages=count["text"],
             vision_pages=count["vision"],
             blank_pages=count["none"],
+            indexed_chunks=self.index_chunks if self.index_revision == self.revision else 0,
             chapters=self.chapters,
             warnings=self.warnings,
         )
@@ -120,6 +129,12 @@ class MaterialInfo(BaseModel):
         ..., description="Pages that were pictures and were read by the vision model"
     )
     blank_pages: int = Field(..., description="Pages with no readable text")
+    indexed_chunks: int = Field(
+        0,
+        description="Pieces of text embedded for search by meaning. 0 means topic search uses "
+        "keywords only (no embedding model configured, the upload could not be embedded, or the "
+        "text was corrected since; the next lesson from it embeds it again)",
+    )
     chapters: list[Chapter] = Field(
         ..., description="Chapter headings found in the book; ask for one by name, e.g. 'chapter 3'"
     )
@@ -279,30 +294,35 @@ def read_pdf(name: str, data: bytes, vision: VisionReader) -> Material:
     return finish(Material(name=name, kind="pdf", pages=pages, warnings=warnings))
 
 
+def photo_to_jpeg(name: str, data: bytes, *, pdf_ok: bool = True) -> bytes:
+    """One uploaded picture as the upright, flat, size-capped JPEG the models read (this also drops any camera
+    location or other metadata). Raises BadUpload for something that isn't a readable picture or is too large."""
+    try:
+        img = Image.open(io.BytesIO(data))
+        if img.width * img.height > MAX_PIXELS:
+            raise BadUpload(
+                f"{name} is too large a picture ({img.width}x{img.height}); resize it first",
+                413,
+            )
+        img.load()
+    except Image.DecompressionBombError as exc:
+        raise BadUpload(f"{name} is too large a picture; resize it first", 413) from exc
+    except (UnidentifiedImageError, OSError) as exc:
+        hint = (
+            " HEIC photos aren't supported; export them as JPG."
+            if name.lower().endswith((".heic", ".heif"))
+            else ""
+        )
+        what = "a PDF or a picture" if pdf_ok else "a picture"
+        formats = "PDF, JPG, PNG or WebP" if pdf_ok else "JPG, PNG or WebP"
+        raise BadUpload(f"{name} isn't {what} I can read (use {formats}).{hint}", 415) from exc
+    return to_jpeg(img)
+
+
 def read_photos(files: list[tuple[str, bytes]], vision: VisionReader) -> Material:
     jpegs: dict[int, bytes] = {}
     for n, (name, data) in enumerate(files, 1):
-        try:
-            img = Image.open(io.BytesIO(data))
-            if img.width * img.height > MAX_PIXELS:
-                raise BadUpload(
-                    f"{name} is too large a picture ({img.width}x{img.height}); resize it first",
-                    413,
-                )
-            img.load()
-        except Image.DecompressionBombError as exc:
-            raise BadUpload(f"{name} is too large a picture; resize it first", 413) from exc
-        except (UnidentifiedImageError, OSError) as exc:
-            hint = (
-                " HEIC photos aren't supported; export them as JPG."
-                if name.lower().endswith((".heic", ".heif"))
-                else ""
-            )
-            raise BadUpload(
-                f"{name} isn't a PDF or a picture I can read (use PDF, JPG, PNG or WebP).{hint}",
-                415,
-            ) from exc
-        jpegs[n] = to_jpeg(img)
+        jpegs[n] = photo_to_jpeg(name, data)
     read, failed = transcribe(jpegs, vision)
     pages = [
         Page(number=n, text=read.get(n, ""), via="vision" if read.get(n) else "none") for n in jpegs
@@ -522,7 +542,20 @@ def chapter_of(material: Material, number: int) -> int | None:
     return next((i for i, c in enumerate(material.chapters) if c.start <= number <= c.end), None)
 
 
-def select_pages(material: Material, query: str) -> Selection:
+def fuse(*rankings: list[int]) -> dict[int, float]:
+    """Reciprocal rank fusion: page indexes -> score, from several best-first rankings. A page that both
+    searches rank highly beats one only a single search found."""
+    scores: dict[int, float] = {}
+    for ranking in rankings:
+        for rank, i in enumerate(ranking):
+            scores[i] = scores.get(i, 0.0) + 1 / (RRF_K + rank + 1)
+    return scores
+
+
+def select_pages(material: Material, query: str, meaning: MeaningSearch | None = None) -> Selection:
+    """The pages a request is about. `meaning`, if given, is only asked for topic searches: its pages are
+    merged with the BM25 ones, so a question in other words ("how do plants make food") still finds
+    the page that says "photosynthesis"."""
     query = query.strip()
     total = len(material.pages)
 
@@ -572,7 +605,14 @@ def select_pages(material: Material, query: str) -> Selection:
     scores = bm25(material.pages, words)
     for n in material.contents:
         scores[n - 1] = 0.0
-    ranked = sorted((i for i, s in enumerate(scores) if s > 0), key=lambda i: -scores[i])
+    by_words = sorted((i for i, s in enumerate(scores) if s > 0), key=lambda i: -scores[i])
+    similar = meaning(rest.strip()) if meaning else {}
+    by_meaning = sorted(
+        (n - 1 for n in similar if 1 <= n <= total and n not in material.contents),
+        key=lambda i: -similar[i + 1],
+    )
+    hits = fuse(by_words, by_meaning)  # page index -> score; only pages some search found
+    ranked = sorted(hits, key=lambda i: -hits[i])
     if not ranked:
         raise NotInMaterial(
             f"I couldn't find “{rest.strip()}” in this upload. "
@@ -585,8 +625,8 @@ def select_pages(material: Material, query: str) -> Selection:
             if not (0 <= j < total and n not in order and material.pages[j].text):
                 continue
             if (
-                j != i and scores[j] <= 0
-            ):  # a neighbour that doesn't mention the topic only counts inside the same chapter
+                j != i and j not in hits
+            ):  # a neighbour that doesn't match the topic only counts inside the same chapter
                 here = chapter_of(material, i + 1)
                 if here is None or here != chapter_of(material, n):
                     continue

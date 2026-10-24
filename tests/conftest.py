@@ -7,6 +7,15 @@ import pytest
 from app.repository import MemoryRepository, PostgresRepository
 
 
+@pytest.fixture(autouse=True)
+def _no_embedding_provider(monkeypatch):
+    """No test may reach a real embedding provider, whatever keys the developer's .env holds. Tests that need
+    vectors install a fake with the `embedder` fixture (tests/learning/test_embeddings.py)."""
+    import learning_service.embeddings as embeddings
+
+    monkeypatch.setattr(embeddings, "model_embedder", lambda: None)
+
+
 @pytest.fixture(scope="session")
 def postgres_url():
     url = os.getenv("TEST_DATABASE_URL")
