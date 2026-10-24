@@ -154,10 +154,7 @@ def client(monkeypatch, repository):
         repository=repository,
     )
     with TestClient(application) as c:
-        session = c.post(
-            "/auth/login", json={"email": "parent@demo.example.com", "password": "DemoParent123!"}
-        ).json()
-        c.headers["Authorization"] = "Bearer " + session["access_token"]
+        c.headers["Authorization"] = "Bearer demo_parent"
         c.seen = seen
         yield c
 

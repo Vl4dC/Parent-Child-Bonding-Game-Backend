@@ -76,13 +76,10 @@ def game(repository, monkeypatch):
     app.state.diagram_renderer = renderer
     app.state.diagram_clock_ms = lambda: now[0]
     with TestClient(app) as client:
-        tokens = {}
-        for name, email, password in [
-            ("parent", "parent@demo.example.com", "DemoParent123!"),
-            ("child", "child@demo.example.com", "DemoChild123!"),
-        ]:
-            session = client.post("/auth/login", json={"email": email, "password": password}).json()
-            tokens[name] = {"Authorization": "Bearer " + session["access_token"]}
+        tokens = {
+            "parent": {"Authorization": "Bearer demo_parent"},
+            "child": {"Authorization": "Bearer demo_child"},
+        }
         yield client, repository, app, now, tokens, calls
 
 

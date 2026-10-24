@@ -10,10 +10,7 @@ PARENT = "00000000-0000-4000-8000-000000000001"
 
 
 def child_headers(client):
-    session = client.post(
-        "/auth/login", json={"email": "child@demo.example.com", "password": "DemoChild123!"}
-    ).json()
-    return {"Authorization": "Bearer " + session["access_token"]}
+    return {"Authorization": "Bearer demo_child"}
 
 
 def approval():

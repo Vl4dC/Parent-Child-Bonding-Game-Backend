@@ -22,11 +22,14 @@ lobbies. Full game rules, public matchmaking, rewards, and family permissions re
 
 ## Authentication and models
 
-Supabase verifies real identity. Offline demo sessions are synthetic and are rejected in Supabase
-mode. Use `/auth/login`, `/auth/me`, `/auth/refresh`, and `/auth/logout` as documented, or an approved
-Supabase session integration supplying a real access token to this API. Serialize refresh operations
-and replace rotated tokens. Choose one deliberate browser session strategy; this API sets no cookies.
-Never copy the prototype's localStorage pattern for real refresh credentials by default.
+The client owns login/signup and session management through Supabase. The backend's former
+account/session routes have been removed; send a provider-issued access token to protected API
+routes with `Authorization: Bearer <access_token>`. Supabase still verifies real identity on each
+request. The API sets no cookies and never receives passwords or refresh tokens. Keep token
+refresh and sign-out in the client's provider integration. See [API.md](../API.md).
+
+Explicit offline demo mode accepts the synthetic `demo_parent` and `demo_child` tokens without
+login; neither is accepted in Supabase mode. Demo mode cannot run in production.
 
 Backend account labels are `parent` and `learner`. Older Splash labels are `grownup`/`kid`, Kay labels
 are `parent`/`kid`/`solo`, and the signup branch uses `student`/`parent`. Map display terms explicitly.

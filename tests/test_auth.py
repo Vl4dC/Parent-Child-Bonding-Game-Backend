@@ -1,4 +1,4 @@
-import json
+"""The backend consumes verified identities but no longer hosts account/session endpoints."""
 
 import httpx
 import pytest
@@ -13,13 +13,19 @@ USER = {
     "user_metadata": {"account_type": "learner"},
     "email_confirmed_at": "2026-10-24T12:00:00Z",
 }
-SESSION = {
-    "access_token": "access",
-    "refresh_token": "refresh",
-    "expires_in": 3600,
-    "token_type": "bearer",
-    "user": USER,
-}
+REMOVED_ROUTES = [
+    ("GET", "/auth/demo-accounts"),
+    ("POST", "/auth/register"),
+    ("POST", "/auth/login"),
+    ("POST", "/auth/verify"),
+    ("POST", "/auth/resend"),
+    ("POST", "/auth/refresh"),
+    ("GET", "/auth/me"),
+    ("POST", "/auth/logout"),
+    ("POST", "/auth/forgot-password"),
+    ("PUT", "/auth/password"),
+]
+PROFILE = "/api/me/profile"
 
 
 def make_client(handler):
@@ -32,159 +38,99 @@ def make_client(handler):
     return TestClient(create_app(settings, httpx.MockTransport(handler)))
 
 
-def test_register_sends_metadata_without_returning_session():
-    def upstream(req):
-        assert req.url.path == "/auth/v1/signup"
-        body = json.loads(req.content)
-        assert body["data"] == {"display_name": "Sam", "account_type": "learner"}
-        assert body["password"] == "test-password"
-        return httpx.Response(200, json={"user": USER})
+@pytest.mark.parametrize("demo", [False, True])
+def test_auth_routes_and_models_are_removed_without_calling_provider(demo):
+    def no_network(request):
+        pytest.fail("Removed endpoints must never call Supabase")
 
-    with make_client(upstream) as client:
-        response = client.post(
-            "/auth/register",
-            json={
-                "email": USER["email"],
-                "password": "test-password",
-                "display_name": "Sam",
-                "account_type": "learner",
-            },
+    client = (
+        TestClient(
+            create_app(
+                Settings(app_env="test", demo_mode=True, _env_file=None),
+                httpx.MockTransport(no_network),
+            )
         )
-        assert response.status_code == 202
-        assert "access_token" not in response.text
-
-
-@pytest.mark.parametrize(
-    "grant,payload,path",
-    [
-        ("password", {"email": USER["email"], "password": "test-password"}, "/auth/login"),
-        ("refresh_token", {"refresh_token": "refresh"}, "/auth/refresh"),
-    ],
-)
-def test_login_and_refresh_use_correct_grants(grant, payload, path):
-    def upstream(req):
-        assert req.url.params["grant_type"] == grant
-        assert json.loads(req.content) == payload
-        assert req.headers["apikey"] == "sb_publishable_test"
-        return httpx.Response(200, json=SESSION)
-
-    with make_client(upstream) as client:
-        response = client.post(path, json=payload)
-        assert response.status_code == 200
-        assert response.json()["access_token"] == "access"
-        assert response.headers["cache-control"] == "no-store"
-
-
-def test_me_requires_supabase_verified_identity_and_does_not_mix_sessions():
-    def upstream(req):
-        token = req.headers["authorization"]
-        if token != "Bearer valid":
-            return httpx.Response(401, json={"message": "raw sensitive error"})
-        return httpx.Response(200, json=USER)
-
-    with make_client(upstream) as client:
-        assert client.get("/auth/me").status_code == 401
+        if demo
+        else make_client(no_network)
+    )
+    with client:
+        schema = client.get("/openapi.json").json()
+        for method, path in REMOVED_ROUTES:
+            response = client.request(method, path, json={"password": "private-password"})
+            assert response.status_code == 404
+            assert "private-password" not in response.text
+            assert path not in schema["paths"]
         assert (
-            client.get("/auth/me", headers={"Authorization": "Bearer valid"}).json()["id"]
-            == USER["id"]
+            not {
+                "Credentials",
+                "Register",
+                "EmailRequest",
+                "RefreshRequest",
+                "VerifyRequest",
+                "PasswordRequest",
+                "Session",
+                "Message",
+            }
+            & schema["components"]["schemas"].keys()
         )
-        invalid = client.get("/auth/me", headers={"Authorization": "Bearer forged"})
-        assert invalid.status_code == 401
-        assert "raw sensitive" not in invalid.text
-        assert client.get("/auth/me").status_code == 401
+        # The separate guardian-approval workflow is preserved.
+        assert "/auth/registration/learners" in schema["paths"]
 
 
-@pytest.mark.parametrize(
-    "payload",
-    [
-        {"email": USER["email"], "token": "123456", "type": "signup"},
-        {"token_hash": "hashed-code", "type": "recovery"},
-    ],
-)
-def test_verify_code_or_hash(payload):
+def test_data_identity_is_verified_per_request_and_owners_remain_isolated():
+    calls = []
+    revoked = set()
+    other_user = USER | {"id": "00000000-0000-4000-8000-000000000002"}
+
     def upstream(req):
-        assert req.url.path.endswith("/verify")
-        assert json.loads(req.content) == payload
-        return httpx.Response(200, json=SESSION)
+        assert req.method == "GET" and req.url.path == "/auth/v1/user"
+        assert req.headers["apikey"] == "sb_publishable_test"
+        assert not req.content
+        token = req.headers["authorization"]
+        calls.append(token)
+        if token in revoked or token not in ("Bearer first", "Bearer second"):
+            return httpx.Response(401, json={"message": "raw sensitive error"})
+        return httpx.Response(200, json=USER if token == "Bearer first" else other_user)
 
     with make_client(upstream) as client:
-        assert client.post("/auth/verify", json=payload).status_code == 200
+        first = {"Authorization": "Bearer first"}
+        second = {"Authorization": "Bearer second"}
+        assert client.put(PROFILE, headers=first, json={"display_name": "First"}).status_code == 200
+        assert client.get(PROFILE, headers=second).json()["display_name"] == "Learner"
+        assert client.get(PROFILE, headers=first).json()["display_name"] == "First"
+        revoked.add("Bearer first")
+        assert client.get(PROFILE, headers=first).status_code == 401
+        assert client.get(PROFILE, headers=second).status_code == 200
+        assert client.get(PROFILE).status_code == 401
+        assert calls == [
+            "Bearer first",
+            "Bearer second",
+            "Bearer first",
+            "Bearer first",
+            "Bearer second",
+        ]
 
 
-def test_ambiguous_verification_rejected_without_secret_echo():
+@pytest.mark.parametrize("authorization", [None, "Basic invalid", "Bearer demo_parent"])
+def test_missing_wrong_scheme_and_demo_identity_do_not_reach_supabase(authorization):
     with make_client(lambda req: pytest.fail("Should not call Supabase")) as client:
-        response = client.post(
-            "/auth/verify",
-            json={
-                "email": USER["email"],
-                "token": "123456",
-                "token_hash": "secret-hash",
-                "type": "signup",
-            },
+        response = client.get(
+            PROFILE, headers={"Authorization": authorization} if authorization else {}
         )
-        assert response.status_code == 422
-        assert "secret-hash" not in response.text
-
-
-@pytest.mark.parametrize("path", ["/auth/forgot-password", "/auth/resend"])
-def test_email_requests_return_generic_messages(path):
-    with make_client(lambda req: httpx.Response(200, json={})) as client:
-        response = client.post(path, json={"email": USER["email"]})
-        assert response.status_code == 202
-        assert USER["email"] not in response.text
-
-
-def test_password_update_requires_user_and_preserves_password_bytes():
-    requests = []
-
-    def upstream(req):
-        requests.append(req.method)
-        assert req.headers["authorization"] == "Bearer valid"
-        if req.method == "PUT":
-            assert json.loads(req.content)["password"] == " long-password "
-        return httpx.Response(200, json=USER)
-
-    with make_client(upstream) as client:
-        assert client.put("/auth/password", json={"password": "new-password"}).status_code == 401
-        response = client.put(
-            "/auth/password",
-            json={"password": " long-password "},
-            headers={"Authorization": "Bearer valid"},
-        )
-        assert response.status_code == 200
-        assert requests == ["GET", "PUT"]
-
-
-def test_logout_revokes_current_session():
-    def upstream(req):
-        assert req.url.params["scope"] == "local"
-        assert req.headers["authorization"] == "Bearer valid"
-        return httpx.Response(204)
-
-    with make_client(upstream) as client:
-        response = client.post("/auth/logout", headers={"Authorization": "Bearer valid"})
-        assert response.status_code == 204
-        assert not response.content
+        assert response.status_code == 401
 
 
 @pytest.mark.parametrize(
-    "status,code,expected",
-    [
-        (400, "invalid_credentials", 401),
-        (400, "email_not_confirmed", 403),
-        (429, "over_request_rate_limit", 429),
-        (500, "unexpected_failure", 503),
-    ],
+    "status,expected", [(400, 401), (401, 401), (403, 401), (429, 429), (500, 503)]
 )
-def test_upstream_errors_are_sanitized(status, code, expected):
+def test_identity_errors_are_sanitized(status, expected):
     with make_client(
-        lambda req: httpx.Response(
-            status, json={"error_code": code, "message": "private-debug-details"}
-        )
+        lambda req: httpx.Response(status, json={"message": "private-debug-details"})
     ) as client:
-        response = client.post("/auth/login", json={"email": USER["email"], "password": "password"})
+        response = client.get(PROFILE, headers={"Authorization": "Bearer valid"})
         assert response.status_code == expected
         assert "private-debug-details" not in response.text
+        assert response.headers["cache-control"] == "no-store"
 
 
 def test_network_failure_becomes_retryable_error():
@@ -192,33 +138,36 @@ def test_network_failure_becomes_retryable_error():
         raise httpx.ConnectError("secret-host-info")
 
     with make_client(upstream) as client:
-        response = client.get("/auth/me", headers={"Authorization": "Bearer valid"})
+        response = client.get(PROFILE, headers={"Authorization": "Bearer valid"})
         assert response.status_code == 503
         assert "secret-host-info" not in response.text
 
 
-def test_validation_does_not_echo_password_or_accept_privilege_fields():
-    with make_client(lambda req: pytest.fail("Should not call Supabase")) as client:
-        response = client.post(
-            "/auth/register",
-            json={
-                "email": USER["email"],
-                "password": "xyz",
-                "display_name": "Sam",
-                "account_type": "admin",
-            },
+@pytest.mark.parametrize("body", [b"not-json", b"{}", b'{"id":"invalid-private-id"}'])
+def test_invalid_provider_identity_is_rejected(body):
+    with make_client(lambda req: httpx.Response(200, content=body)) as client:
+        response = client.get(PROFILE, headers={"Authorization": "Bearer valid"})
+        assert response.status_code == 502
+        assert "invalid-private-id" not in response.text
+
+
+def test_validation_redaction_remains_on_data_routes():
+    with make_client(lambda req: httpx.Response(200, json=USER)) as client:
+        response = client.put(
+            PROFILE,
+            headers={"Authorization": "Bearer valid"},
+            json={"display_name": "Alex", "password": "private-password"},
         )
         assert response.status_code == 422
+        assert "private-password" not in response.text
         assert '"input"' not in response.text
-        assert "xyz" not in response.text
-        assert response.headers["cache-control"] == "no-store"
 
 
 def test_cors_only_allows_configured_origin():
     with make_client(lambda req: httpx.Response(200, json=USER)) as client:
         for origin, allowed in [("http://localhost:3000", True), ("https://evil.example", False)]:
             response = client.options(
-                "/auth/me",
+                PROFILE,
                 headers={
                     "Origin": origin,
                     "Access-Control-Request-Method": "GET",
@@ -242,41 +191,3 @@ def test_secret_key_and_wildcard_origins_are_rejected():
             cors_origins=["*"],
             _env_file=None,
         )
-
-
-@pytest.mark.parametrize(
-    "path,payload,code",
-    [
-        (
-            "/auth/register",
-            {
-                "email": USER["email"],
-                "password": "test-password",
-                "display_name": "Sam",
-                "account_type": "learner",
-            },
-            "user_already_exists",
-        ),
-        ("/auth/forgot-password", {"email": USER["email"]}, "user_not_found"),
-    ],
-)
-def test_existing_or_missing_account_mail_requests_do_not_disclose_identity(path, payload, code):
-    with make_client(lambda req: httpx.Response(400, json={"error_code": code})) as client:
-        assert client.post(path, json=payload).status_code == 202
-
-
-def test_expired_session_cannot_update_password():
-    methods = []
-
-    def upstream(req):
-        methods.append(req.method)
-        return httpx.Response(401, json={"error_code": "bad_jwt"})
-
-    with make_client(upstream) as client:
-        response = client.put(
-            "/auth/password",
-            json={"password": "test-password"},
-            headers={"Authorization": "Bearer expired"},
-        )
-        assert response.status_code == 401
-        assert methods == ["GET"]

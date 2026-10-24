@@ -5,7 +5,8 @@ Frontend source remains in the main repository and is not modified here.
 
 | Module | Responsibility |
 | --- | --- |
-| app/main.py | Factory, Supabase/demo auth, middleware, health/readiness, router composition |
+| app/main.py | Factory, Supabase token verification, middleware, health/readiness, router composition |
+| app/demo.py | Fixed local-only synthetic actors; no passwords, login or sessions |
 | app/context.py | Verified identity and request-local transaction/context |
 | app/repository.py | Owned typed records, immutable question snapshots, PostgreSQL/memory adapters |
 | app/platform.py | Profiles, extraction confirmation, lesson revisions/review, progress/deletion |
@@ -16,9 +17,10 @@ Frontend source remains in the main repository and is not modified here.
 | supabase/migrations/ | Private schema, RLS, transactional room commands, worker/usage functions |
 | tests/ | Authentication, engine regression, HTTP, PostgreSQL policy/concurrency/worker verification |
 
-API requests verify Supabase identity, then switch the database transaction to the authenticated role
-with that identity. Records are owned; account metadata is never permission. The private schema is
-not a browser API. Read [database boundaries](DATABASE.md) and [contracts](API_PLATFORM.md).
+Login/signup and session lifecycle belong to the client/provider integration; there are no backend
+account/session endpoints. API requests verify Supabase identity, then switch the database
+transaction to the authenticated role with that identity. Records are owned; account metadata is
+never permission. The private schema is not a browser API. Read [database boundaries](DATABASE.md) and [contracts](API_PLATFORM.md).
 
 Generated learning content starts as draft. Approval is explicit owner confirmation, not an
 independent correctness guarantee. Edits create new lesson IDs. Immutable question sets are stored

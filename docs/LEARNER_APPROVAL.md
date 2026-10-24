@@ -173,8 +173,8 @@ needs an explicitly reviewed maintenance policy before enabling broad production
 `DELETE /api/me/data` does not claim deletion of pre-account registration records. This batch does
 not silently choose a retention schedule for schoolwork or change older deletion behavior.
 
-Existing `/auth/register` and direct Supabase signup are unchanged and are not subject to this
-approval workflow. Therefore this feature **does not enforce mandatory approval across the app**.
+Direct Supabase signup is not subject to this approval workflow. Therefore this feature
+**does not enforce mandatory approval across the app**.
 Before public launch, the agreed registration/access policy must cover those paths and existing
 users. Activation, no-email learner identity/recovery, username login and family access remain
 separate approved work. No hosted migration, deployment, frontend integration or new paid call is
@@ -189,7 +189,7 @@ permissions and restart persistence, SMTP retry/lease recovery, stale mail cance
 availability during sender execution. Supabase identity replies and email delivery are faked.
 
 See `learner-approval.openapi.json` for the additive five-route schema. The existing OpenAPI snapshot
-is preserved; runtime `/openapi.json` includes both old and added routes.
+excludes the removed login/signup/session routes; runtime `/openapi.json` includes approval routes.
 
 ### Completed local checks
 

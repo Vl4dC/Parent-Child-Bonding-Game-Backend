@@ -1,6 +1,6 @@
 # Parent–Child Bonding Game API
 
-Backend-only FastAPI API for authentication, owned learning data, reviewed content, generation jobs,
+Backend-only FastAPI API for owned learning data, reviewed content, generation jobs,
 and private lobbies. Frontend context lives in the
 [main repository](https://github.com/RahulRohidasPatil/Parent-Child-Bonding-Game).
 
@@ -15,22 +15,20 @@ uv run uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000 --no-a
 ```
 
 Generation defaults off, so this command makes no model calls. Demo storage is in memory, resets
-on restart, and cannot be used in production. Parent login: `parent@demo.example.com` /
-`DemoParent123!`; child login: `child@demo.example.com` / `DemoChild123!`. These are synthetic fixtures.
+on restart, and cannot be used in production. Select a fixed synthetic actor with the local-only
+Bearer token `demo_parent` or `demo_child`; no login, password, or session endpoint is involved.
+These tokens are public demo fixtures, never real credentials, and are rejected in Supabase mode.
 
 ```sh
-curl http://127.0.0.1:8000/auth/login \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"parent@demo.example.com","password":"DemoParent123!"}'
+curl http://127.0.0.1:8000/api/me/profile \
+  -H 'Authorization: Bearer demo_parent'
 ```
-
-Use the returned access token in `Authorization: Bearer <access_token>`. The API sets no auth cookies.
 
 ## Supabase and durable storage
 
 ```sh
 cp .env.example .env
-# Configure Supabase Auth, DATABASE_URL, and exact CORS origins.
+# Configure Supabase identity verification, DATABASE_URL, and exact CORS origins.
 uv sync --locked
 uv run uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000 --no-access-log
 ```
@@ -47,12 +45,14 @@ key is added to the authentication flow. Never put the database credential in br
 **Keep `api_private` outside Supabase's exposed Data API schemas.** It stores private text and
 answer keys. Application data is accessed through the authenticated FastAPI routes.
 
-Real registration/recovery delivery still needs a configured email sender and confirmation flow.
-Email confirmation stays enabled; SMTP work and live email verification are not part of this change.
+Login, signup, email verification, password recovery, refresh and logout belong to the client
+integration with Supabase; this backend no longer exposes account/session endpoints. Send the
+provider-issued access token as `Authorization: Bearer <access_token>` to protected data routes.
+Supabase still verifies each real identity; ownership and access controls are unchanged.
 
 ## API and documentation
 
-- [API.md](API.md): authentication reference plus links to the full platform contract.
+- [API.md](API.md): identity boundary plus links to the full platform contract.
 - [Platform API](docs/API_PLATFORM.md): learning, review, attempts, profiles, jobs, progress, rooms.
 - [Game backend roadmap](docs/GAME_BACKEND_ROADMAP.md): pending Forbidden Clues/heads-up actions and tests.
 - [Server performance](docs/SERVER_PERFORMANCE.md): pools, query optimization, worker resource use, and local measurements.
@@ -137,7 +137,7 @@ An opt-in pending-request workflow now supports private status receipts, bounded
 resends and verified, request-authorized guardian decisions. See
 [learner approval](docs/LEARNER_APPROVAL.md) for the five endpoints, migration 006, explicit mail
 worker and authority-review bridge. This records decisions only; it does not activate accounts,
-replace existing registration or establish mandatory app-wide guardian consent. Feature defaults
+create Supabase accounts or establish mandatory app-wide guardian consent. Feature defaults
 off. No frontend or hosted service was changed.
 
 

@@ -93,10 +93,7 @@ def practice(repository, monkeypatch):
         repository=repository,
     )
     with TestClient(application) as client:
-        session = client.post(
-            "/auth/login", json={"email": "parent@demo.example.com", "password": "DemoParent123!"}
-        ).json()
-        client.headers["Authorization"] = "Bearer " + session["access_token"]
+        client.headers["Authorization"] = "Bearer demo_parent"
         yield client, repository, quiz
 
 
@@ -250,10 +247,7 @@ def test_history_pagination_only_same_snapshot_and_owner(practice):
         after = page["next_cursor"]
     assert len(items) == 3 and len({item["id"] for item in items}) == 3
     assert all("answers" not in item and "questions" not in item for item in items)
-    child = client.post(
-        "/auth/login", json={"email": "child@demo.example.com", "password": "DemoChild123!"}
-    ).json()
-    headers = {"Authorization": "Bearer " + child["access_token"]}
+    headers = {"Authorization": "Bearer demo_child"}
     for path in ("progress", "results", "review", "attempts"):
         assert client.get(f"/api/quiz/{quiz.id}/{path}", headers=headers).status_code == 404
     assert (
@@ -455,11 +449,7 @@ def test_results_and_receipts_survive_postgres_restart(practice):
             Settings(app_env="test", demo_mode=True, _env_file=None), repository=restarted
         )
         with TestClient(app) as other:
-            session = other.post(
-                "/auth/login",
-                json={"email": "parent@demo.example.com", "password": "DemoParent123!"},
-            ).json()
-            other.headers["Authorization"] = "Bearer " + session["access_token"]
+            other.headers["Authorization"] = "Bearer demo_parent"
             assert other.get(f"/api/quiz/{quiz.id}/results").json() == done
             assert answer(other, quiz.id, 0, 1, 0).status_code == 200
             assert other.get(f"/api/quiz/{quiz.id}/review").status_code == 200
@@ -543,10 +533,7 @@ def test_revision_validation_and_owner_isolation(practice):
             ).status_code
             == 422
         )
-    child = client.post(
-        "/auth/login", json={"email": "child@demo.example.com", "password": "DemoChild123!"}
-    ).json()
-    headers = {"Authorization": "Bearer " + child["access_token"]}
+    headers = {"Authorization": "Bearer demo_child"}
     assert client.get(f"/api/quiz/{quiz.id}/author-review", headers=headers).status_code == 404
     assert (
         client.post(

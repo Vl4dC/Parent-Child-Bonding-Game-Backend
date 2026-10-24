@@ -20,8 +20,10 @@ The product plan is a backlog, not proof of implemented features. Keep changes t
 - Use the `create_app` factory and run commands from this repository's root.
 - Supabase verifies identity; never trust an unverified decoded JWT or account-type metadata.
 - Pass each user's Bearer token explicitly; the shared HTTP pool must not hold shared user sessions.
-- Demo mode stays off by default and cannot start in production. It uses synthetic, process-local data.
-- Preserve session isolation, expiry, refresh rotation/replay rejection, and logout revocation.
+- Demo mode stays off by default and cannot start in production. It uses fixed synthetic actors
+  and process-local data, without passwords or session management.
+- Login/signup and session lifecycle belong to the client/provider integration. Keep backend
+  identity verification and ownership checks; do not reintroduce account/session endpoints.
 - `learner` is the child account label. Neither this label nor a parent label proves consent or linkage.
 - Every future data endpoint needs its own ownership/authorization rules.
 - Keep secret values out of validation errors, logs, examples, commits, and URLs.
