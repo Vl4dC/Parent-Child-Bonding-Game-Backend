@@ -154,9 +154,29 @@ def create_app(
             ok = repository is not None and await asyncio.to_thread(repository.ready)
         except Exception:
             ok = False
+        if not ok and settings.diagram_assembly_enabled:
+            diagram = {
+                "enabled": True,
+                "ready": False,
+                "state": "unavailable",
+                "reason": "storage_unavailable",
+                "schema_ready": False,
+                "renderer_ready": False,
+                "checked_at": None,
+            }
+        else:
+            diagram = await asyncio.to_thread(
+                app.state.diagram_preflight.check, repository, settings
+            )
+        ok = ok and diagram["ready"]
         return JSONResponse(
             status_code=200 if ok else 503,
-            content={"ready": ok, "durable": bool(repository and repository.durable)},
+            content={
+                "ready": ok,
+                "durable": bool(repository and repository.durable),
+                "features": {"diagram_assembly": diagram},
+            },
+            headers={"Cache-Control": "no-store"},
         )
 
     from app.diagram_api import install as install_diagram_assembly

@@ -96,3 +96,15 @@ discovery/readiness, a shared five-second countdown, private label placements an
 server timing. Frontend work is not included: proxy the new prefix with Bearer/Idempotency-Key and
 PUT support, map drops to SVG slot IDs, provide keyboard/accessible alternatives, and render
 progress/results/review. The fixed prompt is “How does this work?”; no model generation is invoked.
+
+
+## Diagram lifecycle API handoff — 25 October 2026 addition
+
+Backend only: snapshots now include source availability and cancellation reason; finished results
+remain readable after source withdrawal, while review may return 409. Refresh snapshots after
+mutations/retries because an idempotency receipt is historical. The current room host can discover
+a race ID/version via `/api/diagram-assembly/rooms/{room_id}/management` and cancel it without
+participant content access. Finished/expired cancellation is 409. Source-change cancellation
+does not reopen on reapproval. Readiness now exposes enabled diagram dependency failures.
+See [new contracts and unchanged leave/rejoin policy](DIAGRAM_LIFECYCLE_READINESS.md). No client,
+proxy, UI, AI or harness files were modified. Fresh per-race acknowledgement remains future work.

@@ -148,3 +148,13 @@ rerunning layout, and run a simultaneous room race with shuffled label trays and
 submissions. Study/review and repeat rounds reuse the same snapshot with no model call.
 See [diagram assembly](docs/DIAGRAM_ASSEMBLY.md) for fourteen routes, migration 008, Node/Chromium
 setup and limits. This feature defaults off; no frontend, AI harness or hosted service was changed.
+
+
+## Diagram lifecycle and readiness — 25 October 2026 addition
+
+The first fix batch protects finished/expired results, atomically cancels active races when their
+approved source changes, adds minimal current-host management, and makes `/ready` check enabled
+diagram dependencies. Apply migration 009 after 008; nothing applies migrations automatically.
+Use `uv run python -m app.diagram_preflight --probe` to check before enabling.
+See [lifecycle, API, rollout and remaining work](docs/DIAGRAM_LIFECYCLE_READINESS.md).
+This entry is append-only; no frontend or AI changes or hosted deployment are included.

@@ -363,7 +363,7 @@ def test_forfeit_deadline_and_cancel(game):
         tokens["parent"],
         "cancel-race-key",
     )
-    assert cancelled.status_code == 200
+    assert cancelled.status_code == 409
     assert (
         post(
             client,
@@ -371,14 +371,14 @@ def test_forfeit_deadline_and_cancel(game):
             {"expected_version": 2},
             tokens["parent"],
             "cancel-race-key",
-        ).json()
-        == cancelled.json()
+        ).status_code
+        == 409
     )
     assert (
         client.get(
             f"/api/diagram-assembly/races/{race['id']}/review", headers=tokens["parent"]
         ).status_code
-        == 409
+        == 200
     )
 
 

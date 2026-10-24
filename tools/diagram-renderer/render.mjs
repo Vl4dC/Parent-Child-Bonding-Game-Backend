@@ -61,7 +61,8 @@ try {
       if (labels.length < 2 || labels.length > 40 || labels.some(l=>!l.width || !l.height || l.text.length>300)) throw new Error("Unsupported labels");
       return { svg: new XMLSerializer().serializeToString(element), labels, view_box: element.getAttribute("viewBox") };
     }, code);
-    result.renderer = { mermaid: "12.2.0", browser: browser.version(), theme: "default", viewport_width: 1200 };
+    result.renderer = { mermaid: "12.2.0", playwright: "1.64.1", node: process.version,
+      sandbox: process.env.DIAGRAM_BROWSER_SANDBOX !== "0", browser: browser.version(), theme: "default", viewport_width: 1200 };
     process.stdout.write(JSON.stringify(result));
   }
 } catch {
