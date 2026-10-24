@@ -20,7 +20,6 @@ from pydantic import BaseModel, Field
 
 from lesson import reading_level
 from quiz_graph import Question, _llm
-from safety import guidance
 from visuals.models import Visual
 
 log = logging.getLogger("visual_recall")
@@ -119,7 +118,6 @@ def blank_prompt(visual: Visual, candidates: list[Node], topic: str, age: int, k
         "to someone who learned it. Never reuse a label that is already in the diagram. "
         f"Write for the learner: {reading_level(age)}. Add a one-sentence explanation of why the real "
         "label belongs there."
-        + guidance(age)
     )
 
 
