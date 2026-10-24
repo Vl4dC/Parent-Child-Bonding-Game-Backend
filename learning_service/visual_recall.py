@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field
 
 from learning_service.lesson import reading_level
 from learning_service.quiz_graph import Question, _llm
+from learning_service.safety import content_rules
 from learning_service.visuals.models import Visual
 
 log = logging.getLogger("visual_recall")
@@ -124,7 +125,7 @@ def blank_prompt(visual: Visual, candidates: list[Node], topic: str, age: int, k
         "and length as the real one) and would tempt someone who half-learned it, but are clearly wrong "
         "to someone who learned it. Never reuse a label that is already in the diagram. "
         f"Write for the learner: {reading_level(age)}. Add a one-sentence explanation of why the real "
-        "label belongs there."
+        f"label belongs there.\n{content_rules(age)}"
     )
 
 

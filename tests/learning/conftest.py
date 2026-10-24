@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 
 import learning_service.materials as materials
 import learning_service.routes as app_module
+import learning_service.safety as safety
 import learning_service.store as store
 from learning_service.flashcards import Flashcard
 from learning_service.lesson import Lesson, LessonSection
@@ -60,8 +61,9 @@ FAKE_QUIZ = Quiz(
 
 @pytest.fixture(autouse=True)
 def _no_visual_model(monkeypatch):
-    """A VISUAL_MODEL in the developer's .env must not leak into tests that fake `_llm`."""
-    monkeypatch.delenv("VISUAL_MODEL", raising=False)
+    """A VISUAL_MODEL, SAFETY_MODEL or AUDIENCE_MAX_AGE in the developer's .env must not leak into tests."""
+    for name in ("VISUAL_MODEL", "SAFETY_MODEL", "AUDIENCE_MAX_AGE"):
+        monkeypatch.delenv(name, raising=False)
 
 
 @pytest.fixture
@@ -124,6 +126,12 @@ def client(monkeypatch, repository):
 
         return read
 
+    def fake_check(text, age, *, topic="", kind="content"):
+        """The safety checker approves everything; tests of the guardrails swap it for a scripted one."""
+        seen.setdefault("safety_checks", []).append((kind, age, text))
+        return safety.Verdict(ok=True)
+
+    monkeypatch.setattr(safety, "check", fake_check)
     monkeypatch.setattr(app_module, "make_lesson_from_pages", fake_make_lesson_from_pages)
     monkeypatch.setattr(materials, "model_vision_reader", fake_vision_reader)
     monkeypatch.setattr(store, "make_remedial", fake_make_remedial)

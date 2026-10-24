@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, StringConstraints
 
 import learning_service.flashcards as flashcards
 import learning_service.materials as materials
+import learning_service.safety as safety
 import learning_service.tournament as tournament
 from app.context import api_context
 from app.generation import generation_permit
@@ -34,6 +35,7 @@ from learning_service.lesson import (
     make_lesson_from_pages,
 )
 from learning_service.materials import MaterialInfo, NotInMaterial, select_pages
+from learning_service.safety import AgeBlocked, SafetyUnavailable, ensure_safe
 from learning_service.store import (
     DECKS,
     LESSONS,
@@ -222,6 +224,11 @@ ReviewBody = Annotated[
 ]
 
 
+def visuals_text(visuals: list) -> str:
+    """The words a learner reads around the drawings (code inside a drawing is guarded by the prompt rules only)."""
+    return "\n".join(f"{v.title}. {v.caption} {v.alt}" for v in visuals)
+
+
 def _public_lesson(stored: StoredLesson) -> PublicLesson:
     return PublicLesson(
         id=stored.id,
@@ -364,7 +371,7 @@ def delete_material(material_id: MaterialId) -> None:
     status_code=201,
     tags=[LEARN],
     summary="Explain a topic for an age",
-    responses=errors(502),
+    responses=errors(422, 502),
     dependencies=[Depends(generation_permit, scope="function")],
 )
 def create_lesson(body: LessonBody) -> PublicLesson:
@@ -380,18 +387,32 @@ def create_lesson(body: LessonBody) -> PublicLesson:
     a topic (`photosynthesis`), a chapter (`chapter 3`) or pages (`pages 40-55`). The lesson, and everything
     built from it (visuals, quiz, flashcards, follow-ups), then uses **only what those pages say**. If the
     pages don't cover the request you get a 422 saying so, instead of an invented lesson; the response's
-    `source` lists the pages used. Takes about 20-30 s."""
+    `source` lists the pages used. Takes about 20-30 s.
+
+    **Child safety:** the lesson is written to the age's content rules and checked before it is kept. A topic or
+    lesson that isn't suitable for that age gives a 422 with a friendly message (it never repeats the unsafe text)."""
     material = get_or_404(MATERIALS, body.material_id, "Material") if body.material_id else None
     source = None
     if material is not None and not material.confirmed:
         raise HTTPException(409, "Confirm the extracted material before generating a lesson.")
+    if material is None:
+        safety.screen_request(
+            body.topic, body.age
+        )  # a typed topic is checked before any writing; a book locator isn't
     # sync def: FastAPI runs it in a worker thread, so the slow model call doesn't block the server
     try:
         if material is None:
-            lesson = make_lesson(body)
+            lesson = ensure_safe(
+                lambda: make_lesson(body), Lesson.safety_text, body.age, body.topic
+            )
         else:
             picked = select_pages(material, body.topic)
-            lesson = make_lesson_from_pages(body, picked.text)
+            lesson = ensure_safe(
+                lambda: make_lesson_from_pages(body, picked.text),
+                Lesson.safety_text,
+                body.age,
+                body.topic,
+            )
             source = LessonSource(
                 material_id=material.id,
                 material_revision=material.revision,
@@ -402,6 +423,8 @@ def create_lesson(body: LessonBody) -> PublicLesson:
             )
     except (NotInMaterial, NotCovered) as exc:
         raise HTTPException(422, str(exc)) from exc
+    except (AgeBlocked, SafetyUnavailable):
+        raise
     except Exception as exc:
         log.warning("lesson generation failed")
         raise HTTPException(502, "Lesson generation failed. Try again later.") from exc
@@ -421,7 +444,7 @@ def get_lesson(lesson_id: LessonId) -> PublicLesson:
     status_code=201,
     tags=[LEARN],
     summary="Draw the lesson's visuals",
-    responses=errors(404, 502),
+    responses=errors(404, 422, 502),
     dependencies=[Depends(generation_permit, scope="function")],
 )
 def create_visuals(lesson_id: LessonId, body: VisualsBody) -> VisualsOut:
@@ -431,10 +454,15 @@ def create_visuals(lesson_id: LessonId, body: VisualsBody) -> VisualsOut:
     list). With `ask`: draws one visual answering that request, every time.
 
     Each visual's `html` is a complete web page; see it rendered with `GET /api/lessons/{lesson_id}/visuals/{visual_id}/view`.
-    Takes about 15-30 s."""
+    Takes about 15-30 s.
+
+    **Child safety:** an `ask` that isn't suitable for the learner's age gets a 422 before anything is drawn, and
+    so does a drawing whose title or caption fails the age check."""
     stored = get_or_404(LESSONS, lesson_id, "Lesson")
     ask = body.ask or None
-    if ask is None:
+    if ask is not None:
+        safety.screen_request(ask, stored.request.age)
+    else:
         if stored.auto_drawn:
             return VisualsOut(visuals=[])
         stored.auto_drawn = True  # set before drawing so a double call can't draw twice
@@ -442,10 +470,12 @@ def create_visuals(lesson_id: LessonId, body: VisualsBody) -> VisualsOut:
         topic=stored.request.topic, age=stored.request.age, lesson=stored.lesson, ask=ask
     )
     try:
-        visuals = make_visuals(req)
+        visuals = ensure_safe(lambda: make_visuals(req), visuals_text, req.age, req.topic)
     except Exception as exc:
         if ask is None:
             stored.auto_drawn = False
+        if isinstance(exc, (AgeBlocked, SafetyUnavailable)):
+            raise
         log.warning("visual generation failed")
         raise HTTPException(502, "Visual generation failed. Try again later.") from exc
     new = [StoredVisual(id=new_id(), **v.model_dump()) for v in visuals]
@@ -482,7 +512,7 @@ def view_visual(lesson_id: LessonId, visual_id: str) -> HTMLResponse:
     status_code=201,
     tags=[QUIZ],
     summary="Create a quiz from a lesson",
-    responses=errors(404, 502),
+    responses=errors(404, 422, 502),
     dependencies=[Depends(generation_permit, scope="function")],
 )
 def create_quiz(lesson_id: LessonId, body: QuizBody) -> PublicQuiz:
@@ -561,7 +591,7 @@ def view_question(
     status_code=201,
     tags=[WEAK],
     summary="New quiz on my weak spots",
-    responses=errors(404, 409, 502),
+    responses=errors(404, 409, 422, 502),
     dependencies=[Depends(generation_permit, scope="function")],
 )
 def create_followup(quiz_id: QuizId, body: FollowupBody) -> PublicQuiz:
@@ -607,7 +637,7 @@ def create_quiz_deck(quiz_id: QuizId, body: QuizDeckBody) -> flashcards.PublicDe
     status_code=201,
     tags=[CARDS],
     summary="Create flashcards from a lesson",
-    responses=errors(404, 502),
+    responses=errors(404, 422, 502),
     dependencies=[Depends(generation_permit, scope="function")],
 )
 def create_deck(lesson_id: LessonId, body: DeckBody) -> flashcards.PublicDeck:

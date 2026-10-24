@@ -23,6 +23,7 @@ from learning_service.flashcards import (
 from learning_service.lesson import Lesson, LessonRequest, LessonSource
 from learning_service.materials import Material
 from learning_service.quiz_graph import QuestionType, QuizRequest, make_quiz
+from learning_service.safety import ensure_safe
 from learning_service.visual_recall import (
     BlankItem,
     IllustratedQuestion,
@@ -273,9 +274,32 @@ def interleave(main: list[T], extra: list[T], every: int) -> list[T]:
 
 
 # --------------------------------------------------------------------------
-# Builders
+# Safety: what the safety check reads (everything a learner will see), see safety.py
+# --------------------------------------------------------------------------
+def quiz_text(quiz: StoredQuiz) -> str:
+    parts = [quiz.title, *quiz.focus]
+    for q in quiz.questions:
+        parts += [q.question, *q.options, q.explanation]
+    return "\n".join(parts)
+
+
+def deck_text(deck: StoredDeck) -> str:
+    return "\n".join([deck.title, *(f"{c.front}\n{c.back}" for c in deck.cards)])
+
+
+# --------------------------------------------------------------------------
+# Builders (each result is checked for the learner's age before it is returned, so before it is stored)
 # --------------------------------------------------------------------------
 def quiz_from_lesson(stored: StoredLesson, num_questions: int) -> StoredQuiz:
+    return ensure_safe(
+        lambda: _build_quiz(stored, num_questions),
+        quiz_text,
+        stored.request.age,
+        stored.request.topic,
+    )
+
+
+def _build_quiz(stored: StoredLesson, num_questions: int) -> StoredQuiz:
     """Quiz agent on the lesson text, plus diagram questions if the lesson has diagrams.
     Text questions that never passed review are dropped."""
     req = stored.request
@@ -318,6 +342,15 @@ def quiz_from_lesson(stored: StoredLesson, num_questions: int) -> StoredQuiz:
 
 
 def deck_from_lesson(stored: StoredLesson, num_cards: int) -> StoredDeck:
+    return ensure_safe(
+        lambda: _build_deck(stored, num_cards),
+        deck_text,
+        stored.request.age,
+        stored.request.topic,
+    )
+
+
+def _build_deck(stored: StoredLesson, num_cards: int) -> StoredDeck:
     """Concept cards from the lesson text, plus diagram cards if the lesson has diagrams.
     Writes a full deck of concept cards and trims it, so the deck has exactly `num_cards`
     even when a diagram card falls through."""
@@ -355,32 +388,36 @@ def followup_quiz(
     if not missed:
         raise HTTPException(409, "Nothing to practise yet: there are no wrong answers in this quiz")
     req = lesson.request
-    try:
-        result = make_remedial(
-            RemedialRequest(
-                topic=req.topic,
-                age=req.age,
-                lesson_text=lesson.lesson.as_text(),
-                misses=missed,
-                num_questions=num_questions,
+
+    def build() -> StoredQuiz:
+        try:
+            result = make_remedial(
+                RemedialRequest(
+                    topic=req.topic,
+                    age=req.age,
+                    lesson_text=lesson.lesson.as_text(),
+                    misses=missed,
+                    num_questions=num_questions,
+                )
             )
+        except Exception as exc:
+            log.warning("follow-up quiz generation failed")
+            raise HTTPException(502, "Follow-up quiz generation failed. Try again later.") from exc
+        if not result.questions:
+            raise HTTPException(
+                502, "Couldn't write reliable new questions on those topics - try again"
+            )
+        return StoredQuiz(
+            id=new_id(),
+            lesson_id=lesson.id,
+            title=f"{lesson.lesson.title}: your weak spots",
+            dropped=0,
+            questions=result.questions,
+            focus=result.focus,
+            parent_id=quiz.id,
         )
-    except Exception as exc:
-        log.warning("follow-up quiz generation failed")
-        raise HTTPException(502, "Follow-up quiz generation failed. Try again later.") from exc
-    if not result.questions:
-        raise HTTPException(
-            502, "Couldn't write reliable new questions on those topics - try again"
-        )
-    return StoredQuiz(
-        id=new_id(),
-        lesson_id=lesson.id,
-        title=f"{lesson.lesson.title}: your weak spots",
-        dropped=0,
-        questions=result.questions,
-        focus=result.focus,
-        parent_id=quiz.id,
-    )
+
+    return ensure_safe(build, quiz_text, req.age, req.topic)
 
 
 def deck_from_quiz(quiz: StoredQuiz, which: str = "missed") -> StoredDeck:

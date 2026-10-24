@@ -84,7 +84,7 @@ SubmitBody = Annotated[
     "",
     status_code=201,
     summary="Create a tournament from a lesson",
-    responses=errors(404, 502),
+    responses=errors(404, 422, 502),
     dependencies=[Depends(generation_permit, scope="function")],
 )
 def create_tournament(body: CreateBody) -> PublicQuiz:

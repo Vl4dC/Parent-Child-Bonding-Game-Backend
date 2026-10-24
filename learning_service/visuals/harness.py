@@ -32,6 +32,7 @@ from langgraph.types import Send
 from app.generation import model_settings
 from learning_service.lesson import reading_level
 from learning_service.quiz_graph import _llm
+from learning_service.safety import content_rules
 from learning_service.visuals import render
 from learning_service.visuals.models import (
     Visual,
@@ -90,7 +91,8 @@ def plan_prompt(req: VisualRequest) -> str:
         f"Available kinds (pick the one whose description fits best):\n{menu()}\n\n"
         f"Lesson sections (refer to them by number):\n{_sections(req)}\n\n"
         "`brief` must say exactly what to draw: the elements, their labels in the learner's words, "
-        "and for an interactive, the control and what it changes."
+        "and for an interactive, the control and what it changes.\n\n"
+        f"{content_rules(req.age)}"
     )
 
 
@@ -130,6 +132,7 @@ def draw_prompt(req: VisualRequest, item: VisualPlanItem, feedback: str = "") ->
     return (
         f"{SKILLS[item.kind].body}\n\n---\n"
         f"Learner: {req.age} years old. Write for them: {reading_level(req.age)}\n"
+        f"{content_rules(req.age)}"
         f"Topic: {req.topic}\n"
         f"Lesson section: {section.heading}\n{section.body}\n\n"
         f"Purpose: {item.purpose}\n"

@@ -1,4 +1,4 @@
-# Learn → Quiz → Tournament — Design
+# Learn → Quiz → Tournament - Design
 
 Date: 2026-10-24
 Supersedes the flow (not the API conventions) in `2026-10-24-interactive-mcq-web-design.md`:

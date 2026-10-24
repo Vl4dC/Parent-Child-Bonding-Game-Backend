@@ -27,6 +27,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, Field, StringConstraints
 
 from learning_service.quiz_graph import _llm
+from learning_service.safety import content_rules
 from learning_service.visuals.skillbook import menu
 
 VisualKind = Literal["diagram", "chart", "interactive"]
@@ -100,6 +101,13 @@ class Lesson(BaseModel):
         parts += [f"{s.heading}\n{s.body}" for s in self.sections]
         parts.append("Key points:\n" + "\n".join(f"- {p}" for p in self.key_points))
         return "\n\n".join(parts)
+
+    def safety_text(self) -> str:
+        """Everything a learner will read or be shown: the lesson text plus what each planned picture will show."""
+        pictures = [
+            f"Picture: {s.visual.purpose} {s.visual.brief}" for s in self.sections if s.visual
+        ]
+        return "\n\n".join([self.as_text(), *pictures])
 
 
 class GroundedLesson(Lesson):
@@ -181,6 +189,7 @@ def lesson_prompt(request: LessonRequest, pages: str | None = None) -> str:
         )
     prompt = (
         intro + f"How to write: {reading_level(request.age)}\n"
+        f"{content_rules(request.age)}"
         "Structure: a short summary; 2-6 sections that build on each other (start from what they "
         "already know, then the core idea, then a worked example); then 3-6 key points to remember. "
         "Simplify without saying anything false.\n\n"

@@ -72,6 +72,7 @@ def create_app(
                 await asyncio.to_thread(repository.close)
 
     from learning_service.api_docs import DESCRIPTION, SWAGGER_UI, TAGS
+    from learning_service.safety import AgeBlocked, SafetyUnavailable
 
     app = FastAPI(
         title="Family Learning API (LOCAL DEMO)" if settings.demo_mode else "Family Learning API",
@@ -105,6 +106,16 @@ def create_app(
                 ]
             },
         )
+
+    # Child-safety failures (learning_service/safety.py): the learner gets a fixed, friendly message,
+    # never the unsafe text or anything the model provider said.
+    @app.exception_handler(AgeBlocked)
+    async def age_blocked(request: Request, exc: AgeBlocked):
+        return JSONResponse(status_code=422, content={"detail": exc.message})
+
+    @app.exception_handler(SafetyUnavailable)
+    async def safety_unavailable(request: Request, exc: SafetyUnavailable):
+        return JSONResponse(status_code=502, content={"detail": str(exc)})
 
     @app.exception_handler(psycopg.Error)
     async def storage_error(request: Request, exc):
