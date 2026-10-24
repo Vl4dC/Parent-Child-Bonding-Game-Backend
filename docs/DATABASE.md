@@ -78,3 +78,13 @@ requires a reviewed database procedure. Destructive down migrations are not run 
 Minimal usage counters and expired lobby rows need periodic maintenance; no retention schedule has
 been silently chosen for schoolwork. Explicit deletion is implemented. Age-appropriate output policy,
 reviewer authority, guardian consent, gameplay, rewards, and hosted deployment remain separate work.
+
+
+## Diagram game storage — migration 008 addition
+
+Migration 008 creates private frozen templates, races, participant state and request receipts.
+The source-lesson foreign key cascades deletion to matches; a caller-bound function also removes
+the deleting user from other owners’ matches. Public/anon/authenticated table access is revoked.
+Controller authorization checks current room membership and captured participants. Read paths are
+projected/read-only; mutations lock room then race, with no DB lock held during browser rendering.
+See [diagram assembly](DIAGRAM_ASSEMBLY.md). Apply migrations explicitly; no hosted change was made.

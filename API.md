@@ -201,3 +201,11 @@ Five opt-in request/status/resend/guardian-decision routes have been added. See
 [OpenAPI schema](docs/learner-approval.openapi.json). The feature defaults off; approval does not
 activate a learner or grant family access. Earlier auth contracts and existing signup behavior
 remain unchanged. Creation requests require a private random 32–128 character Idempotency-Key.
+
+
+## Diagram assembly race — 24 October 2026 addition
+
+Fourteen authenticated operations reuse saved lesson flowcharts as frozen SVG label puzzles for
+simultaneous private-room play. See [DIAGRAM_ASSEMBLY.md](docs/DIAGRAM_ASSEMBLY.md) and the
+[additive OpenAPI](docs/diagram-assembly.openapi.json). Model source is unchanged; game grading
+and timing are deterministic/server-owned. Feature defaults off; frontend and deployment are pending.

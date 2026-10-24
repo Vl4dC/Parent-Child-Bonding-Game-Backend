@@ -331,6 +331,7 @@ def create_app(
             },
         )
 
+    from app.diagram_api import install as install_diagram_assembly
     from app.jobs import router as jobs_router
     from app.platform import router as platform_router
     from app.quiz_practice import install as install_quiz_practice
@@ -338,6 +339,7 @@ def create_app(
     from learning_service.routes import app as learning_router
 
     install_quiz_practice(app)
+    install_diagram_assembly(app)
 
     common_errors = {
         401: {"description": "Authentication required"},

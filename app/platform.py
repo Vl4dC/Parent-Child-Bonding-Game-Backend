@@ -173,6 +173,16 @@ def put_profile(body: Profile):
 def delete_own_data():
     """Delete application data and leave rooms; the Supabase Auth account remains active."""
     unit = current_session.get()
+    if unit.connection:
+        if unit.connection.execute(
+            "select to_regprocedure('api_private.diagram_forget_player()') is not null"
+        ).fetchone()[0]:
+            unit.connection.execute(
+                "select pg_advisory_xact_lock(hashtextextended('diagram-account-delete',0))"
+            )
+            unit.forget_diagram_player = True
+    else:
+        unit.forget_diagram_player = True
     for kind in (
         "profile",
         "materials",

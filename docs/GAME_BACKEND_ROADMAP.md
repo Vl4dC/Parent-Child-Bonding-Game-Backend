@@ -63,3 +63,12 @@ No frontend sensor code or device validation is included in this server work.
 Choose term/forbidden-word sourcing and review, players/teams, peer-confirmation rules, skip and
 violation behavior, round length, per-card transitions, scoring, disconnect handling, and the demo
 subset. Guardian access, rewards, purchases, rankings, and public matchmaking remain separate.
+
+
+## Diagram reconstruction — implemented backend addition, 24 October 2026
+
+The user selected a game that rebuilds saved AI-authored flowcharts from blank placeholders, using
+shuffled original labels on separate phones simultaneously. The backend now has scoped template,
+study, lobby discovery/start, placement/finish, results/review and repeat-round support without
+AI calls. See [DIAGRAM_ASSEMBLY.md](DIAGRAM_ASSEMBLY.md). Frontend, hosted runtime/migrations and
+real-device acceptance remain pending. This does not implement the other party-game catalogue.
