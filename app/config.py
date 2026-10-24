@@ -25,6 +25,12 @@ class Settings(BaseSettings):
     job_attempt_limit: int = Field(2, ge=1, le=5)
     learner_approval_enabled: bool = False
     learner_approval_secret: SecretStr | None = None
+    diagram_assembly_enabled: bool = False
+    diagram_node_executable: str = "node"
+    diagram_browser_executable: str | None = None
+    diagram_browser_sandbox: bool = True
+    diagram_render_timeout: int = Field(20, ge=5, le=60)
+    diagram_render_concurrency: int = Field(1, ge=1, le=4)
     quiz_model: str = "anthropic:claude-sonnet-5-5"
     visual_model: str | None = None
     model_timeout_seconds: int = Field(60, ge=1, le=300)

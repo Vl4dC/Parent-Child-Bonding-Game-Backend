@@ -204,6 +204,15 @@ class UnitOfWork:
                 )
             else:
                 self.repository.data[(self.owner, kind, key)] = copy.deepcopy(data)
+        if self.connection and getattr(self, "forget_diagram_player", False):
+            self.connection.execute("select api_private.diagram_forget_player()")
+        if not self.connection and hasattr(self.repository, "diagram_state"):
+            from app.diagram_store import cleanup_memory
+
+            cleanup_memory(
+                self.repository,
+                self.owner if getattr(self, "forget_diagram_player", False) else None,
+            )
 
 
 class MemoryRepository:

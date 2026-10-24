@@ -9,4 +9,5 @@ __pycache__/
 .ruff_cache/
 .coverage
 htmlcov/
+tools/diagram-renderer/node_modules/
 .DS_Store

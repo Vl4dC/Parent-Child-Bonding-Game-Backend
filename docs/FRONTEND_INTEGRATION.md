@@ -84,3 +84,12 @@ No frontend file was changed. The signup branch still needs future API-base/prox
 required headers; no same-origin /api/registration/learner alias is introduced. Parent/learner
 labels are not authority. Birth-year intake does not settle the under-16 versus under-18 policy.
 No activation, username login or automatic family-link behavior is included.
+
+
+## Simultaneous diagram assembly — additive handoff, 24 October 2026
+
+[The new backend contract](DIAGRAM_ASSEMBLY.md) supports selected saved flowcharts, study, room
+discovery/readiness, a shared five-second countdown, private label placements and first-perfect
+server timing. Frontend work is not included: proxy the new prefix with Bearer/Idempotency-Key and
+PUT support, map drops to SVG slot IDs, provide keyboard/accessible alternatives, and render
+progress/results/review. The fixed prompt is “How does this work?”; no model generation is invoked.
