@@ -32,3 +32,23 @@ jobs:
       - run: uv run ruff check app learning_service scripts tests
       - run: uv run ruff format --check app learning_service scripts tests
       - run: uv run pytest -q
+  diagram-renderer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.13.1'
+          python-version: '3.13'
+      - run: uv sync --locked
+      - run: npm ci --ignore-scripts --no-fund --no-audit
+        working-directory: tools/diagram-renderer
+      - run: npx --no-install playwright-core install --with-deps chromium
+        working-directory: tools/diagram-renderer
+      - run: uv run pytest tests/test_diagram_render.py tests/test_diagram_render_live.py -q
+        env:
+          DIAGRAM_RENDERER_TESTS: '1'
+          DIAGRAM_BROWSER_SANDBOX: '0'

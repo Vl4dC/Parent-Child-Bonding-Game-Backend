@@ -69,3 +69,32 @@ No Presence publication or active-game synchronization is implemented yet.
 A future game server must keep secret cards and answer keys off shared room payloads. The prototype's
 full `RoomState.secret` must never become a public API response. Derive actors from verified identity,
 validate phase/turn actions on the server, and choose/freeze rules before implementing each mode.
+
+
+## Quiz lifecycle integration — 24 October 2026 addition
+
+Use the new [deterministic quiz contract](QUIZ_PRACTICE_API.md) to resume first answers, display
+factual results, finish/review, create independent retries and reuse question answers as cards.
+Question corrections return a new quiz/snapshot; approvals are owner confirmations bound to that
+snapshot. Future frontend wiring must supply Bearer identity, idempotency keys and current answer
+counts. No frontend file was changed. Generation, safety checking and AI content production are
+untouched; points/coins/badges, multiplayer and family access remain separate pending rules.
+
+
+## Learner approval endpoints — additive note, 24 October 2026
+
+Opt-in canonical routes now cover pending learner registration, private receipt polling,
+notification resend and verified guardian decisions. See [LEARNER_APPROVAL.md](LEARNER_APPROVAL.md).
+No frontend file was changed. The signup branch still needs future API-base/proxy wiring and
+required headers; no same-origin /api/registration/learner alias is introduced. Parent/learner
+labels are not authority. Birth-year intake does not settle the under-16 versus under-18 policy.
+No activation, username login or automatic family-link behavior is included.
+
+
+## Simultaneous diagram assembly — additive handoff, 24 October 2026
+
+[The new backend contract](DIAGRAM_ASSEMBLY.md) supports selected saved flowcharts, study, room
+discovery/readiness, a shared five-second countdown, private label placements and first-perfect
+server timing. Frontend work is not included: proxy the new prefix with Bearer/Idempotency-Key and
+PUT support, map drops to SVG slot IDs, provide keyboard/accessible alternatives, and render
+progress/results/review. The fixed prompt is “How does this work?”; no model generation is invoked.

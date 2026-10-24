@@ -183,3 +183,29 @@ CORS permits configured exact origins, GET/POST/PUT/PATCH/DELETE, Authorization 
 it does not enable cookie credentials or replace authentication. Upstream Supabase rate limits
 exist; application/edge per-client limiting has not been implemented. Never log real passwords,
 Bearer/refresh tokens, email hashes, or request bodies containing them.
+
+
+## Non-AI quiz lifecycle — 24 October 2026 addition
+
+Eleven deterministic operations now supplement existing quiz contracts: resume/results, strict
+idempotent answers, finish/review, all/missed retries, snapshot history, idempotent review cards,
+author review, question revisions and snapshot-bound approval. See
+[QUIZ_PRACTICE_API.md](docs/QUIZ_PRACTICE_API.md) and the additive
+[OpenAPI supplement](docs/quiz-practice.openapi.json). AI generation/safety code is unchanged.
+
+
+## Learner approval addition — 24 October 2026
+
+Five opt-in request/status/resend/guardian-decision routes have been added. See
+[LEARNER_APPROVAL.md](docs/LEARNER_APPROVAL.md) and the additive
+[OpenAPI schema](docs/learner-approval.openapi.json). The feature defaults off; approval does not
+activate a learner or grant family access. Earlier auth contracts and existing signup behavior
+remain unchanged. Creation requests require a private random 32–128 character Idempotency-Key.
+
+
+## Diagram assembly race — 24 October 2026 addition
+
+Fourteen authenticated operations reuse saved lesson flowcharts as frozen SVG label puzzles for
+simultaneous private-room play. See [DIAGRAM_ASSEMBLY.md](docs/DIAGRAM_ASSEMBLY.md) and the
+[additive OpenAPI](docs/diagram-assembly.openapi.json). Model source is unchanged; game grading
+and timing are deterministic/server-owned. Feature defaults off; frontend and deployment are pending.

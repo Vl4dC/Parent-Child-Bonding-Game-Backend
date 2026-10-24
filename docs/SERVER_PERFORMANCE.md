@@ -83,3 +83,12 @@ concurrent deletion, and replaced leases while generation is in progress.
 Hosted Supabase Realtime and live model acceptance remain separate staging checks. Pools and SQL
 optimizations do not select a retention policy for schoolwork or automatically prune expired lobbies
 and operational counters. Operators still need a reviewed maintenance schedule for those tables.
+
+
+## Diagram assembly renderer — additive limits, 24 October 2026
+
+The optional renderer is isolated/time-bounded and concurrency-limited; it runs outside DB
+transactions and caches frozen output by source fingerprint. Game reads project away unrelated
+SVG/receipt/tray payloads. Mutations use short room/race locks and the existing bounded control
+pool. Node/Chromium, sandbox and deployment requirements are in [DIAGRAM_ASSEMBLY.md](DIAGRAM_ASSEMBLY.md).
+No provider call, runtime network fetch, frontend change or production-load claim is added.
