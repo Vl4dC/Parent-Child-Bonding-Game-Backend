@@ -425,7 +425,21 @@ def test_api_schema_declares_bearer_auth_for_every_data_operation(client):
 
 
 def test_ready_reports_adapter_durability(client, repository):
-    assert client.get("/ready").json() == {"ready": True, "durable": repository.durable}
+    assert client.get("/ready").json() == {
+        "ready": True,
+        "durable": repository.durable,
+        "features": {
+            "diagram_assembly": {
+                "enabled": False,
+                "ready": True,
+                "state": "disabled",
+                "reason": None,
+                "schema_ready": None,
+                "renderer_ready": None,
+                "checked_at": None,
+            }
+        },
+    }
 
 
 def test_flashcard_retries_do_not_duplicate_reviews_with_idempotency_key(client, lesson_id):

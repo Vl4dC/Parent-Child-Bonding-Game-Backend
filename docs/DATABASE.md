@@ -88,3 +88,15 @@ the deleting user from other owners’ matches. Public/anon/authenticated table 
 Controller authorization checks current room membership and captured participants. Read paths are
 projected/read-only; mutations lock room then race, with no DB lock held during browser rendering.
 See [diagram assembly](DIAGRAM_ASSEMBLY.md). Apply migrations explicitly; no hosted change was made.
+
+
+## Diagram lifecycle migration 009 — 25 October 2026 addition
+
+`20261025000900_diagram_lifecycle.sql` adds `diagram_races_template` and the private
+`diagram_source_changed` trigger/function. Lesson data updates lock affected active races and
+atomically persist source cancellation, preserving finished/expired outcomes. Existing deletion
+cascades remain intact; no public schema access is granted. Apply after 008 explicitly.
+Preflight checks tables, indexes, cleanup/invalidation functions and an origin-enabled trigger.
+The migration has no historical repair sweep. Drain/cancel previously stale matches before
+enabling an existing deployment; see [rollout and readiness](DIAGRAM_LIFECYCLE_READINESS.md).
+No hosted database was migrated as part of implementation.

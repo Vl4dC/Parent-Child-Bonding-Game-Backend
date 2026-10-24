@@ -46,3 +46,26 @@ def test_real_snapshot_preserves_geometry_and_removes_all_labels(code, expected)
         sanitized(result["puzzle_svg"])
     )
     assert all(text not in result["puzzle_svg"] for text in expected)
+
+
+def test_real_readonly_preflight_checks_versions_and_caches_browser_probe():
+    from app.config import Settings
+    from app.diagram_preflight import DiagramPreflight
+    from app.repository import MemoryRepository
+
+    config = Settings(
+        app_env="test",
+        demo_mode=True,
+        diagram_assembly_enabled=True,
+        diagram_browser_executable=os.getenv("DIAGRAM_BROWSER_EXECUTABLE"),
+        diagram_browser_sandbox=os.getenv("DIAGRAM_BROWSER_SANDBOX") != "0",
+        _env_file=None,
+    )
+    repo = MemoryRepository()
+    cache = DiagramPreflight()
+    result = cache.check(repo, config)
+    assert result["ready"], result
+    assert result["versions"]["mermaid"] == "12.2.0"
+    assert result["versions"]["playwright"] == "1.64.1"
+    assert cache.check(repo, config) == result
+    assert repo.data == {} and not hasattr(repo, "diagram_state")

@@ -209,3 +209,18 @@ Fourteen authenticated operations reuse saved lesson flowcharts as frozen SVG la
 simultaneous private-room play. See [DIAGRAM_ASSEMBLY.md](docs/DIAGRAM_ASSEMBLY.md) and the
 [additive OpenAPI](docs/diagram-assembly.openapi.json). Model source is unchanged; game grading
 and timing are deterministic/server-owned. Feature defaults off; frontend and deployment are pending.
+
+
+## Diagram lifecycle/readiness supplement — 25 October 2026
+
+Added verified-session `GET /api/diagram-assembly/rooms/{room_id}/management`: current room host
+only, returning latest `room_id`, `race_id`, `version`, `status`, `reason`. A late host may cancel
+without participant content access. Cancel now returns 409 for finished/expired races; cancelled
+retries stay stable. Active source withdrawal/change persists cancellation through migration 009.
+Race snapshots add `reason` and `source`; results add `source: {available, reason}`. Finished
+summaries remain readable when source invalid, while diagram review/board remain blocked.
+`GET /ready` retains `ready`/`durable` and adds `features.diagram_assembly`; enabled dependency
+failure returns 503. Disabled features do not require Node/Chromium. Responses are no-store.
+See [exact rules and examples](docs/DIAGRAM_LIFECYCLE_READINESS.md) and the additive
+[15-operation diagram/readiness OpenAPI snapshot](docs/diagram-lifecycle-readiness.openapi.json).
+Earlier API descriptions and snapshots are preserved as historical records.
