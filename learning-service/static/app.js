@@ -362,7 +362,7 @@ document.addEventListener("keydown", (e) => {
 function renderResults() {
   const score = checks.filter((c) => c.correct).length;
   const total = checks.length;
-  $("score").textContent = `${score} / ${total} — ${Math.round((score / total) * 100)}%`;
+  $("score").textContent = `${score} / ${total} - ${Math.round((score / total) * 100)}%`;
   $("results-title").textContent = quiz.title;
   setError($("results-error"), "");
   // missed anything? offer the two ways to fix it; a clean follow-up gets a pat on the back instead

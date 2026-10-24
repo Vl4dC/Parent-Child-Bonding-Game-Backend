@@ -76,9 +76,15 @@ Model generation is opt-in. The full contract is documented in docs/API_PLATFORM
 - **Slow calls:** anything that writes with the model takes 10-40 seconds. Swagger shows a spinner, then the duration.
 - **Pictures:** diagrams come back as complete HTML pages inside JSON (`html`, `visual_html`, `*_visual_html`),
   which Swagger can't render. Fetch **`/view`** endpoints with your Authorization header and render the response in a sandbox. Never put tokens in URLs.
+- **Child safety:** the learners are school students (10-18). Everything the model writes is written to rules
+  for the learner's age, then checked by a separate safety check before it is kept; what a learner types as a
+  topic or picture request is checked first. Anything unsuitable for the age is a friendly `422` that never
+  repeats it. A learner older than `AUDIENCE_MAX_AGE` (default 18) still gets the 18-and-under rules, because the
+  backend can't verify age. If the check itself can't run, young learners get a `502` and nothing is made.
 - **Errors:** `404` unknown or unowned id, `409` nothing to practise yet (no wrong answers),
-  `413`/`415` upload too big or not a PDF/picture, `422` invalid input (or a request the book doesn't cover),
-  `502` the model call failed.
+  `413`/`415` upload too big or not a PDF/picture, `422` invalid input (or a request the book doesn't cover,
+  or content held back as unsuitable for the learner's age), `502` the model call or the safety check failed
+  (safe to try again; the message never contains the provider's error text).
 - **Uploads:** PDFs are read locally for free; pictures (scans, photos) are read by the vision model,
   with provider usage charges. Limits: 25 MB per file, 600 pages, 100 picture pages, 20 photos at once.
 - Long generation can use `/api/jobs` with an Idempotency-Key and a separately started worker.
@@ -100,6 +106,10 @@ class Error(BaseModel):
 _ERRORS = {
     404: "Unknown or unowned id. Ephemeral demo records also disappear on restart.",
     409: "Nothing to practise, review required, stale state, or conflicting replay.",
+    422: (
+        "Invalid input, or a request the book doesn't cover, or content the child-safety check held "
+        "back because it isn't suitable for the learner's age. The response never repeats the unsafe text."
+    ),
     413: "The upload is too big (25 MB per file, 600 PDF pages, 20 files).",
     415: "That file isn't a PDF or a picture (JPG, PNG or WebP) that can be read.",
     502: "The model call failed, or produced nothing usable. Safe to try again.",

@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field
 
 from learning_service.lesson import Lesson, reading_level
 from learning_service.quiz_graph import _llm
+from learning_service.safety import content_rules
 from learning_service.visual_recall import BLANK, BlankItem, IllustratedQuestion, hidden
 from learning_service.visuals.models import Visual
 from learning_service.visuals.render import document
@@ -54,6 +55,7 @@ def cards_prompt(lesson: Lesson, topic: str, age: int, n: int) -> str:
     return (
         f'Write {n} flashcards for a {age}-year-old who just studied "{topic}" with the lesson below.\n'
         f"Write for them: {reading_level(age)}\n"
+        f"{content_rules(age)}"
         "Cover every key point and the important words. Mix card styles: a term and what it means, "
         "a how/why question, cause and effect, an example to recognise, and fill-in-the-blank sentences "
         "(use ____ for the blank). Each card tests one idea; no two cards test the same thing. "

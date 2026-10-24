@@ -46,7 +46,7 @@ As of 2026-10-24. Sizes are rough: **S** small, **M** medium, **L** large. **?**
 - [ ] **S** HEIC photos (iPhone) and password-protected PDFs (ask for the password).
 
 ## E. Students' safety and trust (?)
-- [ ] **M** Age-appropriate check on topics and uploads (children use this).
+- [x] **M** Age-appropriate guardrails on what the AI writes for under-18s (`learning_service/safety.py`, see `learning-service/docs/superpowers/specs/2026-10-24-child-safety-guardrails.md`). Still open: a bigger red-team set (about 30 prompts per age band), checking text inside finished widgets, and a real age from the wider app instead of a typed number.
 - [ ] **S** Privacy notice: book text and photos go to the model provider; consent for under-18s; "your own copy only".
 - [ ] **S** Retention: once there is persistence, add delete-my-data and auto-expiry.
 

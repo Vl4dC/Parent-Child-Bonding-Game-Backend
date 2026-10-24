@@ -1,4 +1,4 @@
-# Interactive MCQ Web App — Design
+# Interactive MCQ Web App - Design
 
 Date: 2026-10-24
 Status: Approved (pending spec review)
@@ -34,7 +34,7 @@ Browser (static/index.html + static/app.js)
    │ POST /api/quiz/{id}/check      {index, choice}   (practice only)
    │ POST /api/quiz/{id}/submit     {answers: [choice,...]}  (exam only)
    ▼
-app.py (FastAPI) — in-memory store {quiz_id: StoredQuiz(quiz, mode)}
+app.py (FastAPI) - in-memory store {quiz_id: StoredQuiz(quiz, mode)}
    │
    ▼
 quiz_graph.make_quiz(QuizRequest(..., allowed_types=["multiple_choice", "true_false"]))
@@ -42,12 +42,12 @@ quiz_graph.make_quiz(QuizRequest(..., allowed_types=["multiple_choice", "true_fa
 
 ### Files
 
-- `quiz_graph.py` — small change (see below). Everything else untouched.
-- `app.py` — new. FastAPI app, request/response models, in-memory store, routes, static mount.
-- `static/index.html` — new. Markup and CSS for the three screens.
-- `static/app.js` — new. Screen switching, API calls, practice/exam state.
-- `tests/test_app.py` — new. API tests with `make_quiz` faked.
-- `tests/test_quiz_graph.py` — new. `allowed_types` filtering test with a fake LLM.
+- `quiz_graph.py` - small change (see below). Everything else untouched.
+- `app.py` - new. FastAPI app, request/response models, in-memory store, routes, static mount.
+- `static/index.html` - new. Markup and CSS for the three screens.
+- `static/app.js` - new. Screen switching, API calls, practice/exam state.
+- `tests/test_app.py` - new. API tests with `make_quiz` faked.
+- `tests/test_quiz_graph.py` - new. `allowed_types` filtering test with a fake LLM.
 
 Run: `python -m uv run uvicorn app:app --reload`, then open http://localhost:8000.
 
@@ -93,7 +93,7 @@ Response: `{ "correct": bool, "answer_index": int, "explanation": str }`
 
 ### `POST /api/quiz/{id}/submit` (exam only)
 
-Request: `{ "answers": [int, ...] }` — one choice per question, in order.
+Request: `{ "answers": [int, ...] }` - one choice per question, in order.
 Response:
 ```json
 {
@@ -106,11 +106,11 @@ Response:
 
 One page, three screens switched by JS.
 
-1. **Start** — prompt textbox, question count (1–15, default 5), Practice/Exam
+1. **Start** - prompt textbox, question count (1–15, default 5), Practice/Exam
    toggle, Generate button. While generating, the button becomes a spinner:
    "Writing your quiz… (≈30 s)". Errors appear in red below the form; the
    typed prompt is kept.
-2. **Quiz** — one question card at a time, "Q2 / 6" progress. Option buttons
+2. **Quiz** - one question card at a time, "Q2 / 6" progress. Option buttons
    (4 for multiple choice, 2 for true/false). Keyboard: 1–4 or A–D selects.
    If `dropped > 0`, show "N question(s) removed after failing review".
    - *Practice:* click → `/check` → card locks; chosen option green or red,
@@ -119,7 +119,7 @@ One page, three screens switched by JS.
      last card's Next goes to Results.
    - *Exam:* click highlights the choice and can be changed; Back/Next
      navigation; Submit on the last card, enabled when every question has a choice.
-3. **Results** — score ("5 / 6 — 83%") and a review list: question, your answer,
+3. **Results** - score ("5 / 6 - 83%") and a review list: question, your answer,
    correct answer, explanation. "New quiz" returns to Start.
 
 In practice mode the results screen is built from the `/check` responses
@@ -130,7 +130,7 @@ already received; in exam mode from the `/submit` response.
 | Case | Response | UI |
 |---|---|---|
 | LLM/API failure (bad key, rate limit, bad model id) | 502 `{"detail": "<short message>"}` | Red message on Start, prompt kept |
-| Every question unresolved | 502 "Couldn't produce reliable questions — try rephrasing" | Same |
+| Every question unresolved | 502 "Couldn't produce reliable questions - try rephrasing" | Same |
 | Empty prompt, count out of 1–15, bad mode | 422 (Pydantic) | Same |
 | Unknown quiz id | 404 | "Quiz expired" + New quiz button |
 | `/check` on an exam quiz, or `/submit` on a practice quiz | 403 | Not reachable from the UI; guards against direct API use |

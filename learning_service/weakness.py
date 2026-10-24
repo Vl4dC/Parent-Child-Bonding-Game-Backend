@@ -33,6 +33,7 @@ from pydantic import BaseModel, Field
 
 from learning_service.lesson import reading_level
 from learning_service.quiz_graph import Question, QuestionType, _llm
+from learning_service.safety import content_rules
 from learning_service.visual_recall import (
     IllustratedQuestion,
     make_blank_items,
@@ -284,7 +285,8 @@ def diagnose_prompt(req: RemedialRequest) -> str:
         "Group the misses into the underlying ideas they have not mastered (one weakness can explain several "
         'misses). For each: `concept` (a few words in the learner\'s vocabulary, e.g. "How clouds form"), '
         "`misconception` (one sentence: what their wrong choice suggests they believe; leave empty if it looks "
-        "like a guess) and `misses` (the [numbers] it explains). Every missed question belongs to exactly one weakness."
+        "like a guess) and `misses` (the [numbers] it explains). Every missed question belongs to exactly one weakness.\n"
+        f"The concepts are shown to the learner.\n{content_rules(req.age)}"
     )
 
 
@@ -317,6 +319,7 @@ def variant_prompt(
         f"Question type: {kind}.\n"
         "Exactly one correct answer; the explanation is 1-2 sentences that clear up the misunderstanding.\n"
         f"Write for them: {reading_level(req.age)}\n"
+        f"{content_rules(req.age)}"
         f"Only test what this lesson teaches:\n<lesson>\n{req.lesson_text[:LESSON_CHARS]}\n</lesson>"
         + (f"\n\n{feedback}" if feedback else "")
     )

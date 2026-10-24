@@ -31,6 +31,7 @@ from langgraph.types import Send
 from pydantic import BaseModel, Field, model_validator
 
 from app.generation import model_settings
+from learning_service.safety import content_rules
 
 QuestionType = Literal["multiple_choice", "true_false", "short_answer"]
 Difficulty = Literal["easy", "medium", "hard"]
@@ -174,6 +175,7 @@ def _context(req: QuizRequest | None) -> str:
         parts.append(
             f"Audience: a {req.age}-year-old learner. Match their vocabulary and reading level."
         )
+        parts.append(content_rules(req.age))
     if req.source:
         parts.append(
             "Only test what this lesson teaches:\n<lesson>\n" + req.source[:8000] + "\n</lesson>"
