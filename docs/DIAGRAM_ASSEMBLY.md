@@ -237,3 +237,13 @@ was used. Existing frontend and AI/harness source files are unchanged.
 
 The renderer targets a managed Linux/macOS backend with POSIX process supervision. Hosted
 sandbox/runtime and real multi-phone UI acceptance remain required before enabling it.
+
+
+## First lifecycle/readiness fix batch — 25 October 2026 addition
+
+The [lifecycle/readiness supplement](DIAGRAM_LIFECYCLE_READINESS.md) adds migration 009, terminal
+result protection, atomic active-source invalidation, minimal current-host management and cached
+synthetic renderer preflight. These rules supersede the earlier cancellation/source-readiness
+descriptions without rewriting them. Explicit leave/rejoin and room-ready behavior are unchanged.
+The new [OpenAPI supplement](diagram-lifecycle-readiness.openapi.json) has 15 diagram operations
+and readiness. No frontend, AI/harness or hosted configuration changes are included.

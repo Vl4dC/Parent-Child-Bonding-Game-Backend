@@ -78,6 +78,20 @@ class RaceAction(BaseModel):
     status: Literal["running", "countdown", "cancelled"]
     started_at: int | None
     deadline_at: int | None
+    reason: str | None = None
+
+
+class SourceAvailability(BaseModel):
+    available: bool
+    reason: Literal["source_unavailable", "source_unapproved", "source_changed"] | None
+
+
+class RaceManagement(BaseModel):
+    room_id: str
+    race_id: str
+    version: int
+    status: Literal["waiting", "countdown", "running", "finished", "expired", "cancelled"]
+    reason: str | None = None
 
 
 class RaceMember(BaseModel):
@@ -100,6 +114,8 @@ class RaceSnapshot(BaseModel):
     server_now: int
     my_player_id: str
     players: list[RaceMember]
+    reason: str | None = None
+    source: SourceAvailability
 
 
 class Slot(BaseModel):
@@ -165,6 +181,7 @@ class Results(BaseModel):
     players: list[PlayerResult]
     winner_ids: list[str]
     scoring: Literal["fastest_correct_server_elapsed"]
+    source: SourceAvailability
 
 
 class Solution(BaseModel):
@@ -256,6 +273,11 @@ async def start(race_id: ItemId, body: VersionInput, key: Key, identity: Identit
     )
 
 
+@router.get("/rooms/{room_id}/management", response_model=RaceManagement)
+async def management(room_id: ItemId, identity: Identity):
+    return await asyncio.to_thread(identity.game.management, room_id, identity.owner)
+
+
 @router.get("/races/{race_id}/board", response_model=Board)
 async def board(race_id: ItemId, identity: Identity):
     return await asyncio.to_thread(identity.game.board, race_id, identity.owner)
@@ -305,8 +327,11 @@ async def cancel(race_id: ItemId, body: VersionInput, key: Key, identity: Identi
 
 
 def install(app):
+    from app.diagram_preflight import DiagramPreflight
+
     app.state.diagram_render_slots = threading.BoundedSemaphore(
         app.state.settings.diagram_render_concurrency
     )
     app.state.diagram_renderer = render_snapshot
+    app.state.diagram_preflight = DiagramPreflight(render_slots=app.state.diagram_render_slots)
     app.include_router(router)

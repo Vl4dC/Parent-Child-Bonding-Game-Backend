@@ -9,9 +9,9 @@ from uuid import uuid4
 
 from fastapi import HTTPException
 
+from app.diagram_lifecycle import phase, source_fingerprint, source_reason
 from app.diagram_store import DiagramStore
 
-SNAPSHOT_VERSION = "mermaid-12.2.0-frozen-v1"
 QUESTION = "How does this work?"
 MAX_ACTIONS = 1000
 
@@ -26,6 +26,8 @@ class DiagramGame:
     def __init__(self, repository, clock=None):
         self.store = DiagramStore(repository)
         self.clock = clock
+        if not repository.durable and clock is not None:
+            repository.diagram_clock_ms = clock
 
     def now(self, tx):
         if self.clock:
@@ -47,13 +49,7 @@ class DiagramGame:
             raise HTTPException(404, "Saved visual not found.")
         if visual.get("kind") != "diagram":
             raise HTTPException(422, "Select a saved Mermaid flowchart visual.")
-        fingerprint = digest(
-            {
-                "visual": visual,
-                "lesson_revision": lesson.get("revision", 1),
-                "snapshot": SNAPSHOT_VERSION,
-            }
-        )
+        fingerprint = source_fingerprint(visual, lesson.get("revision", 1))
         return visual, fingerprint
 
     def template_info(self, t):
@@ -210,7 +206,16 @@ class DiagramGame:
             )
             return {"id": r["id"], "room_id": r["room_id"], "version": 1, "status": "waiting"}
 
-    def load(self, tx, race_id, actor, write=False, private_actor=False, full_snapshot=False):
+    def load(
+        self,
+        tx,
+        race_id,
+        actor,
+        write=False,
+        private_actor=False,
+        full_snapshot=False,
+        management=False,
+    ):
         r = tx.get("races", race_id)
         if not r:
             raise HTTPException(404, "Race not found.")
@@ -220,36 +225,40 @@ class DiagramGame:
             r = tx.get("races", race_id, lock=True)
             if not r:
                 raise HTTPException(404, "Race not found.")
+            now = self.now(tx)
         players = tx.players(race_id, private_for=actor if private_actor else None)
         player = next((p for p in players if p["user_id"] == actor), None)
-        if not player:
+        if not player and not (management and actor in (room["host_id"], r["owner_id"])):
             raise HTTPException(404, "This account is not a participant in this race.")
         template = tx.get("templates", r["template_id"], light=not full_snapshot)
         if not template:
             raise HTTPException(404, "Source diagram is unavailable.")
-        _, current = self.source(tx, r["owner_id"], template["lesson_id"], template["visual_id"])
-        if current != template["source_hash"]:
-            raise HTTPException(409, "Source visual changed; create a new race.")
         return r, template, room, players, player, now
 
-    def status(self, r, players, now):
-        if r["status"] in ("cancelled", "waiting", "finished", "expired"):
-            return r["status"]
-        if all(p["completed_at"] is not None or p["forfeited"] for p in players):
-            return "finished"
-        if now < r["started_at"]:
-            return "countdown"
-        if now >= r["deadline_at"]:
-            return "expired"
-        return "running"
+    def availability(self, tx, r, t):
+        reason = source_reason(tx.source(r["owner_id"], t["lesson_id"]), t)
+        return {"available": reason is None, "reason": reason}
 
-    def summary(self, r, t, room, players, me, now):
+    def require_source(self, tx, r, t):
+        source = self.availability(tx, r, t)
+        if not source["available"]:
+            raise HTTPException(
+                409, "Source is withdrawn or changed; create a newly reviewed race."
+            )
+        return source
+
+    def status(self, r, players, now):
+        return phase(r, players, now)
+
+    def summary(self, r, t, room, players, me, now, source):
         current = {m["user_id"] for m in room["members"]}
         return {
             "id": r["id"],
             "room_id": r["room_id"],
             "version": r["version"],
             "status": self.status(r, players, now),
+            "reason": r.get("terminal_reason"),
+            "source": source,
             "question": QUESTION,
             "total": len(t["snapshot"]["slots"]),
             "started_at": r["started_at"],
@@ -271,7 +280,7 @@ class DiagramGame:
     def snapshot(self, race_id, actor):
         with self.store.transaction() as tx:
             r, t, room, players, me, now = self.load(tx, race_id, actor)
-            return self.summary(r, t, room, players, me, now)
+            return self.summary(r, t, room, players, me, now, self.availability(tx, r, t))
 
     def current(self, room_id, actor):
         with self.store.transaction() as tx:
@@ -280,7 +289,23 @@ class DiagramGame:
             if not r:
                 raise HTTPException(404, "No diagram race has been created in this room.")
             r, t, room, players, me, now = self.load(tx, r["id"], actor)
-            return self.summary(r, t, room, players, me, now)
+            return self.summary(r, t, room, players, me, now, self.availability(tx, r, t))
+
+    def management(self, room_id, actor):
+        with self.store.transaction() as tx:
+            room = self.room(tx, room_id, actor, self.now(tx))
+            if room["host_id"] != actor:
+                raise HTTPException(403, "Only the current room host can manage this race.")
+            r = tx.latest_race(room_id)
+            if not r:
+                raise HTTPException(404, "No diagram race has been created in this room.")
+            return {
+                "room_id": room_id,
+                "race_id": r["id"],
+                "version": r["version"],
+                "status": self.status(r, tx.players(r["id"]), self.now(tx)),
+                "reason": r.get("terminal_reason"),
+            }
 
     def action(self, receipts, actor, operation, key, body):
         address = digest([actor, operation, key])
@@ -299,6 +324,7 @@ class DiagramGame:
             address, saved = self.action(r["actions"], actor, "start", key, body)
             if saved:
                 return saved["response"]
+            self.require_source(tx, r, t)
             if (
                 self.status(r, players, now) != "waiting"
                 or r["version"] != body["expected_version"]
@@ -340,6 +366,7 @@ class DiagramGame:
                 raise HTTPException(409, "The host has not started the shared clock.")
             if r["status"] == "cancelled":
                 raise HTTPException(409, "Race was cancelled.")
+            self.require_source(tx, r, t)
             return {
                 "id": race_id,
                 "question": QUESTION,
@@ -361,6 +388,7 @@ class DiagramGame:
             r, template, _, players, _, now = self.load(tx, race_id, actor, full_snapshot=True)
             if self.status(r, players, now) != "waiting":
                 raise HTTPException(409, "Study view closes when the common race clock starts.")
+            self.require_source(tx, r, template)
             return {
                 "id": race_id,
                 "question": QUESTION,
@@ -384,6 +412,7 @@ class DiagramGame:
             address, saved = self.action(me["receipts"], actor, operation, key, body)
             if saved:
                 return saved["response"]
+            self.require_source(tx, r, t)
             if me["completed_at"] is not None:
                 raise HTTPException(409, "The first correct finish is final.")
             if self.status(r, players, now) != "running" or me["forfeited"]:
@@ -447,6 +476,9 @@ class DiagramGame:
             status = self.status(r, players, now)
             if status not in ("finished", "expired"):
                 raise HTTPException(409, "Results and the solution unlock after all attempts end.")
+            source = self.availability(tx, r, t)
+            if review:
+                self.require_source(tx, r, t)
             current = {m["user_id"] for m in room["members"]}
             times = sorted(p["elapsed_ms"] for p in players if p["completed_at"] is not None)
             entries = [
@@ -471,6 +503,7 @@ class DiagramGame:
                 ),
                 "winner_ids": [p["id"] for p in entries if p["rank"] == 1],
                 "scoring": "fastest_correct_server_elapsed",
+                "source": source,
             }
             if review:
                 out |= {
@@ -483,7 +516,7 @@ class DiagramGame:
 
     def cancel(self, race_id, actor, body, key):
         with self.store.transaction(write=True) as tx:
-            r, _, _, _, _, _ = self.load(tx, race_id, actor, write=True)
+            r, _, _, players, _, now = self.load(tx, race_id, actor, write=True, management=True)
             room = tx.room(r["room_id"])
             if r["owner_id"] != actor and room["host_id"] != actor:
                 raise HTTPException(
@@ -492,12 +525,18 @@ class DiagramGame:
             address, saved = self.action(r["actions"], actor, "cancel", key, body)
             if saved:
                 return saved["response"]
+            if self.status(r, players, now) in ("finished", "expired"):
+                raise HTTPException(409, "Finished or expired race results cannot be cancelled.")
             if r["version"] != body["expected_version"]:
                 raise HTTPException(409, "Race changed.")
-            r.update(status="cancelled", version=r["version"] + 1)
+            if r["status"] != "cancelled":
+                r.update(
+                    status="cancelled", version=r["version"] + 1, terminal_reason="host_cancelled"
+                )
             out = {
                 "id": race_id,
                 "status": "cancelled",
+                "reason": r.get("terminal_reason"),
                 "version": r["version"],
                 "started_at": r["started_at"],
                 "deadline_at": r["deadline_at"],

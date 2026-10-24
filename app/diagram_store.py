@@ -262,3 +262,16 @@ def cleanup_memory(repository, deleted_owner=None):
     for address, r in list(state["requests"].items()):
         if r["template_id"] not in state["templates"]:
             del state["requests"][address]
+    import time
+
+    from app.diagram_lifecycle import invalidate, source_reason
+
+    clock = getattr(repository, "diagram_clock_ms", None)
+    now = int(clock()) if clock else time.time_ns() // 1_000_000
+    for race in state["races"].values():
+        template = state["templates"][race["template_id"]]
+        lesson = repository.data.get((template["owner_id"], "lessons", template["lesson_id"]))
+        reason = source_reason(lesson, template)
+        if reason:
+            players = [p for (rid, _), p in state["players"].items() if rid == race["id"]]
+            invalidate(race, players, now, reason)
