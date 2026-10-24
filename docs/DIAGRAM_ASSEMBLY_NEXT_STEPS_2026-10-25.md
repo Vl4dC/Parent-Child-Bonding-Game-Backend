@@ -78,6 +78,10 @@ Acceptance: host transfer to a captured player and to a late joiner; all origina
 reconnect without leave; explicit leave/rejoin; cancel after source invalidation; deletion concurrent
 with every recovery path. No erased player row may be recreated.
 
+The host-recovery interface also needs room-addressed management or minimal host-only race
+ID/version discovery. Otherwise the late host cannot identify the race they are authorized to
+cancel. This must not widen participant board/review snapshots or reveal another player's data.
+
 ## Phase 2 — runtime readiness and operational release gate (P0)
 
 Add a **read-only preflight** that checks migration 008 tables/function/indexes, Node/helper package,
