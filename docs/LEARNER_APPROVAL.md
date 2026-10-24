@@ -199,3 +199,21 @@ Sixteen full-suite skips are memory variants of PostgreSQL-only checks; their Po
 The remaining skip is the opt-in live paid safety-model check. Lint passed and all 70 Python files
 passed format checking. OpenAPI references resolve. Existing documentation bytes were verified
 as unchanged prefixes. No real emails, model calls, hosted migrations or deployments were used.
+
+## Policy decision — under 16 (24 October 2026)
+
+The user confirmed that guardian approval applies to learners **under 16**. A learner who has
+reached their 16th birthday is outside this age-based approval requirement. Earlier statements
+that the cutoff was undecided are historical; this addition records the confirmed decision
+without rewriting them. It does not establish unrelated adult-learner or parent-eligibility rules.
+
+The current birth-year-only intake cannot resolve an exact birthday boundary. Future eligibility
+enforcement must use a validated full birth date and an agreed date/timezone convention, and test
+the day before, the day of and the day after the 16th birthday, including leap-day dates. Birth
+date remains self-reported metadata, not independent identity or guardian-authority verification.
+
+This is a documentation-only policy addition. No frontend, endpoint behavior, Auth provisioning
+or activation setting has changed. The feature remains off by default, activation remains absent,
+and existing registration paths are not yet subject to mandatory approval enforcement. The prior
+602-passed/17-skipped results refer to the unchanged runtime code; no new runtime test result is
+claimed for this documentation-only addition.
