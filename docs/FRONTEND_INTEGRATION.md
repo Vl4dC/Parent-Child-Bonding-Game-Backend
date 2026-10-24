@@ -64,3 +64,13 @@ No Presence publication or active-game synchronization is implemented yet.
 A future game server must keep secret cards and answer keys off shared room payloads. The prototype's
 full `RoomState.secret` must never become a public API response. Derive actors from verified identity,
 validate phase/turn actions on the server, and choose/freeze rules before implementing each mode.
+
+
+## Quiz lifecycle integration — 24 October 2026 addition
+
+Use the new [deterministic quiz contract](QUIZ_PRACTICE_API.md) to resume first answers, display
+factual results, finish/review, create independent retries and reuse question answers as cards.
+Question corrections return a new quiz/snapshot; approvals are owner confirmations bound to that
+snapshot. Future frontend wiring must supply Bearer identity, idempotency keys and current answer
+counts. No frontend file was changed. Generation, safety checking and AI content production are
+untouched; points/coins/badges, multiplayer and family access remain separate pending rules.
