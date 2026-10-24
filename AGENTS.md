@@ -36,8 +36,8 @@ Use typed Pydantic request/response models and meaningful behavioral tests for n
 
 ```sh
 uv sync --locked
-uv run ruff check app learning_service tests
-uv run ruff format --check app learning_service tests
+uv run ruff check app learning_service scripts tests
+uv run ruff format --check app learning_service scripts tests
 uv run pytest -q
 ```
 

@@ -359,31 +359,7 @@ def complete_lesson(lesson_id: str):
 
 @router.get("/me/progress", tags=["Progress"], response_model=Progress)
 def progress():
-    unit = current_session.get()
-    totals = {
-        "lessons_completed": 0,
-        "quiz_answers": 0,
-        "correct_answers": 0,
-        "flashcard_reviews": 0,
-        "tournaments_submitted": 0,
-    }
-    for kind in ("completions", "quizzes", "decks", "tournaments"):
-        cursor = ""
-        while rows := unit.list(kind, after=cursor, limit=100):
-            for _, data in rows:
-                if kind == "completions":
-                    totals["lessons_completed"] += 1
-                elif kind == "quizzes":
-                    totals["quiz_answers"] += len(data["attempts"])
-                    totals["correct_answers"] += sum(
-                        a["correct"] for a in data["attempts"].values()
-                    )
-                elif kind == "decks":
-                    totals["flashcard_reviews"] += data["progress"]["reviews"]
-                elif data.get("submission"):
-                    totals["tournaments_submitted"] += 1
-            cursor = rows[-1][0]
-    return totals
+    return current_session.get().progress()
 
 
 @router.get("/resources/{kind}", response_model=ResourcePage, tags=["Resources"])
@@ -392,7 +368,7 @@ def resources(
     after: str = "",
     limit: int = Query(50, ge=1, le=100),
 ):
-    rows = current_session.get().list(kind, after=after, limit=limit + 1)
+    rows = current_session.get().summaries(kind, after=after, limit=limit + 1)
     # Summaries deliberately omit question keys, uploaded text, and job inputs.
     items = [
         {

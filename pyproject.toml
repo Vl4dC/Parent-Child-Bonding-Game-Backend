@@ -29,7 +29,7 @@ dependencies = [
     'python-dotenv>=1.2.4',
     'python-multipart>=0.0.32',
     'tiktoken>=0.14.0',
-    'psycopg[binary]>=3.2,<4',
+    'psycopg[binary,pool]>=3.2,<4',
 ]
 
 [dependency-groups]

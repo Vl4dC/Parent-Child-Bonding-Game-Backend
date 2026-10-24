@@ -38,9 +38,10 @@ def create_app(
     repository=None,
 ):
     settings = settings or Settings()
+    owns_repository = repository is None
     if repository is None:
         if settings.database_url:
-            repository = PostgresRepository(settings.database_url.get_secret_value())
+            repository = PostgresRepository.from_settings(settings)
         elif settings.app_env == "test" or settings.demo_mode:
             repository = MemoryRepository()
 
@@ -52,19 +53,23 @@ def create_app(
             )
         if settings.app_env == "production" and not repository.durable:
             raise RuntimeError("Production requires PostgreSQL persistence")
-        if settings.demo_mode:
-            app.state.demo_auth = DemoAuth()
-            yield
-            return
-        # No shared user sessions: each call explicitly supplies its own bearer token.
-        async with httpx.AsyncClient(
-            base_url=f"{str(settings.supabase_url).rstrip('/')}/auth/v1/",
-            headers={"apikey": settings.supabase_publishable_key.get_secret_value()},
-            timeout=15,
-            transport=transport,
-        ) as client:
-            app.state.auth = client
-            yield
+        try:
+            if settings.demo_mode:
+                app.state.demo_auth = DemoAuth()
+                yield
+                return
+            # No shared user sessions: each call explicitly supplies its own bearer token.
+            async with httpx.AsyncClient(
+                base_url=f"{str(settings.supabase_url).rstrip('/')}/auth/v1/",
+                headers={"apikey": settings.supabase_publishable_key.get_secret_value()},
+                timeout=15,
+                transport=transport,
+            ) as client:
+                app.state.auth = client
+                yield
+        finally:
+            if owns_repository and hasattr(repository, "close"):
+                await asyncio.to_thread(repository.close)
 
     from learning_service.api_docs import DESCRIPTION, SWAGGER_UI, TAGS
 

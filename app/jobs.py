@@ -94,12 +94,7 @@ def submit_job(
         if existing["digest"] != digest:
             raise HTTPException(409, "Idempotency key already used for another request.")
         return public(existing)
-    pending = 0
-    cursor = ""
-    while rows := unit.list("jobs", after=cursor):
-        pending += sum(data["status"] in ("queued", "running") for _, data in rows)
-        cursor = rows[-1][0]
-    if pending >= 10:
+    if unit.pending_jobs() >= 10:
         raise HTTPException(429, "At most ten pending jobs are allowed per account.")
     source_kind = "quizzes" if body.kind == "followup" else "lessons"
     source_id = body.resource_id

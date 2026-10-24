@@ -127,6 +127,13 @@ def command(action, room_id=None, payload=None):
     unit = current_session.get()
     payload = payload or {}
     if unit.connection:
+        if action == "snapshot":
+            row = unit.connection.execute(
+                "select state from api_private.rooms where id=%s", (room_id,)
+            ).fetchone()
+            if row is None:
+                raise HTTPException(404, "Room not found.")
+            return row[0]
         result = unit.connection.execute(
             "select api_private.room_command(%s,%s,%s)", (action, room_id, Jsonb(payload))
         ).fetchone()[0]

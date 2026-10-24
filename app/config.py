@@ -13,6 +13,11 @@ class Settings(BaseSettings):
     supabase_publishable_key: SecretStr | None = None
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
     database_url: SecretStr | None = None
+    database_pool_size: int = Field(8, ge=1, le=64)
+    database_control_pool_size: int = Field(2, ge=1, le=16)
+    database_pool_timeout: float = Field(5, ge=0.1, le=30)
+    database_lock_timeout_ms: int = Field(3000, ge=100, le=30000)
+    database_statement_timeout_ms: int = Field(30000, ge=1000, le=300000)
     generation_enabled: bool = False
     generation_concurrency: int = Field(2, ge=1, le=8)
     generation_daily_limit: int = Field(30, ge=1, le=1000)

@@ -20,18 +20,22 @@ If Realtime is enabled later, install equivalent policies/triggers before claimi
 
 Migration 001 creates records and transactional lobby commands; 002 adds durable job claiming,
 workflow usage, and optional room transport policies; 003 adds leaving every lobby on data deletion;
-004 adds persistent per-account request limiting. Never edit applied migrations: append new ones.
+004 adds persistent per-account request limiting; 005 adds partial job indexes for server performance. Never edit applied migrations: append new ones.
 
 ## Isolation and concurrency
 
 Requests hold a PostgreSQL transaction. Owner advisory locks serialize writes, including absent-row
 creation and idempotency checks, across API processes. Existing records use row locks. Read requests
-avoid the owner-wide lock, so job status can be polled while a worker generates a lesson. Long inline
-generation can hold source locks; use the job API for normal integrations and keep worker counts bounded.
+are read-only and take neither owner-wide nor record row locks. Workers capture sources, release
+connections during model calls, then validate source versions and the lease before an atomic result
+commit. Long inline generation still holds source locks; use jobs for normal integrations.
 
 Room commands additionally lock the room row and check its version. This handles competing members,
 capacity, readiness, and host departure atomically. Question snapshots are immutable; attempt state is
 stored separately. The memory adapter is explicitly nonpersistent and only allowed in demo/test mode.
+
+Connections are bounded and reused through separate data/control pools; role/claims remain local
+to each transaction and reset on commit/rollback. See [server limits](SERVER_PERFORMANCE.md).
 
 Worker claims are global, concurrency-limited, and use expiring leases. A job's result and newly created
 learning data commit in one transaction after verifying its lease. Dead workers are retried up to the
@@ -41,8 +45,8 @@ configured attempt limit. Provider billing is not transactional and can repeat a
 
 ```sh
 uv sync --locked
-uv run ruff check app learning_service tests
-uv run ruff format --check app learning_service tests
+uv run ruff check app learning_service scripts tests
+uv run ruff format --check app learning_service scripts tests
 TEST_DATABASE_URL=postgresql://localhost/questnest_api_test uv run pytest -q
 ```
 

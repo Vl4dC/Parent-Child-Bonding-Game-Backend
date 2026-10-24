@@ -5,7 +5,6 @@ from concurrent.futures import ThreadPoolExecutor
 from contextvars import ContextVar, copy_context
 from datetime import datetime, timezone
 
-import psycopg
 from fastapi import HTTPException, Request
 
 from app.repository import current_session
@@ -21,7 +20,7 @@ class ContextPool(ThreadPoolExecutor):
 def reserve_request(repository, owner, limit):
     minute = int(time.time() // 60)
     if repository.durable:
-        with psycopg.connect(repository.url, connect_timeout=5) as connection:
+        with repository.control() as connection:
             allowed = connection.execute(
                 "select api_private.reserve_request(%s,%s,%s)", (owner, minute, limit)
             ).fetchone()[0]
@@ -39,7 +38,7 @@ def reserve_request(repository, owner, limit):
 def reserve(repository, owner, limit):
     day = datetime.now(timezone.utc).date().isoformat()
     if repository.durable:
-        with psycopg.connect(repository.url, connect_timeout=5) as connection:
+        with repository.control() as connection:
             row = connection.execute(
                 "select api_private.reserve_generation(%s,%s,%s)", (owner, day, limit)
             ).fetchone()

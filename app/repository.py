@@ -6,9 +6,9 @@ import threading
 from contextlib import contextmanager
 from contextvars import ContextVar
 
-import psycopg
 from fastapi import HTTPException
 from psycopg.types.json import Jsonb
+from psycopg_pool import ConnectionPool
 
 current_session = ContextVar("api_session")
 
@@ -18,10 +18,12 @@ def encode(value):
 
 
 class UnitOfWork:
-    def __init__(self, repository, owner, connection=None):
+    def __init__(self, repository, owner, connection=None, readonly=False):
         self.repository = repository
         self.owner = owner
         self.connection = connection
+        self.readonly = readonly
+        self.versions = {}
         self.cache = {}
         self.original = {}
         self.deleted = set()
@@ -32,11 +34,14 @@ class UnitOfWork:
             return None
         if address not in self.cache:
             if self.connection:
+                lock = " for update" if not self.readonly and kind != "question_sets" else ""
                 row = self.connection.execute(
-                    "select data from api_private.records where kind=%s and id=%s for update",
+                    "select data,version from api_private.records where kind=%s and id=%s" + lock,
                     (kind, key),
                 ).fetchone()
                 value = row[0] if row else None
+                if row:
+                    self.versions[address] = row[1]
             else:
                 value = copy.deepcopy(self.repository.data.get((self.owner, kind, key)))
             if (
@@ -48,7 +53,7 @@ class UnitOfWork:
                 if questions is None:
                     raise HTTPException(409, "Question set is unavailable.")
                 value["questions"] = questions["questions"]
-            self.original[address] = copy.deepcopy(value)
+            self.original[address] = value if self.readonly else copy.deepcopy(value)
             self.cache[address] = (
                 model.model_validate(value) if value is not None and model else value
             )
@@ -59,6 +64,8 @@ class UnitOfWork:
         return value
 
     def put(self, kind, key, value):
+        if self.readonly:
+            raise RuntimeError("Cannot write in a read-only unit of work")
         address = (kind, key)
         if address not in self.original:
             self.get(kind, key)
@@ -66,6 +73,8 @@ class UnitOfWork:
         self.cache[address] = value
 
     def delete(self, kind, key):
+        if self.readonly:
+            raise RuntimeError("Cannot delete in a read-only unit of work")
         self.deleted.add((kind, key))
 
     def list(self, kind, after="", limit=100):
@@ -83,7 +92,81 @@ class UnitOfWork:
         ]
         return sorted(rows)[:limit]
 
+    def summaries(self, kind, after="", limit=100):
+        fields = ["title", "name", "status", "revision", "lesson_id"]
+        if self.connection:
+            return self.connection.execute(
+                "select id, (select coalesce(jsonb_object_agg(field,data->field),'{}') "
+                "from unnest(%s::text[]) field where data ? field) "
+                "from api_private.records where kind=%s and id>%s order by id limit %s",
+                (fields, kind, after, limit),
+            ).fetchall()
+        with self.repository.lock:
+            keys = sorted(
+                key
+                for owner, k, key in self.repository.data
+                if owner == self.owner and k == kind and key > after
+            )[:limit]
+            return [
+                (key, {f: copy.deepcopy(data[f]) for f in fields if f in data})
+                for key in keys
+                for data in [self.repository.data[(self.owner, kind, key)]]
+            ]
+
+    def pending_jobs(self):
+        if self.connection:
+            return self.connection.execute(
+                "select count(*) from api_private.records where kind='jobs' "
+                "and data->>'status' in ('queued','running')"
+            ).fetchone()[0]
+        with self.repository.lock:
+            return sum(
+                data["status"] in ("queued", "running")
+                for (owner, kind, _), data in self.repository.data.items()
+                if owner == self.owner and kind == "jobs"
+            )
+
+    def progress(self):
+        keys = [
+            "lessons_completed",
+            "quiz_answers",
+            "correct_answers",
+            "flashcard_reviews",
+            "tournaments_submitted",
+        ]
+        if self.connection:
+            row = self.connection.execute("""select
+                count(*) filter (where kind='completions'),
+                coalesce(sum(q.answered),0), coalesce(sum(q.correct),0),
+                coalesce(sum(case when kind='decks' then (data#>>'{progress,reviews}')::bigint else 0 end),0),
+                count(*) filter (where kind='tournaments' and data->'submission' <> 'null'::jsonb)
+                from api_private.records
+                left join lateral (select count(*) answered,
+                    count(*) filter (where value->>'correct'='true') correct
+                    from jsonb_each(case when kind='quizzes' then data->'attempts' else '{}'::jsonb end)) q on true
+                where kind in ('completions','quizzes','decks','tournaments')""").fetchone()
+            return dict(zip(keys, map(int, row)))
+        totals = dict.fromkeys(keys, 0)
+        with self.repository.lock:
+            for (owner, kind, _), data in self.repository.data.items():
+                if owner != self.owner:
+                    continue
+                if kind == "completions":
+                    totals["lessons_completed"] += 1
+                elif kind == "quizzes":
+                    totals["quiz_answers"] += len(data["attempts"])
+                    totals["correct_answers"] += sum(
+                        a["correct"] for a in data["attempts"].values()
+                    )
+                elif kind == "decks":
+                    totals["flashcard_reviews"] += data["progress"]["reviews"]
+                elif kind == "tournaments" and data.get("submission"):
+                    totals["tournaments_submitted"] += 1
+        return totals
+
     def flush(self):
+        if self.readonly:
+            return
         for kind, key in self.deleted:
             if self.connection:
                 self.connection.execute(
@@ -135,8 +218,10 @@ class MemoryRepository:
 
     @contextmanager
     def session(self, owner, serialize=True):
-        unit = UnitOfWork(self, owner)
+        unit = UnitOfWork(self, owner, readonly=not serialize)
         yield unit
+        if unit.readonly:
+            return
         with self.lock:
             for address, value in unit.cache.items():
                 actual = self.data.get((owner, *address))
@@ -160,28 +245,101 @@ class MemoryRepository:
 class PostgresRepository:
     durable = True
 
-    def __init__(self, url):
+    def __init__(
+        self,
+        url,
+        *,
+        pool_size=8,
+        control_pool_size=2,
+        pool_timeout=5,
+        lock_timeout_ms=3000,
+        statement_timeout_ms=30000,
+    ):
         self.url = url
+        self.lock_timeout_ms = lock_timeout_ms
+        self.statement_timeout_ms = statement_timeout_ms
+        self._pool_lock = threading.Lock()
+        self._opened = False
+        self._closed = False
+        options = {
+            "min_size": 0,
+            "timeout": pool_timeout,
+            "max_waiting": 64,
+            "open": False,
+            "num_workers": 1,
+            "reconnect_timeout": 30,
+            "kwargs": {"connect_timeout": 5, "prepare_threshold": None},
+        }
+        self.pool = ConnectionPool(url, max_size=pool_size, name="api-data", **options)
+        # Independent short control transactions cannot deadlock behind data connections
+        # held by requests which need to reserve a quota before proceeding.
+        self.control_pool = ConnectionPool(
+            url, max_size=control_pool_size, name="api-control", **options
+        )
+
+    @classmethod
+    def from_settings(cls, settings):
+        return cls(
+            settings.database_url.get_secret_value(),
+            pool_size=settings.database_pool_size,
+            control_pool_size=settings.database_control_pool_size,
+            pool_timeout=settings.database_pool_timeout,
+            lock_timeout_ms=settings.database_lock_timeout_ms,
+            statement_timeout_ms=settings.database_statement_timeout_ms,
+        )
+
+    def open(self):
+        with self._pool_lock:
+            if self._closed:
+                raise RuntimeError("Repository has been closed")
+            if not self._opened:
+                self.pool.open()
+                self.control_pool.open()
+                self._opened = True
+
+    def close(self):
+        with self._pool_lock:
+            self._closed = True
+            self.pool.close()
+            self.control_pool.close()
+
+    @contextmanager
+    def control(self):
+        self.open()
+        with self.control_pool.connection() as connection:
+            connection.execute(
+                "select set_config('lock_timeout',%s,true), set_config('statement_timeout',%s,true)",
+                (str(self.lock_timeout_ms), str(self.statement_timeout_ms)),
+            )
+            yield connection
 
     @contextmanager
     def session(self, owner, serialize=True):
-        with psycopg.connect(self.url, connect_timeout=5) as connection:
+        self.open()
+        with self.pool.connection() as connection:
+            if not serialize:
+                connection.execute("set transaction read only")
             connection.execute("set local role authenticated")
             connection.execute(
-                "select set_config('request.jwt.claims', %s, true)",
-                (json.dumps({"sub": owner, "role": "authenticated"}),),
+                "select set_config('request.jwt.claims',%s,true), "
+                "set_config('lock_timeout',%s,true), set_config('statement_timeout',%s,true)",
+                (
+                    json.dumps({"sub": owner, "role": "authenticated"}),
+                    str(self.lock_timeout_ms),
+                    str(self.statement_timeout_ms),
+                ),
             )
             # Serialize one owner's state updates across API processes, including missing-row inserts.
             if serialize:
                 connection.execute(
                     "select pg_advisory_xact_lock(hashtextextended(%s, 0))", (owner,)
                 )
-            unit = UnitOfWork(self, owner, connection)
+            unit = UnitOfWork(self, owner, connection, readonly=not serialize)
             yield unit
             unit.flush()
 
     def ready(self):
-        with psycopg.connect(self.url, connect_timeout=3) as connection:
+        with self.control() as connection:
             return connection.execute("""select
                 to_regclass('api_private.records') is not null
                 and to_regclass('api_private.rooms') is not null

@@ -262,11 +262,14 @@ def test_durable_worker_executes_job_and_survives_new_repository_instance(client
     assert work_once(repository, client.app.state.settings)
     from app.repository import PostgresRepository
 
-    client.app.state.repository = PostgresRepository(repository.url)
+    restarted = PostgresRepository(repository.url)
+    client.app.state.repository = restarted
     job = client.get(f"/api/jobs/{created['id']}").json()
     assert job["status"] == "succeeded" and job["attempts"] == 1
     assert client.get(f"/api/lessons/{job['result']['resource_id']}").status_code == 200
     assert not work_once(repository, client.app.state.settings)
+    restarted.close()
+    client.app.state.repository = repository
 
 
 def test_generation_disabled_and_attempt_budget_even_on_failure(client, monkeypatch):
@@ -491,3 +494,200 @@ def test_queued_job_rejects_changed_material_before_model_call(client, repositor
     assert client.get(f"/api/jobs/{job['id']}").json()["status"] == "failed"
     assert "grounded_request" not in client.seen
     assert client.get("/api/resources/lessons").json()["items"] == []
+
+
+def test_generation_releases_connections_and_allows_profile_write(client, repository, monkeypatch):
+    if not repository.durable:
+        pytest.skip("Worker requires PostgreSQL")
+    from threading import Event
+
+    from app.repository import PostgresRepository
+    from learning_service import routes
+    from tests.learning.conftest import FAKE_LESSON
+
+    constrained = PostgresRepository(repository.url, pool_size=1, control_pool_size=1)
+    client.app.state.repository = constrained
+    entered, release = Event(), Event()
+
+    def slow(_request):
+        entered.set()
+        assert release.wait(10)
+        return FAKE_LESSON.model_copy(deep=True)
+
+    monkeypatch.setattr(routes, "make_lesson", slow)
+    try:
+        job = client.post(
+            "/api/jobs",
+            json={"kind": "lesson", "parameters": {"topic": "networks", "age": 12}},
+            headers={"Idempotency-Key": "connection-free-generation"},
+        ).json()
+        with ThreadPoolExecutor(1) as pool:
+            running = pool.submit(work_once, constrained, client.app.state.settings)
+            assert entered.wait(5)
+            try:
+                assert client.get(f"/api/jobs/{job['id']}").json()["status"] == "running"
+                assert (
+                    client.put(
+                        "/api/me/profile", json={"display_name": "Updated while generating"}
+                    ).status_code
+                    == 200
+                )
+                assert constrained.pool.get_stats()["pool_available"] == 1
+            finally:
+                release.set()
+            assert running.result(timeout=5)
+        assert client.get(f"/api/jobs/{job['id']}").json()["status"] == "succeeded"
+        assert client.get("/api/me/profile").json()["display_name"] == "Updated while generating"
+    finally:
+        release.set()
+        client.app.state.repository = repository
+        constrained.close()
+
+
+def test_source_change_during_generation_cannot_commit_stale_output(
+    client, repository, monkeypatch
+):
+    if not repository.durable:
+        pytest.skip("Worker requires PostgreSQL")
+    from threading import Event
+
+    from learning_service import routes
+    from tests.learning.conftest import FAKE_LESSON
+
+    entered, release = Event(), Event()
+
+    def slow(_request, _pages):
+        entered.set()
+        assert release.wait(10)
+        return FAKE_LESSON.model_copy(deep=True)
+
+    monkeypatch.setattr(routes, "make_lesson_from_pages", slow)
+    mid = book(client)["id"]
+    job = client.post(
+        "/api/jobs",
+        json={
+            "kind": "lesson",
+            "parameters": {"topic": "photosynthesis", "age": 12, "material_id": mid},
+        },
+        headers={"Idempotency-Key": "change-while-generating"},
+    ).json()
+    client.app.state.settings.job_attempt_limit = 1
+    with ThreadPoolExecutor(1) as pool:
+        running = pool.submit(work_once, repository, client.app.state.settings)
+        assert entered.wait(5)
+        try:
+            changed = client.put(
+                f"/api/materials/{mid}/pages",
+                json={
+                    "expected_revision": 1,
+                    "pages": [{"number": 1, "text": "Different material.", "via": "text"}],
+                },
+            )
+            assert changed.status_code == 200
+        finally:
+            release.set()
+        assert running.result(timeout=5)
+    assert client.get(f"/api/jobs/{job['id']}").json()["status"] == "failed"
+    assert client.get("/api/resources/lessons").json()["items"] == []
+
+
+def test_delete_during_generation_does_not_resurrect_data(client, repository, monkeypatch):
+    if not repository.durable:
+        pytest.skip("Worker requires PostgreSQL")
+    from threading import Event
+
+    from learning_service import routes
+    from tests.learning.conftest import FAKE_LESSON
+
+    entered, release = Event(), Event()
+
+    def slow(_request):
+        entered.set()
+        assert release.wait(10)
+        return FAKE_LESSON.model_copy(deep=True)
+
+    monkeypatch.setattr(routes, "make_lesson", slow)
+    job = client.post(
+        "/api/jobs",
+        json={"kind": "lesson", "parameters": {"topic": "networks", "age": 12}},
+        headers={"Idempotency-Key": "delete-while-generating"},
+    ).json()
+    with ThreadPoolExecutor(1) as pool:
+        running = pool.submit(work_once, repository, client.app.state.settings)
+        assert entered.wait(5)
+        try:
+            assert client.delete("/api/me/data").status_code == 204
+        finally:
+            release.set()
+        assert running.result(timeout=5)
+    assert client.get(f"/api/jobs/{job['id']}").status_code == 404
+    assert client.get("/api/resources/lessons").json()["items"] == []
+
+
+def test_pool_exhaustion_returns_503_and_recovers(client, repository):
+    if not repository.durable:
+        pytest.skip("Pool backpressure requires PostgreSQL")
+    from app.repository import PostgresRepository
+
+    constrained = PostgresRepository(
+        repository.url, pool_size=1, control_pool_size=1, pool_timeout=0.1
+    )
+    client.app.state.repository = constrained
+    try:
+        with constrained.session(PARENT):
+            response = client.get("/api/me/profile")
+            assert response.status_code == 503
+            assert response.json()["detail"] == "Application storage is temporarily unavailable."
+        assert client.get("/api/me/profile").status_code == 200
+        assert constrained.pool.get_stats()["connections_num"] == 1
+    finally:
+        client.app.state.repository = repository
+        constrained.close()
+
+
+def test_replaced_worker_lease_discards_old_output(client, repository, monkeypatch):
+    if not repository.durable:
+        pytest.skip("Worker requires PostgreSQL")
+    from threading import Event, Lock
+
+    from learning_service import routes
+    from tests.learning.conftest import FAKE_LESSON
+
+    entered, release = Event(), Event()
+    guard = Lock()
+    calls = 0
+
+    def slow_first(_request):
+        nonlocal calls
+        with guard:
+            calls += 1
+            number = calls
+        if number == 1:
+            entered.set()
+            assert release.wait(10)
+        return FAKE_LESSON.model_copy(deep=True, update={"title": f"Attempt {number}"})
+
+    monkeypatch.setattr(routes, "make_lesson", slow_first)
+    job = client.post(
+        "/api/jobs",
+        json={"kind": "lesson", "parameters": {"topic": "networks", "age": 12}},
+        headers={"Idempotency-Key": "lease-replaced-during-generation"},
+    ).json()
+    with ThreadPoolExecutor(1) as pool:
+        old = pool.submit(work_once, repository, client.app.state.settings)
+        assert entered.wait(5)
+        try:
+            with repository.control() as connection:
+                connection.execute(
+                    "update api_private.records set data=jsonb_set(data,'{lease_until}',to_jsonb((now()-interval '1 second')::text)) where kind='jobs'"
+                )
+            assert work_once(repository, client.app.state.settings)
+            successful = client.get(f"/api/jobs/{job['id']}").json()
+            assert successful["status"] == "succeeded" and successful["attempts"] == 2
+        finally:
+            release.set()
+        assert old.result(timeout=5)
+    assert client.get(f"/api/jobs/{job['id']}").json() == successful
+    lessons = client.get("/api/resources/lessons").json()["items"]
+    assert len(lessons) == 1
+    assert client.get(f"/api/lessons/{lessons[0]['id']}").json()["title"] == "Attempt 2"

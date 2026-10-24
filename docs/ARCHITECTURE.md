@@ -28,3 +28,10 @@ it does not prove the generated content's factual correctness. The age-safety pr
 Durable jobs are processed by an explicitly started worker. Model calls are opt-in and budgeted;
 failed workflows consume attempt budget too. Private rooms are lobbies only. No automatic gameplay,
 public matchmaking, reward economy, family authorization, or hosted deployment is claimed.
+
+## Server execution
+
+PostgreSQL data/control connections use bounded pools with transaction-local identity. GETs use
+read-only MVCC access. Progress and metadata projections are computed by SQL. Durable workers
+generate into an isolated buffer after releasing source reads, then validate row versions and
+the lease in a short commit transaction. See [server performance](SERVER_PERFORMANCE.md).

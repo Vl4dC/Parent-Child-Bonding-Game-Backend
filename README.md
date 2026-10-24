@@ -54,6 +54,8 @@ Email confirmation stays enabled; SMTP work and live email verification are not 
 
 - [API.md](API.md): authentication reference plus links to the full platform contract.
 - [Platform API](docs/API_PLATFORM.md): learning, review, attempts, profiles, jobs, progress, rooms.
+- [Game backend roadmap](docs/GAME_BACKEND_ROADMAP.md): pending Forbidden Clues/heads-up actions and tests.
+- [Server performance](docs/SERVER_PERFORMANCE.md): pools, query optimization, worker resource use, and local measurements.
 - [Database and verification](docs/DATABASE.md): migrations, roles, integration tests, operational limits.
 - [Frontend integration](docs/FRONTEND_INTEGRATION.md): frontend source locations and integration boundary.
 - [Architecture](docs/ARCHITECTURE.md): current module responsibilities and invariants.
@@ -88,8 +90,8 @@ limits are not a currency spending guarantee: configure the provider's own budge
 
 ```sh
 uv sync --locked
-uv run ruff check app learning_service tests
-uv run ruff format --check app learning_service tests
+uv run ruff check app learning_service scripts tests
+uv run ruff format --check app learning_service scripts tests
 uv run pytest -q
 ```
 

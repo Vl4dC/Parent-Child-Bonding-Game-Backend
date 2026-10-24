@@ -34,10 +34,15 @@ def postgres_url():
 @pytest.fixture(params=["memory", "postgres"])
 def repository(request):
     if request.param == "memory":
-        return MemoryRepository()
+        yield MemoryRepository()
+        return
     url = request.getfixturevalue("postgres_url")
     with psycopg.connect(url) as connection:
         connection.execute(
             "truncate api_private.records, api_private.rooms, api_private.generation_usage, api_private.request_usage"
         )
-    return PostgresRepository(url)
+    repo = PostgresRepository(url)
+    try:
+        yield repo
+    finally:
+        repo.close()

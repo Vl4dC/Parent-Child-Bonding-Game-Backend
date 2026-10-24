@@ -116,7 +116,9 @@ they do not promise exactly-once provider billing. Only queued work can be cance
 
 Generation is opt-in. Workflow-attempt limits count failed calls too, independently of request rollback.
 `GENERATION_CONCURRENCY` limits inline calls per API process and running durable jobs across workers.
-The inline and worker pools are separate; use durable jobs for production scheduling. Provider calls
+The inline and worker pools are separate; use durable jobs for production scheduling. Durable workers
+release database connections during model calls and verify source versions before committing, so
+profile/lobby updates and status reads can continue while generation runs. Provider calls
 have explicit timeouts and no automatic SDK retries; workflow retries are bounded in the engines.
 
 Uploads currently run synchronously because file streams are not retained. Text PDFs are extracted
