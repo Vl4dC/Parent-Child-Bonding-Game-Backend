@@ -436,9 +436,7 @@ def create_lesson(body: LessonBody) -> PublicLesson:
             if rag_results:
                 pages_text = "\n\n".join(f"[Page {n}]\n{text}" for text, n in rag_results)
                 page_nums = sorted(n for _, n in rag_results)
-                label = (
-                    f"pages matching '{body.topic}' ({', '.join(str(n) for n in page_nums)})"
-                )
+                label = f"pages matching '{body.topic}' ({', '.join(str(n) for n in page_nums)})"
                 truncated = False
             else:
                 # Fall back to BM25 (Chroma collection absent, e.g. after an in-memory restart).
