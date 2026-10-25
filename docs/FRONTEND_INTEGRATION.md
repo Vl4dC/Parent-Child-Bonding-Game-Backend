@@ -197,3 +197,14 @@ server-priced purchases, inventory and equipment. Clothing/accessories cost 100 
 This supersedes earlier statements that duel/quest rewards and shop purchases are pending.
 The frontend remains unchanged and needs API wiring. See the contract for request examples,
 activity definitions, migration 010, storage boundaries, and the existing unverified player selector.
+
+
+## Friend requests, presence and game invitations — 25 October 2026
+
+[Presence and invitations](FRIENDS_PRESENCE_INVITES.md) adds friend-request send/inbox/outbox/accept/decline/cancel APIs,
+expiring multi-session online/away/busy status,
+friend-only presence reads, visibility/invite preferences, and idempotent lobby invitations.
+Recipients accept/decline; senders cancel. Acceptance atomically joins the lobby in PostgreSQL.
+The existing challenge/match and reward APIs handle play after everyone joins. Apply migration
+011 before deploying; readiness checks it. Frontend wiring, push delivery, async saved-question
+duels, and verified account authentication are outside this backend-only addition.

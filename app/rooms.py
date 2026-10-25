@@ -112,6 +112,10 @@ def memory_command(repository, owner, action, room_id, payload):
                         room["host_id"] = room["members"][0]["user_id"]
                     else:
                         del repository.rooms[room["id"]]
+                        invites = getattr(repository, "game_invites", {})
+                        for invite_id, invite in list(invites.items()):
+                            if invite["room_id"] == room["id"]:
+                                del invites[invite_id]
                         return {"left": True}
                     room["version"] += 1
                     return {"left": True}

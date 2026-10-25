@@ -355,6 +355,8 @@ class PostgresRepository:
             return connection.execute("""select
                 to_regclass('api_private.records') is not null
                 and to_regclass('api_private.rooms') is not null
+                and to_regclass('api_private.game_invites') is not null
+                and to_regprocedure('api_private.game_invite_room(uuid)') is not null
                 and to_regprocedure('api_private.claim_job(text,integer,integer)') is not null
                 and to_regprocedure('api_private.reserve_request(uuid,bigint,integer)') is not null
                 and to_regprocedure('api_private.leave_all_rooms()') is not null""").fetchone()[0]
