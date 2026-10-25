@@ -208,7 +208,7 @@ async def actor(request: Request, owner: Annotated[str, Depends(player_id)]):
     repository = request.app.state.repository
     if repository is None:
         raise HTTPException(503, "Application storage is unavailable.")
-    await asyncio.to_thread(reserve_request, repository, owner, settings.api_requests_per_minute)
+    await asyncio.to_thread(reserve_request, repository, owner, settings.requests_per_minute)
     return Actor(
         owner,
         DiagramGame(repository, getattr(request.app.state, "diagram_clock_ms", None)),

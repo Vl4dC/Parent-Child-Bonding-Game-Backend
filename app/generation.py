@@ -18,6 +18,8 @@ class ContextPool(ThreadPoolExecutor):
 
 
 def reserve_request(repository, owner, limit):
+    if limit is None:
+        return
     minute = int(time.time() // 60)
     if repository.durable:
         with repository.control() as connection:
@@ -36,6 +38,8 @@ def reserve_request(repository, owner, limit):
 
 
 def reserve(repository, owner, limit):
+    if limit is None:
+        return
     day = datetime.now(timezone.utc).date().isoformat()
     if repository.durable:
         with repository.control() as connection:
@@ -57,11 +61,14 @@ def generation_permit(request: Request):
     settings = request.app.state.settings
     if not settings.generation_enabled:
         raise HTTPException(503, "Model generation is disabled. Configure it before enabling.")
+    if not settings.generation_limits_enabled:
+        yield
+        return
     if not request.app.state.generation_slots.acquire(blocking=False):
         raise HTTPException(429, "Generation is busy. Try again later.")
     try:
         unit = current_session.get()
-        reserve(unit.repository, unit.owner, settings.generation_daily_limit)
+        reserve(unit.repository, unit.owner, settings.daily_limit)
         yield
     finally:
         request.app.state.generation_slots.release()

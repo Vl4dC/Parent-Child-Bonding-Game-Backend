@@ -317,6 +317,24 @@ def test_request_limit_is_per_account_and_counts_failed_requests(client):
     assert client.get("/api/me/profile", headers=child_headers(client)).status_code == 200
 
 
+def test_limits_can_be_lifted_for_testing(client, monkeypatch):
+    import learning_service.routes as routes
+
+    settings = client.app.state.settings
+    settings.generation_limits_enabled = False
+    settings.generation_daily_limit = 1
+    settings.api_requests_per_minute = 1
+
+    def fail(_request):
+        raise RuntimeError("provider down")
+
+    monkeypatch.setattr(routes, "make_lesson", fail)
+    for _ in range(3):
+        assert client.get("/api/me/profile").status_code == 200
+        response = client.post("/api/lessons", json={"topic": "networks", "age": 12})
+        assert response.status_code == 502
+
+
 def test_actual_request_body_size_is_bounded(client):
     response = client.put(
         "/api/me/profile",

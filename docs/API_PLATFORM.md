@@ -122,6 +122,9 @@ cannot commit output after its lease has been replaced. Job retries may repeat p
 they do not promise exactly-once provider billing. Only queued work can be cancelled; repeating cancellation is safe. Cancelling running or completed work returns 409.
 
 Generation is opt-in. Workflow-attempt limits count failed calls too, independently of request rollback.
+`GENERATION_LIMITS_ENABLED=false` lifts the daily attempt budget, the per-minute request budget and
+the inline "generation is busy" gate (usage is not counted while off). It is for testing only: with it
+off nothing caps provider spend or concurrent model calls. The diagram renderer's own busy limit stays.
 `GENERATION_CONCURRENCY` limits inline calls per API process and running durable jobs across workers.
 The inline and worker pools are separate; use durable jobs for production scheduling. Durable workers
 release database connections during model calls and verify source versions before committing, so

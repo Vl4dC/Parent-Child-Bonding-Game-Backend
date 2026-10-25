@@ -14,7 +14,7 @@ async def api_context(request: Request, owner: Annotated[str, Depends(player_id)
     if repository is None:
         raise HTTPException(503, "Application storage is not configured.")
     await asyncio.to_thread(
-        reserve_request, repository, owner, request.app.state.settings.api_requests_per_minute
+        reserve_request, repository, owner, request.app.state.settings.requests_per_minute
     )
     # Opening a DB connection and waiting for a lock must not block the event loop.
     stack = ExitStack()

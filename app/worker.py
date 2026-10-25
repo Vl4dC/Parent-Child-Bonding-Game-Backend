@@ -99,7 +99,7 @@ def work_once(repository, settings):
         original = (
             buffer.data.copy()
         )  # buffered writes replace values; source values are never mutated
-        reserve(repository, owner, settings.generation_daily_limit)
+        reserve(repository, owner, settings.daily_limit)
         result = generate(buffer, owner, job, settings)
         commit_result(repository, owner, job, lease, buffer, original, versions, result)
     except Exception:
