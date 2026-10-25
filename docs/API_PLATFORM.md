@@ -1,9 +1,10 @@
 # Platform API contract
 
-All `/api/` endpoints work without authentication. Optional `X-Player-ID` selects a UUID data
-partition; no header uses `00000000-0000-4000-8000-000000000001`. Requests are limited per selected
-player per minute. This is unverified state selection, not account isolation: anyone can choose
-another player's UUID. Gameplay membership, host actions, review and idempotency rules remain.
+All `/api/` endpoints need `Authorization: Bearer <sign-in token>` (a Clerk session JWT) and serve the token's
+`player_id` claim: that UUID is the data partition, and requests are limited per player per minute. Only the
+learner-registration intake works without a token. The `X-Player-ID` header is not read. See
+[API.md](../API.md#sign-in-and-player-state) for what is verified. Gameplay membership, host actions, review and
+idempotency rules remain.
 All API responses are non-cacheable and carry an `X-Request-ID`. See [API.md](../API.md).
 
 Existing learning paths remain compatible except the explicit changes below. OpenAPI is generated
@@ -224,7 +225,7 @@ keeps what matters. A scanned book is different and still goes through `POST /ap
 
 Chats can be remembered per player and continued later. This is one SQLite file (`MEMORY_DB_PATH`, default
 `memory.db`, in memory for tests), separate from the records store, so it survives a restart of the demo server.
-Every row carries the player id (`X-Player-ID`); one id can never read another's chats. A parent and a child just use
+Every row carries the player id (the token's `player_id`); one id can never read another's chats. A parent and a child just use
 two ids. `PUT /api/memory/profile` stores a **role label** (`parent` or `learner`, the repo's word for the child) and
 a display name for each id. The role is a label for the app and for later features, **not** a login or proof of who is
 using the id, and there is no parent-to-child link.
@@ -289,8 +290,8 @@ link exists. A stranger, a private home and a missing home all answer the same 4
 per room (or `home`) per visitor per day (409 on a repeat). `PUT /api/me/home/card` sets the name and avatar shown
 to friends; the default name is `Player`, and a card change does not change the home `version`.
 
-**Not verified.** `X-Player-ID` selects a data partition; it does not prove who is calling, so anyone who knows a
-player's UUID can act as them, and a friend is whoever shared a code. Friendships and `visibility` are an advisory
+**Partly verified.** The token proves which signed-in account is calling, but a friend is still whoever shared a
+code, and nothing proves that two players are really a family. Friendships and `visibility` are an advisory
 privacy setting, not access control. A parent does not approve friends here, and nothing links a parent to a child.
 `DELETE /api/me/data` also removes the player's home, wallet, friend code, friendships and cheers. It is a
 single-process store, like chat memory.

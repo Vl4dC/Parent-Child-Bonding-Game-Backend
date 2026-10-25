@@ -6,7 +6,7 @@ Frontend source remains in the main repository and is not modified here.
 | Module | Responsibility |
 | --- | --- |
 | app/main.py | Factory, middleware, health/readiness, router composition |
-| app/player.py | Optional unverified X-Player-ID selector with a shared default UUID |
+| app/auth.py, app/player.py | Verify the Bearer sign-in token (RS256, issuer, expiry, provider keys); the player is its `player_id` claim |
 | app/context.py | Selected player and request-local transaction/context |
 | app/repository.py | Owned typed records, immutable question snapshots, PostgreSQL/memory adapters |
 | app/platform.py | Profiles, extraction confirmation, lesson revisions/review, progress/deletion |

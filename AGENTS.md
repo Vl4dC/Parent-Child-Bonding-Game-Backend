@@ -18,12 +18,15 @@ The product plan is a backlog, not proof of implemented features. Keep changes t
 ## Invariants
 
 - Use the `create_app` factory and run commands from this repository's root.
-- The FastAPI API has no login/signup or authentication requirement, by explicit product request.
-- Optional X-Player-ID selects a UUID data partition; absent headers use the shared default player.
-  This is not a verified identity or an access-control boundary. Never describe it as one.
+- Every `/api` request needs a valid sign-in token: a Clerk session JWT sent as `Authorization: Bearer`,
+  verified in `app/auth.py` (RS256, issuer, expiry, the provider's public keys). The player is the token's
+  `player_id` claim and nothing else; the `X-Player-ID` header is not read. The only unauthenticated `/api`
+  routes are the learner-registration intake (a child signing up has no token yet; it works on a private
+  receipt). `tests/test_auth.py` pins that list, so a new public route fails a test.
 - Preserve request-local transactions, gameplay membership/host rules, expiry and idempotency.
 - Demo mode stays off by default and cannot start in production. It controls ephemeral storage only.
-- Do not reintroduce account/session endpoints, token checks, or Supabase Auth configuration.
+- The API verifies sign-in tokens; it never issues them. Do not add login, registration, session, password
+  or token-issuing endpoints, or Supabase Auth configuration. Sign-in belongs to the provider.
 - `learner` is the child account label. Neither this label nor a parent label proves consent or linkage.
 - Keep data grouped by the selected player and preserve existing gameplay rules.
 - Keep secret values out of validation errors, logs, examples, commits, and URLs.

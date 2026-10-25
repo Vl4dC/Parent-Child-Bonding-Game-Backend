@@ -2,8 +2,8 @@
 
 Backend implementation on 25 October 2026. Frontend reference: QuestNest `main` `65df915`.
 This adds no frontend changes, authentication, XP, gems, cash purchases or model calls.
-All routes use the existing optional `X-Player-ID` UUID partition selector. It is unverified;
-without it callers share the default player. Parent/learner labels do not verify a family link.
+All routes need the Bearer sign-in token and serve its `player_id` claim (see
+[API.md](../API.md#sign-in-and-player-state)). Parent/learner labels do not verify a family link.
 
 ## Shared wallet
 

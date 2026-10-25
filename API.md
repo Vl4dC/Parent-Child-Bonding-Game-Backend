@@ -6,18 +6,25 @@ see [Platform API](docs/API_PLATFORM.md). Python 3.13+ and the root environment 
 Base URL for local development: `http://127.0.0.1:8000`. Swagger: `/docs`; ReDoc: `/redoc`.
 The running `/openapi.json` is generated from the actual routes and typed models.
 
-## Public API and player state
+## Sign-in and player state
 
-All FastAPI endpoints are available without account login, passwords, Bearer tokens or auth cookies.
-There are no authentication provider calls or required Supabase Auth settings. Swagger/OpenAPI
-contains no security schemes, Authorize button or padlocks. Former login/signup/session routes
-remain removed (404). An obsolete Authorization header is ignored.
+Every `/api` request carries `Authorization: Bearer <token>`: the session JWT the sign-in provider (Clerk) issued.
+The API verifies it (RS256 signature against the provider's published keys, `iss`, `exp`, `nbf`; `aud` and
+`azp` only if configured) and serves the request for the token's **`player_id` claim**, a UUID the frontend adds to
+the session token (Clerk: Sessions > Customize session token, `{"player_id": "{{user.public_metadata.player_id}}"}`).
+That claim selects the state partition for profiles, learning, jobs, rooms and diagram races. The `X-Player-ID`
+header is no longer read. There are no login, signup or session routes (404): the provider signs people in and this
+API only verifies what it signed. Swagger shows an Authorize button for pasting a token.
 
-An optional `X-Player-ID` UUID selects the state partition for profiles, learning, jobs, rooms and
-diagram races. Omitting it selects `00000000-0000-4000-8000-000000000001`. Use a different UUID per
-player to retain independent progress and multiplayer membership. Invalid UUIDs return 422.
-The ID is public, caller-selected context: anyone may select another player's ID. It supplies no
-identity verification, privacy or protection against reading, changing or deleting that data.
+Not an `/api` route, so public: `GET /health`, `GET /ready`, `/docs`, `/openapi.json`. The learner-registration
+intake (`POST /api/registration/learners`, `GET .../requests/{id}`, `POST .../requests/{id}/resend`) also needs no
+token, because a child signing up has none yet; it uses a private receipt and per-address limits, and touches no
+player's data.
+
+Configuration: `JWT_ISSUER` (the Clerk Frontend API URL, the token's `iss`; keys are read from
+`{issuer}/.well-known/jwks.json`, cached, refreshed on rotation, and kept if the provider is briefly down),
+optionally `JWT_JWKS_URL`, `JWT_AUDIENCE`, `JWT_AUTHORIZED_PARTIES` (JSON list of allowed `azp`), `JWT_LEEWAY_SECONDS`
+(5), or a fixed key set in `JWT_JWKS_JSON` for offline use. Without `JWT_ISSUER` every `/api` request is a 503.
 
 Requests retain transactions, idempotency, quotas, resource partitioning and gameplay state rules.
 Game host/membership checks use the selected player ID. Generation and optional features still
@@ -25,8 +32,8 @@ need explicit enablement. Removing authentication does not change model calls or
 
 The separate learner-approval workflow keeps its receipt/proof and request-authority rules.
 Its former /auth/registration routes are now /api/registration routes; there are no /auth endpoints.
-Guardian list/decision routes accept the required `guardian_email` query filter and optional
-`X-Player-ID`; neither is verified. No account session or confirmed-email check is required.
+Guardian list/decision routes need a token and accept the required `guardian_email` query filter, which is
+supplied by the caller and not verified. No confirmed-email check is required.
 This workflow cannot establish verified guardian identity or legal consent.
 
 ## Health, errors and transport
@@ -37,11 +44,13 @@ whether it is durable. Neither calls an authentication provider.
 403: gameplay or approval-workflow rule rejected. 404: absent record or wrong player partition.
 409: stale state or conflicting replay. 422: invalid input. 429: quota/concurrency limit.
 502: generation failure. 503: storage unavailable, generation or an optional feature disabled.
-There are no account-authentication 401 responses. Errors omit raw submitted values and secrets.
+401: no token, or one that is expired (`detail` says so, so the app can sign in again), badly signed, for another
+issuer, or without a valid `player_id` claim; it carries `WWW-Authenticate: Bearer`. 503 also covers sign-in not
+configured (`JWT_ISSUER`) and the provider's keys being unreachable. Errors omit raw submitted values, tokens and secrets.
 
 All `/api/` responses retain no-store/no-cache and no-referrer headers. CORS keeps
-exact origins and allows Content-Type, X-Player-ID, Idempotency-Key and workflow receipt headers;
-legacy Authorization headers remain allowed but ignored. Cookie credentials remain disabled.
+exact origins and allows Content-Type, Authorization, Idempotency-Key and workflow receipt headers.
+Cookie credentials remain disabled.
 
 ## Non-AI quiz lifecycle — 24 October 2026 addition
 
@@ -88,8 +97,9 @@ Earlier API descriptions and snapshots are preserved as historical records.
 
 Seventeen operations under `/api/me/home`, `/api/me/friends`, `/api/me/coins` and `/api/homes` save a player's home
 (rooms built, item levels, positions), spend coins on building, placing and upgrading in one transaction, connect
-players by friend code, and let friends visit read-only and cheer. Stored in SQLite (`HOME_DB_PATH`). `X-Player-ID`
-still only selects a data partition, so friends and visibility are an advisory privacy setting, not access control.
+players by friend code, and let friends visit read-only and cheer. Stored in SQLite (`HOME_DB_PATH`). the
+player comes from the sign-in token, but nothing proves two players are a real family, so friends and visibility are an
+advisory privacy setting, not a family or consent check.
 See [the endpoint table and rules](docs/API_PLATFORM.md#home-wallet-and-friends). Frontend and deployment are pending.
 
 

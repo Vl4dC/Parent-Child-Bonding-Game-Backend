@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 
 from learning_service.home_store import HomeStore, Placement
 
-DEFAULT_PLAYER = "00000000-0000-4000-8000-000000000001"  # app.player.DEFAULT_PLAYER_ID
+DEFAULT_PLAYER = "00000000-0000-4000-8000-000000000001"  # an example real player, for tests
 
 
 @dataclass(frozen=True)

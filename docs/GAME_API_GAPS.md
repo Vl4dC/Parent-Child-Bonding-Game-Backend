@@ -25,13 +25,10 @@ synthetic demo players.
 
 ## 2. Blockers: fix these first
 
-1. **Player identity.** The frontend signs in with Clerk, so `session.user.id` is a Clerk id (`user_…`), not a
-   UUID. `app/api/learn/[...path]/route.ts` forwards `X-Player-ID` only when the id is a UUID and otherwise falls
-   back to the shared default player. `lib/learn-api.ts` calls `/api/<path>`, whose proxy (`app/api/[...path]`)
-   forwards no `X-Player-ID` at all. Until the frontend derives a stable UUID per account (for example a UUIDv5 of
-   the Clerk id) and sends it on every call, all users share one home, one wallet and one friend code, and a friend
-   request to "someone else" is a request to yourself (422). This is a frontend fix. The backend cannot verify the
-   mapping: `X-Player-ID` is not identity (AGENTS.md).
+1. **Player identity.** Resolved on the backend: every `/api` request now needs the account's Clerk session token,
+   and the player is its `player_id` claim; `X-Player-ID` is no longer read ([API.md](../API.md#sign-in-and-player-state)).
+   What remains is frontend and Clerk configuration: add the `player_id` claim to the session token (the frontend already
+   stores that UUID in the user's metadata) and set `JWT_ISSUER` on the server. Without a valid token every call is a 401.
 2. **The duel cannot work against the current backend.** `app/(app)/play/duel/duel-screen.tsx` creates a
    tournament and then submits two different answer sheets to it as the same player. The backend refuses this:
    - `POST /api/tournament` returns 409 unless the lesson is `approved`, and the frontend never calls approve.
@@ -42,7 +39,7 @@ synthetic demo players.
 3. **Proxy.** `app/api/[...path]/route.ts` and `app/api/learn/[...path]/route.ts` export only GET, POST and DELETE
    (the new layout, visibility and card routes use PUT) and allow only `materials|lessons|quiz|flashcards|tournament`
    (the learn proxy adds `chat`). `me`, `homes` and `rooms` are not allowed. Two proxies with different behaviour
-   exist, and `learn-api.ts` uses the one without `chat` and without `X-Player-ID`.
+   exist.
 
 ## 3. Economy APIs still missing
 

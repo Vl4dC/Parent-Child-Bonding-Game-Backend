@@ -15,15 +15,17 @@ uv run uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000 --no-a
 ```
 
 Generation defaults off, so this command makes no model calls. Demo storage is in memory, resets
-on restart, and cannot be used in production. API calls need no login, token or auth configuration.
+on restart, and cannot be used in production.
+
+Every `/api` request needs a sign-in token. Set `JWT_ISSUER` in `.env` to your Clerk Frontend API URL (the `iss` of its
+session tokens, for example `https://your-instance.clerk.accounts.dev`); without it every `/api` request is a 503.
+The Clerk session token must carry a `player_id` claim (a UUID; see [API.md](API.md#sign-in-and-player-state)).
 
 ```sh
-curl http://127.0.0.1:8000/api/me/profile
+curl http://127.0.0.1:8000/api/me/profile -H "Authorization: Bearer $TOKEN"
 ```
 
-Optional `X-Player-ID: <UUID>` selects separate player state for profiles, practice and multiplayer.
-Without it, requests share player `00000000-0000-4000-8000-000000000001`. The ID is caller-selected
-and unverified: anyone can select the same ID and access or delete that partition's data.
+The player is the token's `player_id` claim. The old `X-Player-ID` header is no longer read.
 
 ## Supabase and durable storage
 
@@ -46,10 +48,11 @@ use server-only database functions. Never put the database credential in browser
 **Keep `api_private` outside Supabase's exposed Data API schemas.** It stores private text and
 answer keys. Application data is accessed through the public FastAPI routes.
 
-FastAPI has no password login, registration, session management, Bearer checks or authentication
-provider calls. Swagger has no Authorize button or security locks. Frontend login/register remains
-outside this repository and is unchanged. Learner approval keeps its request receipts and decision
-proofs as a separate workflow; guardian mailbox filters are supplied by the caller and unverified.
+FastAPI verifies the sign-in token of every `/api` request (Clerk JWT, RS256, checked against the provider's
+published keys) and has no password login, registration or session routes of its own: sign-in stays with the provider
+and the frontend. Swagger has an Authorize button. Learner registration intake works without a token; learner approval
+keeps its request receipts and decision proofs as a separate workflow, and guardian mailbox filters are supplied by the
+caller and unverified.
 
 ## API and documentation
 

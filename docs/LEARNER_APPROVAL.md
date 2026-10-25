@@ -32,7 +32,7 @@ configured only for the explicit worker, separately from Supabase confirmation e
 | POST `/api/registration/learners` | Public intake; creation idempotency key required | 202 with request ID, private status receipt and queued-request message |
 | GET `/api/registration/requests/{id}` | `X-Registration-Receipt` | Minimal state/version/expiry; no guardian identity, proof or learner Auth ID |
 | POST `/api/registration/requests/{id}/resend` | Receipt plus idempotency key | 202; queues a replacement notification and supersedes earlier proofs |
-| GET `/api/guardian/registration-requests` | guardian_email query filter; optional X-Player-ID | Paginated requests matching the unverified email filter |
+| GET `/api/guardian/registration-requests` | Bearer token; guardian_email query filter | Paginated requests matching the unverified email filter |
 | POST `/api/guardian/registration-requests/{id}/decision` | guardian_email query filter, selected player, request authority grant, proof and idempotency key | Approved/declined record, always `activated: false` |
 
 All responses use existing no-store/no-referrer behavior. Errors omit submitted secrets. New
@@ -96,7 +96,7 @@ are not interpreted directly by this module. Limits are not proof against distri
 ### Guardian review and decision
 
 List with `guardian_email`, `after` and `limit` (1–50, default 20). The email is a caller-supplied
-filter and is not verified. Optional X-Player-ID selects the player for request-authority checks. Results contain learner display name/year and `can_decide`, but never proofs.
+filter and is not verified. The token's `player_id` is the player for request-authority checks. Results contain learner display name/year and `can_decide`, but never proofs.
 Knowing a request ID, selecting a parent label, or controlling the destination mailbox alone does
 not authorize approval. There is no account metadata or confirmed-email check.
 
@@ -111,7 +111,7 @@ The decision body is:
 ```
 
 `decline` is also accepted. The worker's actual proof is a 64-character private value. Submit it in
-the POST body, not the URL. Supply guardian_email as a query filter, optional X-Player-ID,
+the POST body, not the URL. Supply the Bearer token, guardian_email as a query filter,
 an 8–128 character `Idempotency-Key`, and
 a trusted, unexpired authority grant bound to this request and guardian UUID. Version changes,
 terminal/expired state and conflicting replays return 409; wrong/superseded proof or absent authority

@@ -431,12 +431,15 @@ def test_closed_rooms_reject_readiness_but_can_be_left(client):
     assert client.get(f"/api/rooms/{room['id']}").status_code == 404
 
 
-def test_api_schema_has_no_auth_requirement_for_data_operations(client):
+def test_api_schema_requires_a_token_for_data_operations_but_not_registration_intake(client):
     spec = client.get("/openapi.json").json()
     for path, operations in spec["paths"].items():
         if path.startswith("/api/"):
             for operation in operations.values():
-                assert not operation.get("security"), path
+                if path.startswith("/api/registration/"):  # a child signing up has no token yet
+                    assert not operation.get("security"), path
+                else:
+                    assert operation.get("security"), path
 
 
 def test_ready_reports_adapter_durability(client, repository):

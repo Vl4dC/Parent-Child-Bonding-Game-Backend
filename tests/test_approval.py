@@ -274,7 +274,7 @@ def test_recipient_and_bad_receipt_rate_limits(approval):
     assert 404 in statuses and statuses[-1] == 429
 
 
-def test_cross_origin_headers_and_obsolete_authorization_is_ignored(approval):
+def test_cross_origin_headers_and_a_registration_receipt_is_not_a_sign_in(approval):
     client, _, _, _ = approval
     created = create(client)
     response = client.options(
@@ -288,11 +288,12 @@ def test_cross_origin_headers_and_obsolete_authorization_is_ignored(approval):
     assert response.status_code == 200
     assert response.headers["access-control-allow-origin"] == "http://localhost:3000"
     assert "access-control-allow-credentials" not in response.headers
+    # The receipt proves a registration request, never who is signed in.
     assert (
         client.get(
             "/api/me/profile", headers={"Authorization": "Bearer " + created["receipt"]}
         ).status_code
-        == 200
+        == 401
     )
 
 

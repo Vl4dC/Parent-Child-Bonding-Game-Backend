@@ -1,3 +1,4 @@
+import json
 from typing import Literal
 
 from pydantic import Field, SecretStr, field_validator, model_validator
@@ -47,6 +48,23 @@ class Settings(BaseSettings):
     game_invite_ttl_seconds: int = Field(600, ge=60, le=3600)
     game_invites_per_hour: int = Field(30, ge=1, le=100)
     model_timeout_seconds: int = Field(60, ge=1, le=300)
+    # Sign-in tokens (Clerk session JWTs). Every /api request must carry one; the player is its `player_id` claim.
+    # The issuer is the Clerk Frontend API URL (the token's `iss`); its public keys are read from
+    # {issuer}/.well-known/jwks.json unless JWT_JWKS_URL says otherwise. JWT_JWKS_JSON is a fixed key set
+    # (public keys only) used instead of fetching, for offline runs and tests.
+    jwt_issuer: str | None = None
+    jwt_jwks_url: str | None = None
+    jwt_jwks_json: str | None = None
+    # Optional extra checks: the token's `aud`, and which apps (`azp`, Clerk's authorized parties) may use it.
+    jwt_audience: str | None = None
+    jwt_authorized_parties: list[str] = Field(default_factory=list)
+    jwt_leeway_seconds: int = Field(5, ge=0, le=60)
+
+    @property
+    def jwks_url(self) -> str | None:
+        if self.jwt_jwks_url:
+            return self.jwt_jwks_url
+        return f"{self.jwt_issuer}/.well-known/jwks.json" if self.jwt_issuer else None
 
     @property
     def daily_limit(self) -> int | None:
@@ -63,8 +81,32 @@ class Settings(BaseSettings):
             raise ValueError("Use explicit CORS origins")
         return value
 
+    @field_validator("jwt_issuer")
+    @classmethod
+    def plain_issuer(cls, value: str | None) -> str | None:
+        return value.strip().rstrip("/") or None if value else None
+
+    @field_validator("jwt_jwks_json")
+    @classmethod
+    def valid_key_set(cls, value: str | None) -> str | None:
+        if not value:
+            return None
+        try:
+            keys = json.loads(value).get("keys")
+        except (ValueError, AttributeError):
+            keys = None
+        if not isinstance(keys, list):
+            raise ValueError('JWT_JWKS_JSON must be a JSON key set: {"keys": [...]}')
+        return value
+
     @model_validator(mode="after")
     def validate_runtime(self):
+        if (
+            self.app_env == "production"
+            and self.jwt_issuer
+            and not self.jwt_issuer.startswith("https://")
+        ):
+            raise ValueError("JWT_ISSUER must be an https:// URL in production")
         if self.learner_approval_enabled and (
             self.learner_approval_secret is None
             or len(self.learner_approval_secret.get_secret_value().encode()) < 32

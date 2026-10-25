@@ -15,9 +15,8 @@ appendices and a separate OpenAPI supplement. Learner approval remains a separat
 
 ## Added endpoints
 
-All paths below start with `/api/quiz/{quiz_id}` and work without login or tokens. Optional
-X-Player-ID selects the state partition; a mismatched partition returns 404, but callers can freely
-select another UUID. Player selection is not authentication or account privacy.
+All paths below start with `/api/quiz/{quiz_id}` and need the Bearer sign-in token. Its `player_id` claim
+selects the state partition; a mismatched partition returns 404.
 
 | Method | Suffix | Behavior |
 | --- | --- | --- |

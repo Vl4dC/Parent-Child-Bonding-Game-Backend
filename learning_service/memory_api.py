@@ -11,7 +11,8 @@ Saved chats: profile, conversations filed by subject, and a compact digest of wh
   GET  /api/memory/digest                   subjects and topics studied, without chat text (for competitions later)
 
 A chat is continued by sending its `conversation_id` to POST /api/chat or /api/chat/image (chat.py, image_chat.py).
-Everything is scoped to the player id (X-Player-ID); the stored role is a label, not a verified identity.
+Everything is scoped to the player id (the sign-in token's `player_id`); the stored role is a label, not proof of who
+is using the account.
 """
 
 from __future__ import annotations

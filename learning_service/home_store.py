@@ -3,8 +3,8 @@ SQLite store for the home: each player's rooms and item levels, their wallet and
 cheers.
 
 One database file (HOME_DB_PATH, default home.db; ":memory:" in tests). Every row carries the player id from
-X-Player-ID, which selects a data partition and proves nothing about who is calling. Friendships and the
-`visibility` setting are therefore an advisory privacy setting, never access control.
+the verified sign-in token. Friendships and the `visibility` setting are an advisory privacy setting: a friend is
+whoever shared a code, and nothing proves two players are a real family.
 
 Only what a player chose is saved: rooms built, each item's level, and where it was moved and turned. Room art,
 item looks, default spots and the numbers (costs, max level, unlock level) are the frontend's, or are read from
