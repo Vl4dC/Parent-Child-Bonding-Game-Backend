@@ -82,3 +82,12 @@ failure returns 503. Disabled features do not require Node/Chromium. Responses a
 See [exact rules and examples](docs/DIAGRAM_LIFECYCLE_READINESS.md) and the additive
 [15-operation diagram/readiness OpenAPI snapshot](docs/diagram-lifecycle-readiness.openapi.json).
 Earlier API descriptions and snapshots are preserved as historical records.
+
+
+## Home, wallet and friends — 25 October 2026 addition
+
+Seventeen operations under `/api/me/home`, `/api/me/friends`, `/api/me/coins` and `/api/homes` save a player's home
+(rooms built, item levels, positions), spend coins on building, placing and upgrading in one transaction, connect
+players by friend code, and let friends visit read-only and cheer. Stored in SQLite (`HOME_DB_PATH`). `X-Player-ID`
+still only selects a data partition, so friends and visibility are an advisory privacy setting, not access control.
+See [the endpoint table and rules](docs/API_PLATFORM.md#home-wallet-and-friends). Frontend and deployment are pending.
