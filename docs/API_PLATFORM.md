@@ -28,6 +28,15 @@ from the actual routes and typed models at `/openapi.json`.
 | POST / GET | `/api/memory/conversations` | Start a remembered chat / list this player's chats with a count per subject |
 | GET / PATCH / DELETE | `/api/memory/conversations/{id}` | Open a chat with every message / rename it or change its subject / forget it |
 | GET | `/api/memory/digest` | Subjects and topics this player has studied, with no chat text |
+| GET | `/api/challenges/shared-topics?room_id=` | Topics every member of a room has studied (from memory), and nothing else |
+| POST | `/api/challenges` | The AI writes a game (`mcq`, `heads_up` or `diagram`) for a topic and it is frozen for the room |
+| GET | `/api/challenges/{id}` | The challenge without answers (the creator and the room's members) |
+| GET / DELETE | `/api/challenges/{id}/review`, `/api/challenges/{id}` | Full content with answers (creator only) / forget it |
+| POST | `/api/matches` | Turn one of your challenges into a match (`solo`, `friends`, `parent_child`, `duo`) |
+| POST / GET | `/api/matches/{id}/start`, `/api/matches/{id}` | The creator starts a shared countdown / what this player sees now (poll about once a second) |
+| POST / PUT / POST | `/api/matches/{id}/answer`, `/placements`, `/cards`, `/finish` | Play: answer a question (mcq), place words and finish (diagram), mark a card (heads_up) |
+| GET | `/api/matches/{id}/results` | The ranking, once the game is over |
+| GET / POST | `/api/weekly/next`, `/api/weekly/current`, `/api/weekly/next/prepare` | Show-only preview of the weekly challenge, and writing its samples |
 | POST | `/api/chat/image` | Chat about 1-4 pictures (multipart): the model looks at the picture itself; nothing is stored |
 | GET | `/api/materials/{id}/find?topic=…` | Preview selected pages/chapter/source text; no lesson is written (`by_meaning` says whether embeddings took part) |
 | POST / GET | `/api/lessons`, `/api/lessons/{id}` | Generate draft lesson / read owned lesson |
@@ -233,6 +242,106 @@ separate product decision.
 **Limits and deletion.** 500 chats per player, 2000 messages per chat (a full chat says so in `notice`; creating
 more is a 409). `DELETE /api/memory/conversations/{id}` forgets one chat; `DELETE /api/me/data` forgets all of a
 player's chats and profile.
+
+## Friend challenges (games made from memory)
+
+The content layer for competitions between friends. The AI writes a game for a topic the players have studied, it is
+frozen, and everyone in the room gets exactly the same content. **No play engine exists yet** (no timers, scoring,
+winners or rematches); this is the content those engines will run.
+
+**Finding the topic.** `GET /api/challenges/shared-topics?room_id=` compares the memory of everyone in a room you belong to
+and returns only the topics **all** of them have studied (a chat counts once it has had an answer). Topics are matched
+by their words, so "Photosynthesis" and "Plant photosynthesis" are the same. Nothing about a topic only one player
+studied, and nothing from anyone's chats, is shown; each player's display name and memory role are listed.
+
+**Making a game.** `POST /api/challenges` takes `game`, `topic`, `age` (use the **lowest** age in the room, so it is fair and
+suitable for everyone), an optional `room_id` (the room's members at that moment can read it; later joiners cannot) and
+optional `count` and `seconds`. The topic is screened and the content checked for the age like all generated text. One
+generation attempt is used. Three games:
+
+| `game` | Content | Defaults and limits |
+| --- | --- | --- |
+| `mcq` | Fixed multiple-choice questions for a timer per question. Questions too long to read in the time are dropped. | 10 questions (5 to 15), 30 s each (15 to 60) |
+| `heads_up` | Terms, each with 3 to 5 forbidden words (Taboo style). A forbidden word that is, or contains, part of its term is removed; weak cards are skipped. | 20 terms (8 to 30), 60 s per turn (30 to 120) |
+| `diagram` | A flowchart of 5 to 10 boxes with about 45% blanked out (`?`), and a word bank of the right words plus 3 distractors. The model describes boxes and arrows; the Mermaid is built and validated in code. | 120 s for the whole diagram (60 to 300) |
+
+**What players see.** The response and `GET /api/challenges/{id}` are the **public view** and never contain answers:
+`mcq` has the questions and options; `heads_up` has only the deck size and turn length (the guesser must not see the
+terms, so an engine deals the cards one at a time); `diagram` has the blanked flowchart, the slot ids, the word bank and
+the time. The creator reads everything, with answers, explanations, the whole deck and the solution, from
+`GET /api/challenges/{id}/review`; other players get a 404 so a game cannot be spoiled.
+
+**Casual by design.** Every challenge carries `label` ("Written by AI for casual play and not reviewed") and
+`casual: true`: it is checked for the age but not reviewed by a person, which is why it is separate from the reviewed
+quizzes and duels. It expires after 24 hours. `diagram` records `wrong_finish_penalty_seconds: 10`: the rule agreed for
+the race is that each wrong finish adds 10 seconds to a player's time (the existing diagram race already counts
+submissions, so this is a small change there).
+
+**Storage.** Challenges live in the same SQLite file as chat memory (`MEMORY_DB_PATH`) because several players read
+one challenge; `DELETE /api/me/data` removes the challenges a player created. A PostgreSQL deployment would move these
+tables behind the same `MemoryStore` interface.
+
+## Playing a challenge (matches)
+
+A **match** is one played instance of a challenge: the server runs the clock and ranks the players. There are no
+background timers. The server stores when play begins and works out everything else from the time of each request, so
+clients only send actions and poll `GET /api/matches/{id}` about once a second. **Clients never send times**; use the
+returned `server_time_ms` to line a countdown up with the server. All matches are casual (times include network delay;
+nothing here is an anti-cheat boundary) and expire after 24 hours.
+
+**Flow.** `POST /api/matches` with `challenge_id` (your own) and `mode` creates it; the creator calls `POST .../start`,
+which sets `play_at_ms` five seconds ahead for everyone; players act; `GET .../results` returns the ranking once the game
+is over (409 before). Only the match's players can read it (404 otherwise), only the creator starts (403).
+
+| `mode` | Players | Rules |
+| --- | --- | --- |
+| `solo` | You | Not available for heads-up. |
+| `friends` | Everyone in the challenge's room (2 to 8) | Each for themselves, on equal terms. |
+| `parent_child` | Exactly one parent and one learner, each with a memory profile | **The parent gets two thirds of the time** (the agreed handicap, 5 s minimum). |
+| `duo` | Four players and `teams: [[a, b], [c, d]]` | Points are added up per team; parents get two thirds of the time. Not available for the diagram yet. |
+
+**Timed quiz (`mcq`).** Questions open for everyone at the same moment, one at a time: each lasts the challenge's
+`seconds_per_question`, then a 3-second pause shows its answer. A parent's own time is shorter, but the screen moves on
+together (`closes_at_ms` is shared, `your_closes_at_ms` is yours). `POST .../answer` `{question_index, choice}`: your first
+answer to the open question is final (the same answer again is a replay, a different one is a 409); an answer after your
+own time (plus 0.8 s network allowance) is a 409. Whether it was right, with the explanation, appears in the view only
+once the question is over for everyone, so a fast answer tells the others nothing. Ranking: most correct, then less time
+spent on the correct ones; equal results share a rank; a winner needs at least one correct answer. In duo a team's
+correct answers and times are summed (both members answer every question, so its `total` is twice the question count).
+
+**Heads-up (`heads_up`).** Players take turns: one **guesses** (phone on the forehead) while another **explains**. Everyone
+guesses once; in duo the teams alternate and the teammate explains, so each team plays two turns. A turn lasts the
+challenge's `seconds_per_round` (a parent guessing gets two thirds), with a 15-second handover between turns. The server
+deals the cards one at a time from a shuffled deck, across turns, so nobody sees a card twice. `GET` shows the current
+`card` to the two players of the turn only. They (either of them, since one phone is passed around) send `POST .../cards`
+`{action, card_index}`: `correct` +1, `skip` 0, `violation` -1 (the explainer said a forbidden word). Sending the same
+card again is a harmless replay, a card not dealt yet is a 409, marking while no turn is being played is a 409, and anyone but the two players of the turn gets a 403. A turn's points
+never go below zero and count for the guesser (their team in duo). Ranking: most points.
+
+**Diagram (`diagram`).** Everyone races at once on the same board (`board`: the flowchart with `?` boxes, `slots`,
+`options`). `PUT .../placements` sends your whole arrangement as `{slot id: word index}` and replaces the previous one
+(partial is fine, a word only once). `POST .../finish` needs every blank filled: a wrong finish returns how many are right
+and **which slots are wrong, never the right words**, and adds **+10 s** to your final time (`penalty_seconds`);
+a perfect one records your time. Your time limit is the challenge's `seconds` (two thirds for a parent), after which you can
+no longer place or finish. Results unlock when everyone has finished or run out of time. Only perfect reconstructions are
+ranked, by time plus penalties; anyone who did not finish is listed unranked.
+
+`view` in `GET /api/matches/{id}` depends on the game: `mcq` has `phase` (waiting, countdown, question, reveal, finished),
+the open `question`, `reveals` and running `scores`; `heads_up` has the `turns` plan, the current `turn` (with `card` for its
+two players), `cards_left` and `scores`; `diagram` has the `board`, `you` (placements, wrong finishes), your deadline and
+who has finished (`your_deadline_ms` is your own cut-off). Matches live in the same SQLite file as chat memory (`MEMORY_DB_PATH`); `DELETE /api/me/data` removes the
+ones you created.
+
+## Weekly challenge preview (show only)
+
+`GET /api/weekly/next?band=` (and `/current`) previews the weekly tournament: one **common school topic** per week that
+needs nobody's memory (a curated list that rotates by ISO week), the three games, the four modes, the rules, and an
+**example leaderboard that is made up and labelled so**. Leagues are age bands `10-12`, `13-15` and `16-18` (content is
+written for 11, 14 and 17). It is a preview: there is no sign-up, no scoring and no real leaderboard yet.
+`POST /api/weekly/next/prepare` `{band, games?}` has the AI write sample content (five quiz questions, an eight-card
+heads-up deck and a fill-in-the-blanks diagram, checked for the band's age and without answers in the preview) and caches
+it for the week and band, so showing the preview again costs nothing; games already prepared are kept. It takes about
+45 s the first time and uses one generation attempt.
 
 ## Private room contract
 

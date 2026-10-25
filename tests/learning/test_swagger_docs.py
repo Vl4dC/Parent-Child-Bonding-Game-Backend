@@ -17,6 +17,8 @@ MODEL_CALLS = {
     ("post", "/api/tournament"),
     ("post", "/api/chat"),
     ("post", "/api/chat/image"),
+    ("post", "/api/challenges"),
+    ("post", "/api/weekly/next/prepare"),
 }
 
 
@@ -51,6 +53,9 @@ def test_the_page_has_a_walkthrough_and_ordered_tags(spec):
             "Your book",
             "Chat",
             "Memory",
+            "Challenges",
+            "Matches",
+            "Weekly",
             "Learn",
             "Quiz",
             "Flashcards",

@@ -11,10 +11,13 @@ from typing import Annotated
 from fastapi import FastAPI, Path
 from pydantic import BaseModel
 
-UPLOAD, CHAT, MEMORY, LEARN, QUIZ, CARDS, WEAK, TOURNAMENT = (
+UPLOAD, CHAT, MEMORY, CHALLENGES, MATCHES, WEEKLY, LEARN, QUIZ, CARDS, WEAK, TOURNAMENT = (
     "Your book",
     "Chat",
     "Memory",
+    "Challenges",
+    "Matches",
+    "Weekly",
     "Learn",
     "Quiz",
     "Flashcards",
@@ -35,6 +38,18 @@ TAGS = [
     {
         "name": MEMORY,
         "description": "Saved chats, kept per player and filed by subject, so a chat can be continued later. Long chats are summarised.",
+    },
+    {
+        "name": CHALLENGES,
+        "description": "Friend challenges: the AI writes a timed quiz, a heads-up deck or a fill-in-the-blanks diagram from topics players have studied.",
+    },
+    {
+        "name": MATCHES,
+        "description": "Play a challenge: the server runs the clock for timed questions, heads-up turns and the diagram race, and ranks the players.",
+    },
+    {
+        "name": WEEKLY,
+        "description": "Preview of the weekly tournament: next week's common topic, the games, the modes and sample content. Show only for now.",
     },
     {
         "name": LEARN,
@@ -148,6 +163,7 @@ class Error(BaseModel):
 
 
 _ERRORS = {
+    403: "Not allowed for this player, for example only the creator can start a match.",
     404: "Unknown or unowned id. Ephemeral demo records also disappear on restart.",
     409: "Nothing to practise, review required, stale state, or conflicting replay.",
     422: (
@@ -171,6 +187,8 @@ QuizId = Annotated[
     Path(description="A quiz `id`, from `POST /api/lessons/{lesson_id}/quiz` or a follow-up quiz"),
 ]
 DeckId = Annotated[str, Path(description="A deck `id`, from a flashcards endpoint")]
+ChallengeId = Annotated[str, Path(description="A challenge `id`, from `POST /api/challenges`")]
+MatchId = Annotated[str, Path(description="A match `id`, from `POST /api/matches`")]
 ConversationId = Annotated[
     str, Path(description="A chat `id`, from `POST /api/memory/conversations` or the chat list")
 ]

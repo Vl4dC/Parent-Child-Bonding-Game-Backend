@@ -8,14 +8,17 @@ from fastapi import APIRouter, Body, Depends, File, Header, HTTPException, Query
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field, StringConstraints
 
+import learning_service.challenge_api as challenge_api
 import learning_service.chat as chat
 import learning_service.embeddings as embeddings
 import learning_service.flashcards as flashcards
 import learning_service.image_chat as image_chat
+import learning_service.match_api as match_api
 import learning_service.materials as materials
 import learning_service.memory_api as memory_api
 import learning_service.safety as safety
 import learning_service.tournament as tournament
+import learning_service.weekly_api as weekly_api
 from app.context import api_context
 from app.generation import generation_permit, model_settings
 from learning_service.api_docs import (
@@ -265,6 +268,9 @@ app.include_router(tournament.router)
 app.include_router(chat.router)
 app.include_router(image_chat.router)
 app.include_router(memory_api.router)
+app.include_router(challenge_api.router)
+app.include_router(match_api.router)
+app.include_router(weekly_api.router)
 
 
 # --------------------------------------------------------------------------

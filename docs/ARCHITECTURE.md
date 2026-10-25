@@ -14,6 +14,9 @@ Frontend source remains in the main repository and is not modified here.
 | app/jobs.py, app/worker.py | Validated idempotent jobs, leasing, bounded retries, durable results |
 | app/rooms.py | Private lobby creation, membership, readiness, snapshots, host transfer |
 | learning_service/ | Existing lesson/quiz/flashcard/visual/weakness engines and integrated routers |
+| learning_service/matches.py, match_api.py | Server-clocked engines that play a challenge: timed quiz, heads-up turns, diagram race; modes, handicap and ranking |
+| learning_service/weekly.py, weekly_api.py | Show-only preview of the weekly tournament with cached AI samples |
+| learning_service/challenges.py, challenge_api.py | Friend challenges: shared topics from memory, and the AI-written content of three games (timed quiz, heads-up deck, fill-in-the-blanks diagram) |
 | learning_service/memory_store.py, memory.py, memory_api.py | Chat memory: SQLite store per player id, subject filing, summary folding, `/api/memory/*` |
 | learning_service/chat.py | `POST /api/chat`: retrieval-augmented answers from an upload, with `used_pdf` and cited pages |
 | learning_service/image_chat.py | `POST /api/chat/image`: the model looks at 1-4 pictures; re-encoded, checked for age, never stored |

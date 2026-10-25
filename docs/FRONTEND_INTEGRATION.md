@@ -74,6 +74,31 @@ child use different `X-Player-ID` values; `PUT /api/memory/profile` stores their
 The role is a label, not authentication. A saved chat whose PDF was deleted still opens: the next answer carries a
 `notice` asking for the PDF again. See [API_PLATFORM.md](API_PLATFORM.md#saved-chats-memory).
 
+## Friend challenges
+
+Flow for a competition screen: two or more friends join a room (`/api/rooms`), then
+`GET /api/challenges/shared-topics?room_id=` lists the topics they have all studied. Pick one and call
+`POST /api/challenges` with the game, the topic, the **lowest** player age and the `room_id`; every member then reads
+the same content from `GET /api/challenges/{id}` (no answers). Show the returned `label` ("Written by AI for casual play
+and not reviewed"). For `diagram`, render the returned `mermaid` and put a drop target on each id in `slots`; the word
+bank is `options`. For `heads_up` the public view only gives the deck size; there is no endpoint that deals the cards
+yet. No game engine, timer or scoring exists yet, so the client would have to run the clock until one does. See
+[API_PLATFORM.md](API_PLATFORM.md#friend-challenges-games-made-from-memory).
+
+## Playing matches and the weekly preview
+
+After a challenge exists (see above), `POST /api/matches` `{challenge_id, mode}` makes a match and the creator calls
+`POST /api/matches/{id}/start`. Every player then polls `GET /api/matches/{id}` about once a second and draws from `view`;
+line countdowns up with `server_time_ms` and `play_at_ms`, and never send times. MCQ: show `view.question` until
+`your_closes_at_ms`, send `POST .../answer`, and show `view.reveals` when they appear. Heads-up: only the two players of
+the current turn get `view.turn.card`; send `POST .../cards` for correct, skip or violation (tilt down/up or buttons).
+Diagram: render `view.board.mermaid`, put a drop target on each `slots` id, send the whole arrangement with
+`PUT .../placements` on each drop and `POST .../finish` to check. Results come from `GET .../results`. In parent-child
+and duo matches show the parent their shorter `your_seconds`.
+
+`GET /api/weekly/next?band=` returns everything for a "next week's challenge" screen (topic, games, modes, rules,
+samples once prepared, and an example leaderboard marked `example: true`). It is a preview; do not present it as live.
+
 ## Visuals and rooms
 
 Visual HTML belongs inside a sandboxed frame with scripts allowed and no same-origin permission.
