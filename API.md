@@ -134,3 +134,7 @@ earlier statements that these routes and scoped token verification were still pe
 - Match state includes `can_start`; `GET /api/matches/{match_id}/diagram/view` renders the public masked
   board in a sandboxed HTML document with slot IDs visible. It never returns the private answer mapping.
 - Resource summaries now expose a lesson's nested title while keeping lesson content private.
+
+The configured model split is preserved: Luna (`openai/gpt-6-luna`) for main/planning work,
+Haiku (`anthropic/claude-haiku-5.5`) for visual/UI code generation. Bare vendor/model names route
+through the existing OpenRouter adapter; explicit environment overrides remain supported.

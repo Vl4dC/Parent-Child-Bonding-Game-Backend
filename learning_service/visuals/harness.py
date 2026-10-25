@@ -61,7 +61,11 @@ def drawer_llm():
     """The model that writes the visual code. VISUAL_MODEL (same format as QUIZ_MODEL, e.g.
     `openrouter:anthropic/claude-haiku-5.5`) if set, else the main model. Planning stays on the main model."""
     runtime = model_settings.get()
-    model = runtime.visual_model if runtime else os.getenv("VISUAL_MODEL")
+    model = (
+        runtime.visual_model
+        if runtime
+        else os.getenv("VISUAL_MODEL", "openrouter:anthropic/claude-haiku-5.5")
+    )
     return (
         _llm(model, temperature=DRAW_TEMPERATURE) if model else _llm(temperature=DRAW_TEMPERATURE)
     )

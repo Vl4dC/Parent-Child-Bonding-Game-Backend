@@ -272,7 +272,7 @@ def test_max_visuals_cap(monkeypatch):
     assert [v.section_index for v in visuals] == [0, 1]
 
 
-def test_drawer_uses_the_separate_visual_model_only_when_one_is_set(monkeypatch):
+def test_drawer_defaults_to_haiku_and_respects_explicit_override(monkeypatch):
     asked = []
     monkeypatch.setattr(
         harness,
@@ -280,10 +280,13 @@ def test_drawer_uses_the_separate_visual_model_only_when_one_is_set(monkeypatch)
         lambda model=None, temperature=1.0: asked.append((model, temperature)) or "llm",
     )
     harness.drawer_llm()
-    monkeypatch.setenv("VISUAL_MODEL", "openrouter:anthropic/claude-haiku-5.5")
+    monkeypatch.setenv("VISUAL_MODEL", "openrouter:anthropic/custom-visual-model")
     harness.drawer_llm()
     steady = harness.DRAW_TEMPERATURE  # drawing code is steadier than the chat default of 1.0
-    assert asked == [(None, steady), ("openrouter:anthropic/claude-haiku-5.5", steady)]
+    assert asked == [
+        ("openrouter:anthropic/claude-haiku-5.5", steady),
+        ("openrouter:anthropic/custom-visual-model", steady),
+    ]
     assert steady < 1.0
 
 
