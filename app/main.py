@@ -160,6 +160,7 @@ def create_app(
         )
 
     from app.diagram_api import install as install_diagram_assembly
+    from app.economy_api import router as economy_router
     from app.home_api import router as home_router
     from app.jobs import router as jobs_router
     from app.platform import router as platform_router
@@ -177,6 +178,7 @@ def create_app(
     app.include_router(learning_router, responses=common_errors)
     app.include_router(platform_router, responses=common_errors)
     app.include_router(home_router, responses=common_errors)
+    app.include_router(economy_router, responses=common_errors)
     app.include_router(jobs_router, responses=common_errors)
     app.include_router(rooms_router, responses=common_errors)
     from app.approval_api import install as install_approval

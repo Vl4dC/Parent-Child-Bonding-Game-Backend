@@ -175,6 +175,7 @@ class StoredDeck(BaseModel):
     cards: list[Flashcard]
     progress: DeckProgress
     review_receipts: dict[str, dict] = Field(default_factory=dict)
+    weak_practice: bool = False
 
     def state(self) -> DeckState:
         p = self.progress

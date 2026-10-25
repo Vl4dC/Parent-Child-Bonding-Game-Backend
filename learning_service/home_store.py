@@ -28,6 +28,7 @@ from typing import Annotated, Callable, Iterator, Literal
 from pydantic import BaseModel, Field
 
 from learning_service.home_rules import RULES
+from learning_service.shop import CATALOG, ITEMS
 
 Visibility = Literal["family", "friends", "nobody"]
 HOME = "home"  # the room id of a cheer for the whole home
@@ -75,6 +76,19 @@ create table if not exists coin_ledger (
     created_at text not null,
     unique (player_id, reason, ref)
 ) strict;
+create table if not exists inventory (
+    player_id text not null references wallets (player_id) on delete cascade,
+    item_id text not null,
+    acquired_at text not null,
+    primary key (player_id, item_id)
+) strict, without rowid;
+create table if not exists equipment (
+    player_id text not null references wallets (player_id) on delete cascade,
+    slot text not null,
+    item_id text,
+    primary key (player_id, slot),
+    foreign key (player_id, item_id) references inventory (player_id, item_id)
+) strict, without rowid;
 create table if not exists friend_codes (
     player_id text primary key,
     code text not null unique
@@ -486,10 +500,14 @@ class HomeStore:
         """Add coins for `(ref, amount)` pairs. A reference already paid under this reason is skipped.
 
         Returns (balance, coins credited now)."""
+        return self.credit_rewards(pid, [(reason, ref, amount) for ref, amount in entries])
+
+    def credit_rewards(self, pid: str, entries: list[tuple[str, str, int]]) -> tuple[int, int]:
+        """Atomically pay several reward components, each with its own duplicate protection."""
         with self._tx() as db:
             self._ensure(db, pid)
             credited = 0
-            for ref, amount in entries:
+            for reason, ref, amount in entries:
                 if amount > 0 and self._ledger(db, pid, amount, reason, ref, ignore=True):
                     credited += amount
             db.execute("update wallets set coins = coins + ? where player_id = ?", (credited, pid))
@@ -497,6 +515,92 @@ class HomeStore:
                 0
             ]
             return coins, credited
+
+    def _inventory(self, db: sqlite3.Connection, pid: str) -> dict:
+        self._ensure(db, pid)
+        for item in CATALOG:
+            if item.starter:
+                db.execute(
+                    "insert or ignore into inventory values (?, ?, ?)", (pid, item.id, now())
+                )
+                db.execute(
+                    "insert or ignore into equipment values (?, ?, ?)", (pid, item.slot, item.id)
+                )
+        return {
+            "owned": [
+                r[0]
+                for r in db.execute(
+                    "select item_id from inventory where player_id=? order by item_id", (pid,)
+                )
+            ],
+            "equipped": dict(
+                db.execute("select slot,item_id from equipment where player_id=?", (pid,))
+            ),
+        }
+
+    def inventory(self, pid: str) -> dict:
+        with self._tx() as db:
+            return self._inventory(db, pid)
+
+    def purchase(self, pid: str, item_id: str) -> dict:
+        item = ITEMS.get(item_id)
+        if item is None:
+            raise HomeError(404, "Shop item not found.")
+        with self._tx() as db:
+            inventory = self._inventory(db, pid)
+            owned = item_id in inventory["owned"]
+            if not owned:
+                self._spend(db, pid, item.price, "shop_purchase", item_id)
+                db.execute("insert into inventory values (?, ?, ?)", (pid, item_id, now()))
+            coins = db.execute("select coins from wallets where player_id=?", (pid,)).fetchone()[0]
+            return {
+                "item_id": item_id,
+                "charged": 0 if owned else item.price,
+                "coins": coins,
+                "inventory": self._inventory(db, pid),
+            }
+
+    def equip(self, pid: str, slot: str, item_id: str | None) -> dict:
+        with self._tx() as db:
+            inventory = self._inventory(db, pid)
+            if item_id is not None:
+                item = ITEMS.get(item_id)
+                if item is None:
+                    raise HomeError(404, "Shop item not found.")
+                if item.slot != slot:
+                    raise HomeError(422, "That item does not fit this slot.")
+                if item_id not in inventory["owned"]:
+                    raise HomeError(409, "Buy this item before equipping it.")
+            db.execute(
+                "insert into equipment values (?, ?, ?) on conflict(player_id,slot) "
+                "do update set item_id=excluded.item_id",
+                (pid, slot, item_id),
+            )
+            return self._inventory(db, pid)
+
+    def wallet(self, pid: str, after: int, limit: int) -> dict:
+        with self._tx() as db:
+            self._ensure(db, pid)
+            rows = db.execute(
+                "select id,delta,reason,ref,created_at from coin_ledger "
+                "where player_id=? and id>? order by id limit ?",
+                (pid, after, limit + 1),
+            ).fetchall()
+            return {
+                "coins": db.execute(
+                    "select coins from wallets where player_id=?", (pid,)
+                ).fetchone()[0],
+                "transactions": [dict(r) for r in rows[:limit]],
+                "next_cursor": rows[limit - 1]["id"] if len(rows) > limit else None,
+            }
+
+    def claimed_quests(self, pid: str) -> set[str]:
+        return {
+            r[0]
+            for r in self._query(
+                "select ref from coin_ledger where player_id=? and reason='quest'", (pid,)
+            )
+        }
 
     # ------------------------------------------------------------ friends
     def friend_code(self, pid: str) -> str:
@@ -662,6 +766,7 @@ class HomeStore:
     # ------------------------------------------------------------ deletion
     def _erase(self, db: sqlite3.Connection, pid: str) -> None:
         db.execute("delete from homes where player_id = ?", (pid,))  # rooms, items, cheers received
+        db.execute("delete from equipment where player_id = ?", (pid,))
         db.execute("delete from wallets where player_id = ?", (pid,))  # and its ledger
         db.execute("delete from friend_codes where player_id = ?", (pid,))
         db.execute("delete from friendships where a = ? or b = ?", (pid, pid))

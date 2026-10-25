@@ -1,0 +1,906 @@
+[
+  {
+    "id": "nova",
+    "name": "Nova",
+    "slot": "look",
+    "price": 0,
+    "asset_pack": "questnest",
+    "starter": true
+  },
+  {
+    "id": "mia",
+    "name": "Mia",
+    "slot": "look",
+    "price": 300,
+    "asset_pack": "questnest",
+    "starter": false
+  },
+  {
+    "id": "zara",
+    "name": "Zara",
+    "slot": "look",
+    "price": 300,
+    "asset_pack": "questnest",
+    "starter": false
+  },
+  {
+    "id": "leo",
+    "name": "Leo",
+    "slot": "look",
+    "price": 300,
+    "asset_pack": "questnest",
+    "starter": false
+  },
+  {
+    "id": "sam",
+    "name": "Sam",
+    "slot": "look",
+    "price": 300,
+    "asset_pack": "questnest",
+    "starter": false
+  },
+  {
+    "id": "mom",
+    "name": "Mom",
+    "slot": "look",
+    "price": 500,
+    "asset_pack": "questnest",
+    "starter": false
+  },
+  {
+    "id": "dad",
+    "name": "Dad",
+    "slot": "look",
+    "price": 500,
+    "asset_pack": "questnest",
+    "starter": false
+  },
+  {
+    "id": "cat",
+    "name": "Mochi the cat",
+    "slot": "pet",
+    "price": 0,
+    "asset_pack": "questnest",
+    "starter": true
+  },
+  {
+    "id": "top.navy",
+    "name": "Crewneck sweatshirt",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.quarter",
+    "name": "Fleece quarter-zip pullover",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.white_tee",
+    "name": "Heavyweight crewneck T-shirt",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.hoodie",
+    "name": "Pullover hoodie",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.forest_hoodie",
+    "name": "Zip-up hoodie",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.polo",
+    "name": "Short-sleeve knit polo",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.oxford",
+    "name": "Oxford shirt",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.knit",
+    "name": "Ribbed knit sweater",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.denim",
+    "name": "Denim jacket",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.bomber",
+    "name": "Classic bomber jacket",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.track",
+    "name": "Track jacket",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "bottom.denim",
+    "name": "Straight-leg jeans",
+    "slot": "bottom",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "bottom.black",
+    "name": "Straight-leg trousers",
+    "slot": "bottom",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "bottom.cargo",
+    "name": "Cargo trousers",
+    "slot": "bottom",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "bottom.track",
+    "name": "Track pants",
+    "slot": "bottom",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.white",
+    "name": "Minimal low-top sneakers",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.black",
+    "name": "Classic low-top sneakers",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "earrings.studs",
+    "name": "Stud earrings",
+    "slot": "earrings",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "earrings.hoops",
+    "name": "Hoop earrings",
+    "slot": "earrings",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "hat.cap",
+    "name": "Baseball cap",
+    "slot": "hat",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "hat.beanie",
+    "name": "Cuffed beanie",
+    "slot": "hat",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "glasses.round",
+    "name": "Round-frame glasses",
+    "slot": "glasses",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "glasses.rect",
+    "name": "Rectangular-frame glasses",
+    "slot": "glasses",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.oat_quarter",
+    "name": "Relaxed fleece quarter-zip",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.tech_quarter",
+    "name": "Technical quarter-zip top",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.burgundy_hoodie",
+    "name": "Relaxed pullover hoodie",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.gray_crew",
+    "name": "Classic crewneck sweatshirt",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.breton",
+    "name": "Striped long-sleeve T-shirt",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.cable_knit",
+    "name": "Cable-knit sweater",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.work_shirt",
+    "name": "Button-front work shirt",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.olive_polo",
+    "name": "Textured knit polo",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.terminal_tee",
+    "name": "Graphic crewneck T-shirt",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.sky_tee",
+    "name": "Washed cotton T-shirt",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.studio_bomber",
+    "name": "Relaxed bomber jacket",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.light_denim",
+    "name": "Washed denim jacket",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.fleece",
+    "name": "Fleece jacket",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.chore",
+    "name": "Canvas chore jacket",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.navy_track",
+    "name": "Contrast-piping track jacket",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.diff_track",
+    "name": "Contrast-panel track jacket",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "bottom.cream_chinos",
+    "name": "Chino trousers",
+    "slot": "bottom",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "bottom.slate_pleats",
+    "name": "Pleated tailored trousers",
+    "slot": "bottom",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "bottom.washed_jeans",
+    "name": "Washed straight-leg jeans",
+    "slot": "bottom",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "bottom.olive_cargo",
+    "name": "Relaxed cargo trousers",
+    "slot": "bottom",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "bottom.diff_track",
+    "name": "Contrast-panel track pants",
+    "slot": "bottom",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "bottom.burgundy_sweats",
+    "name": "Relaxed sweatpants",
+    "slot": "bottom",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.brown_boots",
+    "name": "Leather work boots",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.cream_runner",
+    "name": "Retro running sneakers",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.court_high",
+    "name": "High-top basketball sneakers",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.court_mid",
+    "name": "Mid-top basketball sneakers",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.court_low",
+    "name": "Low-top basketball sneakers",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.skate_chunky",
+    "name": "Chunky skate sneakers",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.suede_terrace",
+    "name": "Suede low-top sneakers",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.canvas_high",
+    "name": "High-top canvas sneakers",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.canvas_low",
+    "name": "Low-top canvas sneakers",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.slip_on",
+    "name": "Canvas slip-on shoes",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.retro_mesh",
+    "name": "Mesh running sneakers",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.performance_runner",
+    "name": "Performance running shoes",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.trail_grip",
+    "name": "Trail running shoes",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.knit_runner",
+    "name": "Knit running sneakers",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.platform_sneaker",
+    "name": "Platform sneakers",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.tennis_court",
+    "name": "Tennis shoes",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.hiking_lace",
+    "name": "Lace-up hiking boots",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.work_lace",
+    "name": "Lace-up work boots",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.chelsea",
+    "name": "Chelsea boots",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.combat_lace",
+    "name": "Lace-up combat boots",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.desert_suede",
+    "name": "Suede desert boots",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.winter_padded",
+    "name": "Padded winter boots",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.penny_loafer",
+    "name": "Penny loafers",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.tassel_loafer",
+    "name": "Tassel loafers",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.derby_lace",
+    "name": "Derby shoes",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.mary_jane",
+    "name": "Buckle-strap flats",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.clog_cork",
+    "name": "Cork-footbed clogs",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "shoes.house_mule",
+    "name": "Backless slippers",
+    "slot": "shoes",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.boxy_heavy_tee",
+    "name": "Boxy heavyweight T-shirt",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.rugby_collar",
+    "name": "Long-sleeve rugby shirt",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.knit_polo",
+    "name": "Relaxed knit polo",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.waffle_henley",
+    "name": "Waffle-knit Henley shirt",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.mockneck_zip",
+    "name": "Mock-neck half-zip pullover",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.relaxed_cardigan",
+    "name": "Relaxed knit cardigan",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.box_puffer",
+    "name": "Boxy puffer jacket",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.hooded_puffer",
+    "name": "Hooded puffer jacket",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.quilt_liner",
+    "name": "Quilted liner jacket",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.flight_bomber",
+    "name": "Flight bomber jacket",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.varsity_wool",
+    "name": "Wool varsity jacket",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.denim_trucker",
+    "name": "Denim trucker jacket",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.leather_biker",
+    "name": "Leather biker jacket",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.rain_parka",
+    "name": "Rain parka",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.sherpa_fleece",
+    "name": "Sherpa fleece jacket",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.track_piped",
+    "name": "Zip-up track jacket with piping",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "bottom.baggy_denim",
+    "name": "Baggy jeans",
+    "slot": "bottom",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "bottom.wide_denim",
+    "name": "Wide-leg jeans",
+    "slot": "bottom",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "bottom.carpenter_denim",
+    "name": "Carpenter jeans",
+    "slot": "bottom",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "bottom.barrel_denim",
+    "name": "Barrel-leg jeans",
+    "slot": "bottom",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "bottom.parachute_cargo",
+    "name": "Parachute cargo trousers",
+    "slot": "bottom",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "bottom.pleated_wide",
+    "name": "Wide pleated trousers",
+    "slot": "bottom",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "bottom.stacked_sweats",
+    "name": "Stacked sweatpants",
+    "slot": "bottom",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "bottom.piped_warmup",
+    "name": "Warm-up pants with piping",
+    "slot": "bottom",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.dress_white",
+    "name": "White dress shirt",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.suit_charcoal",
+    "name": "Charcoal suit jacket",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "tie.classic",
+    "name": "Classic necktie",
+    "slot": "tie",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.fine_turtleneck",
+    "name": "Fine-knit turtleneck",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.shawl_sweater",
+    "name": "Shawl-collar sweater",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.raglan_baseball",
+    "name": "Raglan baseball T-shirt",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.camp_collar",
+    "name": "Camp-collar shirt",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.training_panel",
+    "name": "Panelled training top",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.check_flannel",
+    "name": "Checked flannel shirt",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.utility_pocket_tee",
+    "name": "Utility pocket T-shirt",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "top.fisherman_knit",
+    "name": "Fisherman rib sweater",
+    "slot": "top",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.corduroy",
+    "name": "Corduroy jacket",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.cafe_racer",
+    "name": "Stand-collar leather jacket",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.hood_anorak",
+    "name": "Hooded anorak",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.double_blazer",
+    "name": "Double-breasted blazer",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.herringbone",
+    "name": "Herringbone overshirt",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "jacket.utility_field",
+    "name": "Utility field jacket",
+    "slot": "jacket",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "bottom.corduroy_straight",
+    "name": "Straight corduroy trousers",
+    "slot": "bottom",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "bottom.pinstripe",
+    "name": "Pinstripe trousers",
+    "slot": "bottom",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "bottom.cuffed_joggers",
+    "name": "Cuffed joggers",
+    "slot": "bottom",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "bottom.double_knee",
+    "name": "Double-knee work trousers",
+    "slot": "bottom",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "bottom.patchwork_denim",
+    "name": "Patchwork jeans",
+    "slot": "bottom",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  },
+  {
+    "id": "bottom.bootcut_denim",
+    "name": "Bootcut jeans",
+    "slot": "bottom",
+    "price": 100,
+    "asset_pack": "atelier-r6"
+  }
+]

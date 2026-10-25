@@ -727,6 +727,11 @@ def review_card(
         deck.progress = flashcards.review(deck.progress, body.card, body.result)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
+    from app.economy import record
+
+    record("card_review", f"{deck.id}/{deck.progress.reviews}")
+    if deck.weak_practice and deck.progress.next is None:
+        record("weak", f"deck/{deck.id}")
     state = deck.state()
     if idempotency_key:
         deck.review_receipts[idempotency_key] = {

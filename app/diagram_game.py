@@ -470,6 +470,14 @@ class DiagramGame:
                 tx.put("races", race_id, r)
             return out
 
+    def participated(self, race_id, actor):
+        """A finished/expired race can reward a real submission, including an incorrect one."""
+        with self.store.transaction() as tx:
+            r, _, _, players, me, now = self.load(tx, race_id, actor)
+            if self.status(r, players, now) not in ("finished", "expired"):
+                raise HTTPException(409, "The race has not ended.")
+            return me["submissions"] > 0 and not me["forfeited"]
+
     def results(self, race_id, actor, review=False):
         with self.store.transaction() as tx:
             r, t, room, players, me, now = self.load(tx, race_id, actor, full_snapshot=review)
