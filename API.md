@@ -91,3 +91,13 @@ Seventeen operations under `/api/me/home`, `/api/me/friends`, `/api/me/coins` an
 players by friend code, and let friends visit read-only and cheer. Stored in SQLite (`HOME_DB_PATH`). `X-Player-ID`
 still only selects a data partition, so friends and visibility are an advisory privacy setting, not access control.
 See [the endpoint table and rules](docs/API_PLATFORM.md#home-wallet-and-friends). Frontend and deployment are pending.
+
+
+## Coins, quests and wardrobe — 25 October 2026
+
+The [economy contract](docs/ECONOMY.md) adds server-scored same-device duel submissions, parent-child
+MCQ reward claims, 20 participation coins per completed backend game, daily/weekly quests with Europe/Berlin calendar resets, shared wallet history,
+server-priced purchases, inventory and equipment. Clothing/accessories cost 100 coins each.
+This supersedes earlier statements that duel/quest rewards and shop purchases are pending.
+The frontend remains unchanged and needs API wiring. See the contract for request examples,
+activity definitions, migration 010, storage boundaries, and the existing unverified player selector.

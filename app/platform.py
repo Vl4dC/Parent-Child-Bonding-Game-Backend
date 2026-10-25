@@ -202,6 +202,7 @@ def delete_own_data(request: Request):
         "tournaments",
         "decks",
         "completions",
+        "economy_events",
         "jobs",
     ):
         for key, _ in all_records(unit, kind):
@@ -367,12 +368,18 @@ def new_attempt(quiz_id: str):
 
 @router.post("/lessons/{lesson_id}/complete", tags=["Progress"], response_model=Completion)
 def complete_lesson(lesson_id: str):
-    store.get_or_404(store.LESSONS, lesson_id, "Lesson")
+    lesson = store.get_or_404(store.LESSONS, lesson_id, "Lesson")
     unit = current_session.get()
     completion = unit.get("completions", lesson_id) or {
         "lesson_id": lesson_id,
         "completed_at": now(),
     }
+    if unit.get("completions", lesson_id) is None:
+        from app.economy import record
+
+        record("lesson", lesson_id)
+        if lesson.source:
+            record("upload_learned", lesson.source.material_id)
     unit.put("completions", lesson_id, completion)
     return completion
 

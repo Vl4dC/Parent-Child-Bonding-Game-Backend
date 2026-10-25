@@ -324,7 +324,11 @@ def answer(quiz_id: QuizId, body: AnswerInput, key: Key):
         raise HTTPException(409, "The first recorded choice cannot be changed.")
     capacity(data["answers"])
     feedback = grade(question, body.choice)
-    quiz.attempts.setdefault(body.index, Attempt(choice=body.choice, correct=feedback.correct))
+    if previous is None:
+        from app.economy import quiz_answered
+
+        quiz.attempts[body.index] = Attempt(choice=body.choice, correct=feedback.correct)
+        quiz_answered(quiz, body.index)
     response = AnswerResponse(
         index=body.index,
         recorded_choice=quiz.attempts[body.index].choice,

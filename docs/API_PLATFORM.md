@@ -435,3 +435,13 @@ by this API after extraction; extracted text persists until explicit deletion.
 Automated content retention periods, guardian permissions, reward economies, public matchmaking,
 rankings, gameplay, and the proposed age-safety output gate remain pending. No frontend files or
 hosted database were changed by this API implementation.
+
+
+## Coins, quests and wardrobe — 25 October 2026
+
+The [economy contract](ECONOMY.md) adds server-scored same-device duel submissions, parent-child
+MCQ reward claims, 20 participation coins per completed backend game, daily/weekly quests with Europe/Berlin calendar resets, shared wallet history,
+server-priced purchases, inventory and equipment. Clothing/accessories cost 100 coins each.
+This supersedes earlier statements that duel/quest rewards and shop purchases are pending.
+The frontend remains unchanged and needs API wiring. See the contract for request examples,
+activity definitions, migration 010, storage boundaries, and the existing unverified player selector.

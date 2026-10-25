@@ -122,3 +122,13 @@ Preflight checks tables, indexes, cleanup/invalidation functions and an origin-e
 The migration has no historical repair sweep. Drain/cancel previously stale matches before
 enabling an existing deployment; see [rollout and readiness](DIAGRAM_LIFECYCLE_READINESS.md).
 No hosted database was migrated as part of implementation.
+
+
+## Coins, quests and wardrobe — 25 October 2026
+
+The [economy contract](ECONOMY.md) adds server-scored same-device duel submissions, parent-child
+MCQ reward claims, daily/weekly quests with Europe/Berlin calendar resets, shared wallet history,
+server-priced purchases, inventory and equipment. Clothing/accessories cost 100 coins each.
+This supersedes earlier statements that duel/quest rewards and shop purchases are pending.
+The frontend remains unchanged and needs API wiring. See the contract for request examples,
+activity definitions, migration 010, storage boundaries, and the existing unverified player selector.

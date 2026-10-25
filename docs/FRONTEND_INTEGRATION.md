@@ -186,3 +186,13 @@ approves each friend, which this API cannot do. Replace the "unlimited coins" te
 
 Everything the game side still needs beyond this (duel, shop, quests, stats, presence, family link, party games) is
 listed with frontend evidence in [GAME_API_GAPS.md](GAME_API_GAPS.md).
+
+
+## Coins, quests and wardrobe — 25 October 2026
+
+The [economy contract](ECONOMY.md) adds server-scored same-device duel submissions, parent-child
+MCQ reward claims, 20 participation coins per completed backend game, daily/weekly quests with Europe/Berlin calendar resets, shared wallet history,
+server-priced purchases, inventory and equipment. Clothing/accessories cost 100 coins each.
+This supersedes earlier statements that duel/quest rewards and shop purchases are pending.
+The frontend remains unchanged and needs API wiring. See the contract for request examples,
+activity definitions, migration 010, storage boundaries, and the existing unverified player selector.
