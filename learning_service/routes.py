@@ -13,6 +13,7 @@ import learning_service.embeddings as embeddings
 import learning_service.flashcards as flashcards
 import learning_service.image_chat as image_chat
 import learning_service.materials as materials
+import learning_service.memory_api as memory_api
 import learning_service.safety as safety
 import learning_service.tournament as tournament
 from app.context import api_context
@@ -262,6 +263,7 @@ app = APIRouter(dependencies=[Depends(api_context, scope="function")])
 app.include_router(tournament.router)
 app.include_router(chat.router)
 app.include_router(image_chat.router)
+app.include_router(memory_api.router)
 
 
 # --------------------------------------------------------------------------

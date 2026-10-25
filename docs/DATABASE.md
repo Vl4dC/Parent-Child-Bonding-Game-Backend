@@ -24,6 +24,14 @@ Migration 001 creates records and transactional lobby commands; 002 adds durable
 workflow usage, and optional room transport policies; 003 adds leaving every lobby on data deletion;
 004 adds persistent per-account request limiting; 005 adds partial job indexes for server performance. Never edit applied migrations: append new ones.
 
+## Chat memory (SQLite, separate from PostgreSQL)
+
+Saved chats live in a SQLite file (`MEMORY_DB_PATH`, default `memory.db`), not in `api_private.records`. It holds
+`profiles`, `conversations` and `messages`, each scoped by player id, and is opened by `create_app` (in memory when
+`APP_ENV=test`). It needs no migration and is not touched by the PostgreSQL tests. It is a single-process store meant
+for the demo and local use: a deployment with several API processes or hosts would put these tables in PostgreSQL
+behind the same `MemoryStore` interface (`learning_service/memory_store.py`). `DELETE /api/me/data` also clears it.
+
 ## Isolation and concurrency
 
 Requests hold a PostgreSQL transaction. Owner advisory locks serialize writes, including absent-row

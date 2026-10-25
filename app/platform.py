@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.context import api_context
@@ -174,9 +174,10 @@ def put_profile(body: Profile):
 
 
 @router.delete("/me/data", status_code=204, tags=["Profile"])
-def delete_own_data():
-    """Delete application data and leave rooms; the Supabase Auth account remains active."""
+def delete_own_data(request: Request):
+    """Delete application data, remembered chats and the memory profile, and leave rooms."""
     unit = current_session.get()
+    request.app.state.memory.forget_player(unit.owner)
     for key, data in all_records(unit, "materials"):
         for revision in range(1, data["revision"] + 1):
             unit.delete("material_vectors", f"{key}:{revision}")
