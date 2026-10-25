@@ -11,6 +11,9 @@ Every query is scoped by player_id, so one player's memory is never visible thro
 label for the interface and for later features such as friend competitions; it proves nothing about who someone is
 (there is no login). A competition can later read two players' digests from this one file.
 
+The same file also holds the friend-competition challenges (the frozen content of a game made from topics players
+studied, challenges.py): they are shared between the players of a room, so they cannot live in a per-player store.
+
 This module only stores and reads. Deciding what to remember, summarising and filing by subject is memory.py.
 """
 
@@ -55,6 +58,36 @@ create table if not exists conversations (
 );
 create index if not exists conversations_by_player
     on conversations (player_id, subject, updated_at desc);
+create table if not exists challenges (
+    id text primary key,
+    game text not null check (game in ('mcq', 'heads_up', 'diagram')),
+    creator_id text not null,
+    players text not null,
+    room_id text,
+    topic text not null,
+    subject text,
+    age integer not null,
+    content text not null,
+    created_at text not null,
+    expires_at text not null
+);
+create table if not exists matches (
+    id text primary key,
+    challenge_id text not null,
+    creator_id text not null,
+    players text not null,
+    doc text not null,
+    created_at text not null,
+    expires_at text not null
+);
+create table if not exists weekly_samples (
+    week_key text not null,
+    band text not null,
+    game text not null,
+    content text not null,
+    created_at text not null,
+    primary key (week_key, band, game)
+);
 create table if not exists messages (
     conversation_id text not null references conversations (id) on delete cascade,
     seq integer not null,
@@ -120,6 +153,31 @@ class SubjectDigest(BaseModel):
     conversations: int
     last_studied: str
     topics: list[TopicDigest]
+
+
+class StudiedTopic(BaseModel):
+    """One thing a player has studied: a chat that has had at least one answer."""
+
+    subject: str
+    topic: str
+    conversation_id: str
+    updated_at: str
+
+
+class StoredChallenge(BaseModel):
+    id: str
+    game: Literal["mcq", "heads_up", "diagram"]
+    creator_id: str
+    players: list[str] = Field(
+        ..., description="Who may read it: the creator and the room's members"
+    )
+    room_id: str | None = None
+    topic: str
+    subject: str | None = None
+    age: int
+    content: dict
+    created_at: str
+    expires_at: str
 
 
 class Digest(BaseModel):
@@ -275,6 +333,8 @@ class MemoryStore:
         with self._tx() as db:
             cursor = db.execute("delete from conversations where player_id = ?", (player_id,))
             db.execute("delete from profiles where player_id = ?", (player_id,))
+            db.execute("delete from challenges where creator_id = ?", (player_id,))
+            db.execute("delete from matches where creator_id = ?", (player_id,))
             return cursor.rowcount
 
     # ------------------------------------------------------------ messages
@@ -341,6 +401,149 @@ class MemoryStore:
             db.execute(
                 "update conversations set summary = ?, summarized_upto = ? where id = ? and player_id = ?",
                 (summary, summarized_upto, conversation_id, player_id),
+            )
+
+    # ------------------------------------------------------------ topics, for finding what friends share
+    def studied_topics(self, player_id: str) -> list[StudiedTopic]:
+        """The chats this player has had answered, newest first, as (subject, topic) pairs."""
+        return [
+            StudiedTopic(
+                subject=c.subject or "Other",
+                topic=c.topic or c.title,
+                conversation_id=c.id,
+                updated_at=c.updated_at,
+            )
+            for c in self.list_conversations(player_id, limit=MAX_CONVERSATIONS)
+            if c.message_count
+        ]
+
+    # ------------------------------------------------------------ challenges
+    def save_challenge(self, challenge: StoredChallenge) -> None:
+        with self._tx() as db:
+            db.execute(
+                "insert into challenges (id, game, creator_id, players, room_id, topic, subject, age, content, "
+                "created_at, expires_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    challenge.id,
+                    challenge.game,
+                    challenge.creator_id,
+                    json.dumps(challenge.players),
+                    challenge.room_id,
+                    challenge.topic,
+                    challenge.subject,
+                    challenge.age,
+                    json.dumps(challenge.content),
+                    challenge.created_at,
+                    challenge.expires_at,
+                ),
+            )
+
+    def get_challenge(self, player_id: str, challenge_id: str) -> StoredChallenge | None:
+        """The challenge, if it exists, has not expired and this player may read it."""
+        rows = self._query("select * from challenges where id = ?", (challenge_id,))
+        if not rows:
+            return None
+        row = rows[0]
+        players = json.loads(row["players"])
+        if player_id not in players or row["expires_at"] <= now():
+            return None
+        return StoredChallenge(
+            id=row["id"],
+            game=row["game"],
+            creator_id=row["creator_id"],
+            players=players,
+            room_id=row["room_id"],
+            topic=row["topic"],
+            subject=row["subject"],
+            age=row["age"],
+            content=json.loads(row["content"]),
+            created_at=row["created_at"],
+            expires_at=row["expires_at"],
+        )
+
+    def delete_challenge(self, player_id: str, challenge_id: str) -> bool:
+        """Only the creator can delete a challenge."""
+        with self._tx() as db:
+            return (
+                db.execute(
+                    "delete from challenges where id = ? and creator_id = ?",
+                    (challenge_id, player_id),
+                ).rowcount
+                > 0
+            )
+
+    def purge_expired_challenges(self) -> int:
+        with self._tx() as db:
+            return db.execute("delete from challenges where expires_at <= ?", (now(),)).rowcount
+
+    # ------------------------------------------------------------ matches
+    def save_match(
+        self,
+        match_id: str,
+        challenge_id: str,
+        creator_id: str,
+        players: list[str],
+        doc: dict,
+        expires_at: str,
+    ) -> None:
+        with self._tx() as db:
+            db.execute(
+                "insert into matches (id, challenge_id, creator_id, players, doc, created_at, expires_at) "
+                "values (?, ?, ?, ?, ?, ?, ?)",
+                (
+                    match_id,
+                    challenge_id,
+                    creator_id,
+                    json.dumps(players),
+                    json.dumps(doc),
+                    now(),
+                    expires_at,
+                ),
+            )
+
+    def get_match(self, player_id: str, match_id: str) -> dict | None:
+        """The match document, if it exists, has not expired and this player is one of its players."""
+        rows = self._query("select players, doc, expires_at from matches where id = ?", (match_id,))
+        if (
+            not rows
+            or player_id not in json.loads(rows[0]["players"])
+            or rows[0]["expires_at"] <= now()
+        ):
+            return None
+        return json.loads(rows[0]["doc"])
+
+    def mutate_match(self, player_id: str, match_id: str, change):
+        """Read the match, let `change(doc)` modify it and return a result, and save it, all in one transaction so
+        simultaneous players cannot overwrite each other. If `change` raises, nothing is saved. Returns the result,
+        or None if the player may not see the match."""
+        with self._tx() as db:
+            row = db.execute(
+                "select players, doc, expires_at from matches where id = ?", (match_id,)
+            ).fetchone()
+            if (
+                row is None
+                or player_id not in json.loads(row["players"])
+                or row["expires_at"] <= now()
+            ):
+                return None
+            doc = json.loads(row["doc"])
+            result = change(doc)
+            db.execute("update matches set doc = ? where id = ?", (json.dumps(doc), match_id))
+            return result if result is not None else {}
+
+    # ------------------------------------------------------------ weekly preview samples
+    def get_weekly_sample(self, week_key: str, band: str, game: str) -> dict | None:
+        rows = self._query(
+            "select content from weekly_samples where week_key = ? and band = ? and game = ?",
+            (week_key, band, game),
+        )
+        return json.loads(rows[0]["content"]) if rows else None
+
+    def save_weekly_sample(self, week_key: str, band: str, game: str, content: dict) -> None:
+        with self._tx() as db:
+            db.execute(
+                "insert or replace into weekly_samples (week_key, band, game, content, created_at) values (?, ?, ?, ?, ?)",
+                (week_key, band, game, json.dumps(content), now()),
             )
 
     # ------------------------------------------------------------ digest

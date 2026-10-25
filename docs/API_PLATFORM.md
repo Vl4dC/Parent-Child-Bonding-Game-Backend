@@ -40,6 +40,15 @@ from the actual routes and typed models at `/openapi.json`.
 | POST | `/api/me/coins/claim-quiz` | 10 coins per first-correct answer of a quiz, once per question of its set |
 | POST | `/api/me/coins/demo-topup` | Add coins to try the home; 404 unless `DEMO_MODE=true` |
 | GET | `/api/memory/digest` | Subjects and topics this player has studied, with no chat text |
+| GET | `/api/challenges/shared-topics?room_id=` | Topics every member of a room has studied (from memory), and nothing else |
+| POST | `/api/challenges` | The AI writes a game (`mcq`, `heads_up` or `diagram`) for a topic and it is frozen for the room |
+| GET | `/api/challenges/{id}` | The challenge without answers (the creator and the room's members) |
+| GET / DELETE | `/api/challenges/{id}/review`, `/api/challenges/{id}` | Full content with answers (creator only) / forget it |
+| POST | `/api/matches` | Turn one of your challenges into a match (`solo`, `friends`, `parent_child`, `duo`) |
+| POST / GET | `/api/matches/{id}/start`, `/api/matches/{id}` | The creator starts a shared countdown / what this player sees now (poll about once a second) |
+| POST / PUT / POST | `/api/matches/{id}/answer`, `/placements`, `/cards`, `/finish` | Play: answer a question (mcq), place words and finish (diagram), mark a card (heads_up) |
+| GET | `/api/matches/{id}/results` | The ranking, once the game is over |
+| GET / POST | `/api/weekly/next`, `/api/weekly/current`, `/api/weekly/next/prepare` | Show-only preview of the weekly challenge, and writing its samples |
 | POST | `/api/chat/image` | Chat about 1-4 pictures (multipart): the model looks at the picture itself; nothing is stored |
 | GET | `/api/materials/{id}/find?topic=…` | Preview selected pages/chapter/source text; no lesson is written (`by_meaning` says whether embeddings took part) |
 | POST / GET | `/api/lessons`, `/api/lessons/{id}` | Generate draft lesson / read owned lesson |
@@ -134,6 +143,9 @@ cannot commit output after its lease has been replaced. Job retries may repeat p
 they do not promise exactly-once provider billing. Only queued work can be cancelled; repeating cancellation is safe. Cancelling running or completed work returns 409.
 
 Generation is opt-in. Workflow-attempt limits count failed calls too, independently of request rollback.
+`GENERATION_LIMITS_ENABLED=false` lifts the daily attempt budget, the per-minute request budget and
+the inline "generation is busy" gate (usage is not counted while off). It is for testing only: with it
+off nothing caps provider spend or concurrent model calls. The diagram renderer's own busy limit stays.
 `GENERATION_CONCURRENCY` limits inline calls per API process and running durable jobs across workers.
 The inline and worker pools are separate; use durable jobs for production scheduling. Durable workers
 release database connections during model calls and verify source versions before committing, so

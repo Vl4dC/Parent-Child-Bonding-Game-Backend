@@ -201,3 +201,16 @@ def embedder(monkeypatch):
     fake = FakeEmbedder()
     monkeypatch.setattr(embeddings, "model_embedder", lambda: fake)
     return fake
+
+
+@pytest.fixture
+def models(monkeypatch):
+    """The AI that writes challenges (quiz, heads-up deck, diagram), faked. See tests/learning/fakes.py."""
+    import learning_service.challenges as challenges
+    from tests.learning.fakes import Models
+
+    fake = Models()
+    monkeypatch.setattr(challenges, "make_quiz", fake.make_quiz)
+    monkeypatch.setattr(challenges, "ask_deck", fake.ask_deck)
+    monkeypatch.setattr(challenges, "ask_flow", fake.ask_flow)
+    return fake

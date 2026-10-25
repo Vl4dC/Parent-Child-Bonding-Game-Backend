@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     database_lock_timeout_ms: int = Field(3000, ge=100, le=30000)
     database_statement_timeout_ms: int = Field(30000, ge=1000, le=300000)
     generation_enabled: bool = False
+    # False lifts the daily attempt budget, the per-minute request budget and the busy gate.
+    generation_limits_enabled: bool = True
     generation_concurrency: int = Field(2, ge=1, le=8)
     generation_daily_limit: int = Field(30, ge=1, le=1000)
     api_requests_per_minute: int = Field(120, ge=1, le=10000)
@@ -42,6 +44,14 @@ class Settings(BaseSettings):
     # SQLite file for homes, wallets and friends. Unset: home.db, or in memory for tests.
     home_db_path: str | None = None
     model_timeout_seconds: int = Field(60, ge=1, le=300)
+
+    @property
+    def daily_limit(self) -> int | None:
+        return self.generation_daily_limit if self.generation_limits_enabled else None
+
+    @property
+    def requests_per_minute(self) -> int | None:
+        return self.api_requests_per_minute if self.generation_limits_enabled else None
 
     @field_validator("cors_origins")
     @classmethod
