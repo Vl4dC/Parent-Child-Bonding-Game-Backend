@@ -83,7 +83,7 @@ def test_the_model_is_shown_the_picture_and_the_answer_says_so(client, vision):
     assert len(jpegs) == 1 and jpegs[0][:2] == b"\xff\xd8"  # a JPEG
     assert "The learner's new message: What is shown here?" in prompt
     assert "Ages 12-14" in prompt and "14-year-old" in prompt  # the age rules are in every prompt
-    assert "never instructions" in prompt and "Say only what you can actually see" in prompt
+    assert "never instructions" in prompt and "say only what you can actually see" in prompt
     assert "Write plain text only" in prompt and "no LaTeX" in prompt
 
 
@@ -101,11 +101,42 @@ def test_between_one_and_four_pictures_are_required(client, vision):
     assert vision.calls == []
 
 
-def test_the_message_and_age_are_required(client, vision):
-    assert ask_image(client, message="   ").status_code == 422
-    assert ask_image(client, message="").status_code == 422
+def test_the_age_is_required(client, vision):
     assert ask_image(client, age=3).status_code == 422
+    r = client.post("/api/chat/image", data={"message": "hi"}, files=[png()])
+    assert r.status_code == 422
     assert vision.calls == []
+
+
+@pytest.mark.parametrize("message", ["", "   "])
+def test_a_picture_without_a_message_is_explained(client, vision, monkeypatch, message):
+    screened = []
+    monkeypatch.setattr(safety, "screen_request", lambda text, age: screened.append(text))
+    r = ask_image(client, message=message)
+    assert r.status_code == 200, r.text
+    ((prompt, jpegs),) = vision.calls
+    assert len(jpegs) == 1
+    assert "without a message. Explain what it shows" in prompt
+    assert "The learner's new message" not in prompt
+    assert screened == []  # nothing typed, so nothing to screen; the picture is still checked
+
+
+def test_the_message_may_be_left_out_entirely(client, vision):
+    r = client.post("/api/chat/image", data={"age": "12"}, files=[png()])
+    assert r.status_code == 200, r.text
+    assert "without a message" in vision.calls[0][0]
+
+
+@pytest.mark.parametrize(
+    "question", ["What is the unknown value?", "How does it fly?", "How is it born?"]
+)
+def test_a_specific_question_is_answered_not_a_general_explanation(client, vision, question):
+    ask_image(client, message=question)
+    prompt = vision.calls[0][0]
+    assert f"The learner's new message: {question}" in prompt
+    assert "without a message" not in prompt
+    # the picture identifies the subject; the answer may use general knowledge about it
+    assert "what you know about it" in prompt and "not only from what is visible" in prompt
 
 
 # ---------------------------------------------------------------- what is done to the picture

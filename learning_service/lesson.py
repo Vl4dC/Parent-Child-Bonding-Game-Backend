@@ -40,8 +40,13 @@ VISUAL_WORDS = re.compile(
 )
 
 
+TOPIC_CHARS = 1000  # what a learner may type as the lesson prompt; same room as a chat message
+
+
 class LessonRequest(BaseModel):
-    topic: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+    topic: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=TOPIC_CHARS)
+    ]
     age: int = Field(..., ge=5, le=99)
     prefers_visuals: bool = Field(False, description="Learner has asked for visuals before")
     material_id: str | None = Field(
