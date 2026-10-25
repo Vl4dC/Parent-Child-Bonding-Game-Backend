@@ -1,0 +1,53 @@
+{
+  "source": "RahulRohidasPatil/Parent-Child-Bonding-Game lib/home-data.ts @ ceb8069",
+  "place_cost": 30,
+  "max_level": 10,
+  "unlock_level": 3,
+  "upgrade_cost_per_level": 20,
+  "build_cost_per_room": 250,
+  "floor_tiles": 2.7,
+  "starter_coins": 240,
+  "quiz_coins_per_correct": 10,
+  "rooms": [
+    {"id": "living", "name": "Living room", "items": [
+      {"id": "tv", "name": "TV", "starter": true},
+      {"id": "sofa", "name": "Sofa", "starter": true},
+      {"id": "table", "name": "Coffee table", "starter": false},
+      {"id": "rug", "name": "Rug", "starter": false},
+      {"id": "shelf", "name": "Bookshelf", "starter": false},
+      {"id": "armchair", "name": "Armchair", "starter": false},
+      {"id": "lamp", "name": "Floor lamp", "starter": false},
+      {"id": "plant", "name": "Plants", "starter": false}
+    ]},
+    {"id": "kitchen", "name": "Kitchen", "items": [
+      {"id": "fridge", "name": "Fridge", "starter": true},
+      {"id": "stove", "name": "Stove", "starter": true},
+      {"id": "sink", "name": "Sink", "starter": false},
+      {"id": "counter", "name": "Counter", "starter": false},
+      {"id": "dining", "name": "Dining table", "starter": false},
+      {"id": "chairs", "name": "Chairs", "starter": false},
+      {"id": "pantry", "name": "Pantry", "starter": false},
+      {"id": "plant", "name": "Plants", "starter": false}
+    ]},
+    {"id": "bedroom", "name": "Bedroom", "items": [
+      {"id": "bed", "name": "Bed", "starter": true},
+      {"id": "nightstand", "name": "Nightstand", "starter": true},
+      {"id": "wardrobe", "name": "Wardrobe", "starter": false},
+      {"id": "desk", "name": "Desk", "starter": false},
+      {"id": "rug", "name": "Rug", "starter": false},
+      {"id": "toys", "name": "Toy corner", "starter": false},
+      {"id": "lamp", "name": "Floor lamp", "starter": false},
+      {"id": "books", "name": "Bookshelf", "starter": false}
+    ]},
+    {"id": "bathroom", "name": "Bathroom", "items": [
+      {"id": "toilet", "name": "Toilet", "starter": true},
+      {"id": "sink", "name": "Sink", "starter": true},
+      {"id": "bath", "name": "Bath", "starter": false},
+      {"id": "washer", "name": "Washer", "starter": false},
+      {"id": "shelf", "name": "Towel shelf", "starter": false},
+      {"id": "mat", "name": "Bath mat", "starter": false},
+      {"id": "cabinet", "name": "Cabinet", "starter": false},
+      {"id": "plant", "name": "Plants", "starter": false}
+    ]}
+  ]
+}

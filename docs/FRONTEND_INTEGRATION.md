@@ -157,3 +157,32 @@ participant content access. Finished/expired cancellation is 409. Source-change 
 does not reopen on reapproval. Readiness now exposes enabled diagram dependency failures.
 See [new contracts and unchanged leave/rejoin policy](DIAGRAM_LIFECYCLE_READINESS.md). No client,
 proxy, UI, AI or harness files were modified. Fresh per-race acknowledgement remains future work.
+
+
+## Home, wallet and friends — 25 October 2026 addition (backend ready, frontend not wired)
+
+Frontend reference: `lib/home-data.ts`, `lib/store.ts` and the base, visit and friends screens of
+`Parent-Child-Bonding-Game` `main` at `ceb8069`. Nothing in the frontend repository was changed. To use these
+routes the frontend needs to:
+
+1. Send a stable `X-Player-ID` UUID per account. At `ff5eff2` the app signs in with Clerk, whose user ids
+   (`user_…`) are not UUIDs. The `/api/learn/*` proxy only forwards `X-Player-ID` when the id is a UUID and
+   otherwise falls back to the shared default player, and `lib/learn-api.ts` calls `/api/<path>`, whose proxy
+   forwards no `X-Player-ID` at all. Until the frontend derives a UUID from the account (for example a UUIDv5 of
+   the Clerk id) and sends it, every browser shares one player's home, wallet and friend code.
+2. Add `me` and `homes` to the proxy's allowed paths, and export `PUT` (the layout, visibility and card routes use
+   it; the proxy exports only GET, POST and DELETE).
+3. Read levels and coins from `GET /api/me/home`: turn each room's `items` back into the level list by walking
+   `ROOMS[i].items` and taking the level by id (0 when absent), and build the layout from items that have `at`.
+4. Replace the local `setLevels`, `buyRoom`, `place` and `levelUp` with the POST calls, and keep `version` to send
+   as `expected_version`.
+5. Show the server's 402/422 message; on 409 reload the home. Starter flags and costs are in
+   `learning_service/home_rules.json`.
+
+Limits to plan for: duel and quest coin awards and shop purchases are not server-side, so the browser's coin balance
+and the server's will differ. Friends and visibility are unverified and advisory; the frontend copy says a parent
+approves each friend, which this API cannot do. Replace the "unlimited coins" test tool with
+`POST /api/me/coins/demo-topup` (demo mode only). See [Home, wallet and friends](API_PLATFORM.md#home-wallet-and-friends).
+
+Everything the game side still needs beyond this (duel, shop, quests, stats, presence, family link, party games) is
+listed with frontend evidence in [GAME_API_GAPS.md](GAME_API_GAPS.md).

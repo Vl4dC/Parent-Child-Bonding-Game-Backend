@@ -32,6 +32,18 @@ Saved chats live in a SQLite file (`MEMORY_DB_PATH`, default `memory.db`), not i
 for the demo and local use: a deployment with several API processes or hosts would put these tables in PostgreSQL
 behind the same `MemoryStore` interface (`learning_service/memory_store.py`). `DELETE /api/me/data` also clears it.
 
+## Home, wallet and friends (SQLite, separate from PostgreSQL)
+
+Homes live in a second SQLite file (`HOME_DB_PATH`, default `home.db`, in memory when `APP_ENV=test`), opened by
+`create_app` with the same single-connection pattern as chat memory (`learning_service/home_store.py`). Tables
+(`STRICT`, SQLite 3.37 or newer): `homes` (visibility, version, name, avatar), `home_rooms`, `home_items`
+(level 1-10, `x`/`y`, `rot`), `wallets`, `coin_ledger` (append-only, `UNIQUE(player_id, reason, ref)` so a credit or
+purchase cannot repeat), `friend_codes`, `friendships` (each pair once, smaller id first) and `home_cheers`. Every
+row is scoped by player id; there is no users table. It needs no migration and the PostgreSQL tests do not touch it.
+A deployment with several API processes or hosts would put the same tables in PostgreSQL behind the same `HomeStore`
+interface. `DELETE /api/me/data` clears it. Seed synthetic demo players with
+`APP_ENV=development uv run python scripts/seed_home_demo.py` (it refuses production and never runs at startup).
+
 ## Isolation and concurrency
 
 Requests hold a PostgreSQL transaction. Owner advisory locks serialize writes, including absent-row

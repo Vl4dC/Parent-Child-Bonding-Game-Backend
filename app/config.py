@@ -41,6 +41,8 @@ class Settings(BaseSettings):
     illustrations_per_lesson: int = Field(2, ge=0, le=5)
     # SQLite file for chat memory (conversations kept per player). Unset: memory.db, or in memory for tests.
     memory_db_path: str | None = None
+    # SQLite file for homes, wallets and friends. Unset: home.db, or in memory for tests.
+    home_db_path: str | None = None
     model_timeout_seconds: int = Field(60, ge=1, le=300)
 
     @property

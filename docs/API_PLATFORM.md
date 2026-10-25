@@ -27,6 +27,18 @@ from the actual routes and typed models at `/openapi.json`.
 | GET / PUT | `/api/memory/profile` | The player's role label (`parent` or `learner`) and display name |
 | POST / GET | `/api/memory/conversations` | Start a remembered chat / list this player's chats with a count per subject |
 | GET / PATCH / DELETE | `/api/memory/conversations/{id}` | Open a chat with every message / rename it or change its subject / forget it |
+| GET | `/api/me/home` | My home, coin balance, cheers received and `version`; the first call creates the living room, its starter items and 240 coins |
+| POST | `/api/me/home/rooms` | Build the next room (every item of the newest room at level 3+; 250 coins × rooms built) |
+| POST | `/api/me/home/items/{room}/{item}/place` | Place a non-starter item at level 1 for 30 coins, with `at` and `rot` |
+| POST | `/api/me/home/items/{room}/{item}/upgrade` | Level +1 for 20 × the new level in coins, up to level 10 |
+| PUT | `/api/me/home/rooms/{room}/layout` | Replace one room's positions and rotations (free) |
+| PUT | `/api/me/home/visibility`, `/api/me/home/card` | Who may visit (advisory) / the name and avatar friends see |
+| GET | `/api/me/friends` | My friend code, friends and pending requests |
+| POST / DELETE | `/api/me/friends/requests`, `/api/me/friends/requests/{player_id}/accept` or `decline`, `/api/me/friends/{player_id}` | Ask by friend code / answer a request / remove a friend or cancel a request |
+| GET | `/api/homes?scope=friends` or `family`, `/api/homes/{player_id}` | Cards of homes I may visit / visit one (read-only, no coins) |
+| POST | `/api/homes/{player_id}/cheers` | Cheer a room or the whole home, once a day |
+| POST | `/api/me/coins/claim-quiz` | 10 coins per first-correct answer of a quiz, once per question of its set |
+| POST | `/api/me/coins/demo-topup` | Add coins to try the home; 404 unless `DEMO_MODE=true` |
 | GET | `/api/memory/digest` | Subjects and topics this player has studied, with no chat text |
 | GET | `/api/challenges/shared-topics?room_id=` | Topics every member of a room has studied (from memory), and nothing else |
 | POST | `/api/challenges` | The AI writes a game (`mcq`, `heads_up` or `diagram`) for a topic and it is frozen for the room |
@@ -246,105 +258,42 @@ separate product decision.
 more is a 409). `DELETE /api/memory/conversations/{id}` forgets one chat; `DELETE /api/me/data` forgets all of a
 player's chats and profile.
 
-## Friend challenges (games made from memory)
+## Home, wallet and friends
 
-The content layer for competitions between friends. The AI writes a game for a topic the players have studied, it is
-frozen, and everyone in the room gets exactly the same content. **No play engine exists yet** (no timers, scoring,
-winners or rematches); this is the content those engines will run.
+The home is stored per player in a SQLite file (`HOME_DB_PATH`, default `home.db`, in memory for tests), separate
+from the records store and the chat memory. Only what a player chose is saved: rooms built, each placed item's
+level (1-10), and where it was moved and turned (`at` in floor tiles 0-2.7, `rot` 0-3). Room art, item looks,
+default spots and the numbers come from the frontend's `lib/home-data.ts`, copied into
+`learning_service/home_rules.json` (its `source` field names the commit). Item ids repeat across rooms (`plant`,
+`sink`), so an item is always addressed as room + item.
 
-**Finding the topic.** `GET /api/challenges/shared-topics?room_id=` compares the memory of everyone in a room you belong to
-and returns only the topics **all** of them have studied (a chat counts once it has had an answer). Topics are matched
-by their words, so "Photosynthesis" and "Plant photosynthesis" are the same. Nothing about a topic only one player
-studied, and nothing from anyone's chats, is shown; each player's display name and memory role are listed.
+**Spending.** Building, placing and upgrading each run in one transaction: the wallet is debited only if it holds
+enough, the change is written, a row is appended to the coin ledger and `version` goes up, or nothing happens.
+`402` not enough coins ("You need 40 coins."), `422` a rule is broken (the message says which), `404` unknown room
+or item, `409` `expected_version` is out of date (send the `version` you last saw; omit it to skip the check).
+The first two items of each room are starters: they begin at level 1 for free when the room is built. Every
+change returns the whole home and the balance. `PUT .../layout` replaces the room's layout: placed items left out
+go back to their default spot. The server checks that items are placed and positions are on the floor; it cannot
+check furniture footprints, so the app still resolves overlaps when it draws.
 
-**Making a game.** `POST /api/challenges` takes `game`, `topic`, `age` (use the **lowest** age in the room, so it is fair and
-suitable for everyone), an optional `room_id` (the room's members at that moment can read it; later joiners cannot) and
-optional `count` and `seconds`. The topic is screened and the content checked for the age like all generated text. One
-generation attempt is used. Three games:
+**Coins.** A new wallet holds 240 coins. `POST /api/me/coins/claim-quiz {"quiz_id": "..."}` pays 10 per question
+answered correctly on the first try, read from the answers the server recorded; each question of a question set
+pays once, so claiming again or retrying the same questions adds nothing. Every coin change is a row in an
+append-only ledger. Duel and quest rewards and shop purchases are **not** on the server: they still change the
+browser's own balance and will not match this one.
 
-| `game` | Content | Defaults and limits |
-| --- | --- | --- |
-| `mcq` | Fixed multiple-choice questions for a timer per question. Questions too long to read in the time are dropped. | 10 questions (5 to 15), 30 s each (15 to 60) |
-| `heads_up` | Terms, each with 3 to 5 forbidden words (Taboo style). A forbidden word that is, or contains, part of its term is removed; weak cards are skipped. | 20 terms (8 to 30), 60 s per turn (30 to 120) |
-| `diagram` | A flowchart of 5 to 10 boxes with about 45% blanked out (`?`), and a word bank of the right words plus 3 distractors. The model describes boxes and arrows; the Mermaid is built and validated in code. | 120 s for the whole diagram (60 to 300) |
+**Friends and visits.** `GET /api/me/friends` returns my friend code; another player sends it to
+`POST /api/me/friends/requests` and I accept or decline (the path id is the player who sent the request). Visibility
+`friends` (the default) lets accepted friends visit; `family` and `nobody` admit only the owner, because no family
+link exists. A stranger, a private home and a missing home all answer the same 404. Visitors get no coins. One cheer
+per room (or `home`) per visitor per day (409 on a repeat). `PUT /api/me/home/card` sets the name and avatar shown
+to friends; the default name is `Player`, and a card change does not change the home `version`.
 
-**What players see.** The response and `GET /api/challenges/{id}` are the **public view** and never contain answers:
-`mcq` has the questions and options; `heads_up` has only the deck size and turn length (the guesser must not see the
-terms, so an engine deals the cards one at a time); `diagram` has the blanked flowchart, the slot ids, the word bank and
-the time. The creator reads everything, with answers, explanations, the whole deck and the solution, from
-`GET /api/challenges/{id}/review`; other players get a 404 so a game cannot be spoiled.
-
-**Casual by design.** Every challenge carries `label` ("Written by AI for casual play and not reviewed") and
-`casual: true`: it is checked for the age but not reviewed by a person, which is why it is separate from the reviewed
-quizzes and duels. It expires after 24 hours. `diagram` records `wrong_finish_penalty_seconds: 10`: the rule agreed for
-the race is that each wrong finish adds 10 seconds to a player's time (the existing diagram race already counts
-submissions, so this is a small change there).
-
-**Storage.** Challenges live in the same SQLite file as chat memory (`MEMORY_DB_PATH`) because several players read
-one challenge; `DELETE /api/me/data` removes the challenges a player created. A PostgreSQL deployment would move these
-tables behind the same `MemoryStore` interface.
-
-## Playing a challenge (matches)
-
-A **match** is one played instance of a challenge: the server runs the clock and ranks the players. There are no
-background timers. The server stores when play begins and works out everything else from the time of each request, so
-clients only send actions and poll `GET /api/matches/{id}` about once a second. **Clients never send times**; use the
-returned `server_time_ms` to line a countdown up with the server. All matches are casual (times include network delay;
-nothing here is an anti-cheat boundary) and expire after 24 hours.
-
-**Flow.** `POST /api/matches` with `challenge_id` (your own) and `mode` creates it; the creator calls `POST .../start`,
-which sets `play_at_ms` five seconds ahead for everyone; players act; `GET .../results` returns the ranking once the game
-is over (409 before). Only the match's players can read it (404 otherwise), only the creator starts (403).
-
-| `mode` | Players | Rules |
-| --- | --- | --- |
-| `solo` | You | Not available for heads-up. |
-| `friends` | Everyone in the challenge's room (2 to 8) | Each for themselves, on equal terms. |
-| `parent_child` | Exactly one parent and one learner, each with a memory profile | **The parent gets two thirds of the time** (the agreed handicap, 5 s minimum). |
-| `duo` | Four players and `teams: [[a, b], [c, d]]` | Points are added up per team; parents get two thirds of the time. Not available for the diagram yet. |
-
-**Timed quiz (`mcq`).** Questions open for everyone at the same moment, one at a time: each lasts the challenge's
-`seconds_per_question`, then a 3-second pause shows its answer. A parent's own time is shorter, but the screen moves on
-together (`closes_at_ms` is shared, `your_closes_at_ms` is yours). `POST .../answer` `{question_index, choice}`: your first
-answer to the open question is final (the same answer again is a replay, a different one is a 409); an answer after your
-own time (plus 0.8 s network allowance) is a 409. Whether it was right, with the explanation, appears in the view only
-once the question is over for everyone, so a fast answer tells the others nothing. Ranking: most correct, then less time
-spent on the correct ones; equal results share a rank; a winner needs at least one correct answer. In duo a team's
-correct answers and times are summed (both members answer every question, so its `total` is twice the question count).
-
-**Heads-up (`heads_up`).** Players take turns: one **guesses** (phone on the forehead) while another **explains**. Everyone
-guesses once; in duo the teams alternate and the teammate explains, so each team plays two turns. A turn lasts the
-challenge's `seconds_per_round` (a parent guessing gets two thirds), with a 15-second handover between turns. The server
-deals the cards one at a time from a shuffled deck, across turns, so nobody sees a card twice. `GET` shows the current
-`card` to the two players of the turn only. They (either of them, since one phone is passed around) send `POST .../cards`
-`{action, card_index}`: `correct` +1, `skip` 0, `violation` -1 (the explainer said a forbidden word). Sending the same
-card again is a harmless replay, a card not dealt yet is a 409, marking while no turn is being played is a 409, and anyone but the two players of the turn gets a 403. A turn's points
-never go below zero and count for the guesser (their team in duo). Ranking: most points.
-
-**Diagram (`diagram`).** Everyone races at once on the same board (`board`: the flowchart with `?` boxes, `slots`,
-`options`). `PUT .../placements` sends your whole arrangement as `{slot id: word index}` and replaces the previous one
-(partial is fine, a word only once). `POST .../finish` needs every blank filled: a wrong finish returns how many are right
-and **which slots are wrong, never the right words**, and adds **+10 s** to your final time (`penalty_seconds`);
-a perfect one records your time. Your time limit is the challenge's `seconds` (two thirds for a parent), after which you can
-no longer place or finish. Results unlock when everyone has finished or run out of time. Only perfect reconstructions are
-ranked, by time plus penalties; anyone who did not finish is listed unranked.
-
-`view` in `GET /api/matches/{id}` depends on the game: `mcq` has `phase` (waiting, countdown, question, reveal, finished),
-the open `question`, `reveals` and running `scores`; `heads_up` has the `turns` plan, the current `turn` (with `card` for its
-two players), `cards_left` and `scores`; `diagram` has the `board`, `you` (placements, wrong finishes), your deadline and
-who has finished (`your_deadline_ms` is your own cut-off). Matches live in the same SQLite file as chat memory (`MEMORY_DB_PATH`); `DELETE /api/me/data` removes the
-ones you created.
-
-## Weekly challenge preview (show only)
-
-`GET /api/weekly/next?band=` (and `/current`) previews the weekly tournament: one **common school topic** per week that
-needs nobody's memory (a curated list that rotates by ISO week), the three games, the four modes, the rules, and an
-**example leaderboard that is made up and labelled so**. Leagues are age bands `10-12`, `13-15` and `16-18` (content is
-written for 11, 14 and 17). It is a preview: there is no sign-up, no scoring and no real leaderboard yet.
-`POST /api/weekly/next/prepare` `{band, games?}` has the AI write sample content (five quiz questions, an eight-card
-heads-up deck and a fill-in-the-blanks diagram, checked for the band's age and without answers in the preview) and caches
-it for the week and band, so showing the preview again costs nothing; games already prepared are kept. It takes about
-45 s the first time and uses one generation attempt.
+**Not verified.** `X-Player-ID` selects a data partition; it does not prove who is calling, so anyone who knows a
+player's UUID can act as them, and a friend is whoever shared a code. Friendships and `visibility` are an advisory
+privacy setting, not access control. A parent does not approve friends here, and nothing links a parent to a child.
+`DELETE /api/me/data` also removes the player's home, wallet, friend code, friendships and cheers. It is a
+single-process store, like chat memory.
 
 ## Private room contract
 
