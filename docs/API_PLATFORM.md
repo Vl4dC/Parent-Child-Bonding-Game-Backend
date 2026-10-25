@@ -177,8 +177,9 @@ never instructions to the model. The first chat with a book that was uploaded be
 
 ## Chat about an image
 
-`POST /api/chat/image` is multipart: `message`, `age`, `images` (1-4 files: JPG, PNG or WebP, up to 8 MiB each) and
-optional `history` (a JSON string of `{"role","content"}` turns, as for `/api/chat`). It returns
+`POST /api/chat/image` is multipart: `age`, `images` (1-4 files: JPG, PNG or WebP, up to 8 MiB each), an optional
+`message` (up to 1000 characters; leave it out or blank and the picture is simply explained, otherwise the question is
+what gets answered) and optional `history` (a JSON string of `{"role","content"}` turns, as for `/api/chat`). It returns
 `{"answer", "used_image", "images", "label"}` (`label`: "Looked at your image for this answer"). The model is shown the
 picture itself, with no text extraction and no search index: a labelled diagram, a graph or a handwritten problem
 keeps what matters. A scanned book is different and still goes through `POST /api/materials` and `/api/chat`.
@@ -209,7 +210,8 @@ using the id, and there is no parent-to-child link.
 own memory for the model (so `history` is ignored), saves the question and answer together, and returns
 `conversation_id`, `title`, `subject` and an optional `notice`. A chat about a PDF carries on with that PDF without
 `material_id`; if the PDF is gone (uploads are not part of this store) `notice` says so and `pdf_only` is a 422.
-A picture is never saved: only the text, flagged `used_image`. Without `conversation_id` chat stays stateless.
+A picture is never saved: only the text, flagged `used_image` (a picture sent without a message is saved as the note
+"(sent a picture)"). Without `conversation_id` chat stays stateless.
 
 **Subjects.** After the first answer the model files the chat under one of Science, Math, History, Geography, Languages,
 Computing, Arts or Other and names it after its topic (2 to 6 words). `PATCH` changes the title or subject; if

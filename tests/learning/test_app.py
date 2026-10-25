@@ -27,6 +27,13 @@ def test_lesson_bad_input_is_422(client):
     assert client.post("/api/lessons", json={"topic": "x"}).status_code == 422
 
 
+def test_lesson_topic_can_be_a_long_prompt(client):
+    long_prompt = "explain how the water cycle works, " * 20  # about 700 characters
+    assert client.post("/api/lessons", json={"topic": long_prompt, "age": 12}).status_code == 201
+    too_long = {"topic": "x" * 1001, "age": 12}
+    assert client.post("/api/lessons", json=too_long).status_code == 422
+
+
 def test_lesson_failure_is_502(client, monkeypatch):
     import learning_service.routes as app_module
 

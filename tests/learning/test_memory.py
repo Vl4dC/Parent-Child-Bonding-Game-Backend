@@ -519,6 +519,29 @@ def test_a_picture_chat_is_remembered_but_the_picture_is_not(client, models, mon
     assert pictures.getvalue() not in [m["content"].encode() for m in saved]
 
 
+def test_a_picture_sent_without_a_message_is_saved_as_a_readable_note(client, models, monkeypatch):
+    vision = FakeVision()
+    monkeypatch.setattr(image_chat, "ask_vision", vision)
+    cid = new_chat(client)
+    one = ("images", ("a.png", make_png(), "image/png"))
+    two = ("images", ("b.png", make_png(300, 300), "image/png"))
+    r = client.post("/api/chat/image", data={"age": "12", "conversation_id": cid}, files=[one])
+    assert r.status_code == 200, r.text
+    client.post(
+        "/api/chat/image",
+        data={"age": "12", "conversation_id": cid, "message": "  "},
+        files=[one, two],
+    )
+    saved = client.get(f"/api/memory/conversations/{cid}").json()["messages"]
+    assert [m["content"] for m in saved if m["role"] == "user"] == [
+        "(sent a picture)",
+        "(sent 2 pictures)",
+    ]
+    assert (
+        "without a message" in vision.calls[0][0]
+    )  # the model was still asked to explain the picture
+
+
 # ---------------------------------------------------------------- deletion and the digest
 def test_deleting_all_my_data_forgets_my_chats_and_only_mine(client, model, models):
     cid = new_chat(client)

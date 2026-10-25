@@ -31,6 +31,7 @@ from learning_service.api_docs import (
     errors,
 )
 from learning_service.lesson import (
+    TOPIC_CHARS,
     Lesson,
     LessonRequest,
     LessonSource,
@@ -352,7 +353,7 @@ def find_pages(
         str,
         Query(
             min_length=1,
-            max_length=200,
+            max_length=TOPIC_CHARS,
             description=(
                 "What you would type as the lesson topic: a topic, `chapter 3` or `pages 40-55`"
             ),
