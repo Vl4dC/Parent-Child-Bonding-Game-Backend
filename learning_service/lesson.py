@@ -28,9 +28,10 @@ from pydantic import BaseModel, Field, StringConstraints
 
 from learning_service.quiz_graph import _llm
 from learning_service.safety import content_rules
+from learning_service.visuals import illustrate
 from learning_service.visuals.skillbook import menu
 
-VisualKind = Literal["diagram", "chart", "interactive"]
+VisualKind = Literal["diagram", "chart", "interactive", "illustration"]
 MAX_VISUALS = 5
 
 # Words in the learner's own request that mean "show me, don't just tell me"
@@ -207,8 +208,11 @@ def lesson_prompt(request: LessonRequest, pages: str | None = None) -> str:
         "For a section with a visual, set `visual` (kind, purpose, brief) and write the body to work WITH "
         "the picture (e.g. 'In the picture, follow the arrows from the Sun to the leaf...'). Never write a "
         "section that only describes a picture in words. The brief must say exactly what to draw: the "
-        "elements, their labels in the learner's words, and for an interactive the control and what it changes.\n"
-        f"Visual kinds (pick the one whose description fits the section best):\n{menu()}"
+        "elements, their labels in the learner's words, and for an interactive the control and what it changes. "
+        "For a diagram, list every box in order and what each arrow does (a verb), from where the process starts "
+        "to where it ends: 5-9 boxes that tell the whole story of that section, never only its first step.\n"
+        f"{illustration_rule()}"
+        f"Visual kinds (pick the one whose description fits the section best):\n{visual_menu()}"
     )
     if pages is not None:
         safe = pages.replace(
@@ -218,9 +222,33 @@ def lesson_prompt(request: LessonRequest, pages: str | None = None) -> str:
     return prompt
 
 
+def visual_menu() -> str:
+    """The kinds a planner may choose from: illustrations only while they are switched on."""
+    return menu(skip=() if illustrate.per_lesson() else ("illustration",))
+
+
+def illustration_rule() -> str:
+    limit = illustrate.per_lesson()
+    if not limit:
+        return ""
+    return (
+        "When a section is about what something looks like or how it is built (the inside of a volcano, a "
+        "coral reef, a cell, a Roman street), use an illustration: a real picture teaches that better than "
+        "boxes and arrows. Keep diagrams for steps, causes and flows. An illustration has no words in it, so "
+        "its brief describes the picture and the section body tells the learner what to look for in it. "
+        f"At most {limit} illustration(s).\n"
+    )
+
+
 def cap_visuals(lesson: Lesson) -> Lesson:
-    """Enforce the visual limit in code: keep the first MAX_VISUALS planned visuals."""
-    for s in [s for s in lesson.sections if s.visual][MAX_VISUALS:]:
+    """Enforce the visual limits in code: keep the first MAX_VISUALS planned visuals, and only as many
+    illustrations as are allowed (none while they are switched off)."""
+    planned = [s for s in lesson.sections if s.visual]
+    for s in planned[MAX_VISUALS:]:
+        s.visual = None
+    for s in [s for s in planned[:MAX_VISUALS] if s.visual.kind == "illustration"][
+        illustrate.per_lesson() :
+    ]:
         s.visual = None
     return lesson
 

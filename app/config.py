@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     # Meaning-based book search. Empty disables it (keyword search only); needs the provider's API key.
     embedding_model: str | None = "openrouter:openai/text-embedding-3-small"
     embedding_dimensions: int = Field(512, ge=64, le=3072)
+    illustrations_enabled: bool = False
+    illustration_model: str = "anthropic/claude-haiku-5.5"
+    illustrations_per_lesson: int = Field(2, ge=0, le=5)
     # SQLite file for chat memory (conversations kept per player). Unset: memory.db, or in memory for tests.
     memory_db_path: str | None = None
     model_timeout_seconds: int = Field(60, ge=1, le=300)

@@ -14,6 +14,7 @@ import html
 import json
 import re
 
+from learning_service.visuals import diagram_lint
 from learning_service.visuals.models import Visual, VisualKind
 
 LIBS = {
@@ -24,9 +25,12 @@ LIBS = {
         "https://cdn.jsdelivr.net/npm/vega-embed@6.26.0/build/vega-embed.min.js",
     ],
     "interactive": [],
+    "illustration": [],
 }
 
-MAX_CHARS = {"diagram": 5_000, "chart": 30_000, "interactive": 40_000}
+# An illustration's code is a WebP data URL (~100-300 KB), produced by illustrate.py, not by a chat model
+MAX_CHARS = {"diagram": 5_000, "chart": 30_000, "interactive": 40_000, "illustration": 1_500_000}
+ILLUSTRATION_URL = re.compile(r"data:image/(webp|png|jpeg);base64,[A-Za-z0-9+/]+={0,2}")
 
 MERMAID_TYPES = {
     "flowchart",
@@ -108,7 +112,7 @@ def validate(kind: VisualKind, code: str) -> str | None:
         for pattern, why in MERMAID_BANNED:
             if re.search(pattern, code, flags=re.I | re.M):
                 return why
-        return None
+        return diagram_lint.syntax_problem(code)
 
     if kind == "chart":
         try:
@@ -128,6 +132,11 @@ def validate(kind: VisualKind, code: str) -> str | None:
                     'don\'t set "axis": null in later layers: layers share axes, so it hides the '
                     "first layer's axis too; leave axis out of later layers instead"
                 )
+        return None
+
+    if kind == "illustration":
+        if not ILLUSTRATION_URL.fullmatch(code):
+            return "an illustration must be a base64 WebP, PNG or JPEG data URL"
         return None
 
     for pattern, why in INTERACTIVE_BANNED:
@@ -151,6 +160,7 @@ THEME = """
 html, body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
 #root { padding:12px; }
 .mermaid { display:flex; justify-content:center; margin:0; }
+.illustration { display:block; width:100%; max-width:1024px; height:auto; margin:0 auto; border-radius:8px; }
 .visual-error { padding:12px; border-radius:8px; border:1px dashed var(--line); color:var(--muted); }
 """
 
@@ -177,10 +187,64 @@ BOOT = """
 })();
 """
 
+# Colours come from the page's CSS variables (light and dark), the same source the charts use, instead of Mermaid's
+# stock grey theme. A flowchart box can take a role: `a["Sun"]:::start`, `:::key` (the step that matters most) or
+# `:::result` (where it ends up); the class definitions are added here so the drawing model never writes colours.
 DIAGRAM_RUN = """
-mermaid.initialize({ startOnLoad: false, securityLevel: "strict",
-                     theme: matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "default" });
-mermaid.run({ querySelector: ".mermaid" }).catch(function (e) { __fail(e.message || String(e)); });
+var css = getComputedStyle(document.documentElement);
+function v(name) { return css.getPropertyValue(name).trim(); }
+function rgb(hex) {
+  hex = hex.replace("#", "");
+  if (hex.length === 3) hex = hex.replace(/./g, "$&$&");
+  return [0, 2, 4].map(function (i) { return parseInt(hex.substr(i, 2), 16); });
+}
+function mix(a, b, t) {  // t of colour a over colour b, as #rrggbb
+  var x = rgb(a), y = rgb(b);
+  return "#" + x.map(function (c, i) {
+    return Math.round(c * t + y[i] * (1 - t)).toString(16).padStart(2, "0");
+  }).join("");
+}
+var fg = v("--fg"), bg = v("--bg"), accent = v("--accent"), warm = v("--accent-2"), good = v("--ok");
+var font = 'system-ui, -apple-system, "Segoe UI", sans-serif';
+var node = document.querySelector(".mermaid"), code = node.textContent;
+if (/^\\s*(flowchart|graph)\\b/.test(code)) {
+  code = code + "\\n" +
+    "classDef start fill:" + mix(good, bg, 0.2) + ",stroke:" + good + ",stroke-width:2.5px,color:" + fg + "\\n" +
+    "classDef key fill:" + mix(warm, bg, 0.22) + ",stroke:" + warm + ",stroke-width:2.5px,color:" + fg + "\\n" +
+    "classDef result fill:" + mix(accent, bg, 0.32) + ",stroke:" + accent + ",stroke-width:2.5px,color:" + fg + "\\n";
+}
+node.textContent = "";
+mermaid.initialize({
+  startOnLoad: false, securityLevel: "strict", theme: "base", fontFamily: font,
+  flowchart: { curve: "linear", padding: 14, nodeSpacing: 46, rankSpacing: 56, htmlLabels: true,
+               useMaxWidth: true, wrappingWidth: 190 },
+  themeVariables: {
+    fontFamily: font, fontSize: "16px", background: bg, textColor: fg,
+    primaryColor: mix(accent, bg, 0.13), primaryBorderColor: accent, primaryTextColor: fg,
+    secondaryColor: mix(warm, bg, 0.13), tertiaryColor: mix(v("--line"), bg, 0.5),
+    lineColor: mix(fg, bg, 0.6), nodeTextColor: fg, nodeBorder: accent,
+    clusterBkg: mix(accent, bg, 0.05), clusterBorder: mix(accent, bg, 0.45), titleColor: fg,
+    edgeLabelBackground: bg
+  },
+  themeCSS: ".node rect, .node polygon, .node path { stroke-width: 2px; } .node rect { rx: 12px; ry: 12px; } " +
+    ".flowchart-link { stroke-width: 2px; } .edgeLabel, .labelBkg { background-color: " + bg + " !important; } " +
+    ".edgeLabel { font-size: 14px; padding: 2px 4px; border-radius: 6px; } .edgeLabel p { margin: 0; } " +
+    ".cluster rect { rx: 14px; ry: 14px; stroke-dasharray: 5 4; }"
+});
+// A left-to-right chain that is wider than the page would be shrunk until its text is unreadable: draw it
+// top-to-bottom instead (the page is always taller than it is wide on a phone, and scrolls down for free).
+function naturalWidth(svg) {
+  var m = /viewBox="[-\\d.]+ [-\\d.]+ ([\\d.]+)/.exec(svg);
+  return m ? parseFloat(m[1]) : 0;
+}
+(async function () {
+  var room = document.getElementById("root").clientWidth - 24, drawn = await mermaid.render("qn-diagram", code);
+  var sideways = /^(\\s*(?:flowchart|graph))\\s+(LR|RL)\\b/;
+  if (sideways.test(code) && room > 0 && naturalWidth(drawn.svg) > room * 1.1) {
+    drawn = await mermaid.render("qn-diagram-down", code.replace(sideways, "$1 TD"));
+  }
+  node.innerHTML = drawn.svg;
+})().catch(function (e) { __fail(e.message || String(e)); });
 """
 
 # Chart colours come from the same CSS variables as everything else, so light/dark just works.
@@ -225,6 +289,12 @@ def document(visual: Visual, visual_id: str) -> str:
     elif visual.kind == "chart":
         body = '<div id="chart" style="width:100%"></div>'
         run = CHART_RUN.replace("__SPEC__", _script_json(json.loads(visual.code)))
+    elif visual.kind == "illustration":
+        body = (
+            f'<img class="illustration" src="{html.escape(visual.code)}" alt="{html.escape(visual.alt)}" '
+            "onerror=\"__fail('image did not load')\">"
+        )
+        run = ""
     else:
         body, run = visual.code, ""
 

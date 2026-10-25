@@ -8,7 +8,12 @@ Built the way Claude's own harness handles skills and artifacts:
                 section a `visual` plan (or none), adapting to topic, age and preference.
                 Only a learner's own request (`ask`) needs a separate planner call here.
   draw          per plan item, in parallel: load that skill, write the code, validate,
-                and retry with the validator's reason if it was rejected
+                and retry with the validator's reason if it was rejected.
+                A diagram is also checked for structure (diagram_lint.py) and then read by a reviewer
+                call that asks "does this show the whole mechanism, and is it true?"; either can send
+                it back for a redraw. If the retries run out the last drawable draft is kept.
+                An illustration skips the chat model: its brief goes straight to the
+                image model (illustrate.py), one call, a few seconds
   render        render.document() wraps each visual in a sandboxed page
 
 Graph:
@@ -30,11 +35,12 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 
 from app.generation import model_settings
-from learning_service.lesson import reading_level
+from learning_service.lesson import reading_level, visual_menu
 from learning_service.quiz_graph import _llm
 from learning_service.safety import content_rules
-from learning_service.visuals import render
+from learning_service.visuals import diagram_lint, illustrate, render
 from learning_service.visuals.models import (
+    DiagramReview,
     Visual,
     VisualDraft,
     VisualKind,
@@ -42,10 +48,13 @@ from learning_service.visuals.models import (
     VisualPlanItem,
     VisualRequest,
 )
-from learning_service.visuals.skillbook import SKILLS, menu
+from learning_service.visuals.skillbook import SKILLS
 
 log = logging.getLogger("visuals")
 MAX_ATTEMPTS = 3
+DRAW_TEMPERATURE = (
+    0.4  # writing code and diagrams: steady beats inventive (the chat default is 1.0)
+)
 
 
 def drawer_llm():
@@ -53,7 +62,9 @@ def drawer_llm():
     `openrouter:anthropic/claude-haiku-5.5`) if set, else the main model. Planning stays on the main model."""
     runtime = model_settings.get()
     model = runtime.visual_model if runtime else os.getenv("VISUAL_MODEL")
-    return _llm(model) if model else _llm()
+    return (
+        _llm(model, temperature=DRAW_TEMPERATURE) if model else _llm(temperature=DRAW_TEMPERATURE)
+    )
 
 
 assert set(SKILLS) == set(get_args(VisualKind)), (
@@ -88,7 +99,7 @@ def plan_prompt(req: VisualRequest) -> str:
         f'A {req.age}-year-old learner studying "{req.topic}" asked to see: "{req.ask}".\n'
         "Plan exactly one visual that answers this request, tied to the closest lesson section. "
         "Show the real mechanism, not a decorative picture.\n\n"
-        f"Available kinds (pick the one whose description fits best):\n{menu()}\n\n"
+        f"Available kinds (pick the one whose description fits best):\n{visual_menu()}\n\n"
         f"Lesson sections (refer to them by number):\n{_sections(req)}\n\n"
         "`brief` must say exactly what to draw: the elements, their labels in the learner's words, "
         "and for an interactive, the control and what it changes.\n\n"
@@ -142,10 +153,79 @@ def draw_prompt(req: VisualRequest, item: VisualPlanItem, feedback: str = "") ->
     )
 
 
+def draw_illustration(payload: dict) -> dict:
+    """One image-model call; the words around the picture come from the plan, so no chat model is needed."""
+    req: VisualRequest = payload["request"]
+    item: VisualPlanItem = payload["item"]
+    if not illustrate.enabled():
+        return {"drawn": {}}
+    try:
+        code = illustrate.illustrate(item.brief, req.topic, req.age)
+    except Exception:
+        log.warning("drawing illustration failed")
+        return {"drawn": {}}
+    if render.validate(item.kind, code) is not None:
+        log.warning("illustration rejected by the validator")
+        return {"drawn": {}}
+    visual = Visual(
+        title=req.lesson.sections[item.section_index].heading,
+        caption=item.purpose,
+        alt=item.brief,
+        code=code,
+        kind=item.kind,
+        section_index=item.section_index,
+    )
+    return {"drawn": {payload["n"]: visual}}
+
+
+def review_prompt(req: VisualRequest, item: VisualPlanItem, code: str) -> str:
+    section = req.lesson.sections[item.section_index]
+    return (
+        f'You check a diagram that a {req.age}-year-old will use to learn "{req.topic}". Be strict: a vague or '
+        "partial diagram teaches little.\n\n"
+        f"Lesson section: {section.heading}\n{section.body}\n\n"
+        f"What the diagram is for: {item.purpose}\n"
+        f"What it was asked to show: {item.brief}\n\n"
+        f"Mermaid code:\n{code}\n\n"
+        "Answer ok=true only if ALL of these hold:\n"
+        "1. It shows the whole mechanism of the section from where it starts to where it ends, not just the "
+        "first step, one stage, or a list of parts.\n"
+        "2. Every box and every arrow is true according to the lesson section; the order of the boxes is the "
+        "real order.\n"
+        "3. Each arrow label says what happens (a verb or a reason), not a vague word.\n"
+        "4. No box is decorative, repeats another box, or is only a heading from the lesson.\n"
+        "5. The words suit a child of that age.\n"
+        "If not, set ok=false and list 1-3 problems as short instructions that name the boxes to change or add. "
+        "Do not comment on colours or styling: the page handles those."
+    )
+
+
+def review(req: VisualRequest, item: VisualPlanItem, code: str) -> str | None:
+    """What a reviewer thinks is wrong with a drawn diagram, or None if it is good (or the reviewer failed:
+    a flaky second opinion must never cost the learner their diagram)."""
+    try:
+        verdict = (
+            _llm(temperature=0)
+            .with_structured_output(DiagramReview)
+            .invoke(review_prompt(req, item, code))
+        )
+    except Exception:
+        log.warning("diagram review failed")
+        return None
+    if verdict.ok or not verdict.problems:
+        return None
+    return "; ".join(p.strip() for p in verdict.problems[:3] if p.strip()) or None
+
+
 def draw_visual(payload: dict) -> dict:
     req: VisualRequest = payload["request"]
     item: VisualPlanItem = payload["item"]
+    if item.kind == "illustration":
+        return draw_illustration(payload)
     feedback = ""
+    kept: Visual | None = (
+        None  # a draft that draws but was judged weak: better than nothing if retries run out
+    )
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
             draft = (
@@ -155,7 +235,7 @@ def draw_visual(payload: dict) -> dict:
             )
         except Exception:
             log.warning("drawing %s visual failed", item.kind)
-            return {"drawn": {}}
+            break
         code = render.clean(draft.code)
         problem = render.validate(item.kind, code)
         if problem is None:
@@ -165,10 +245,18 @@ def draw_visual(payload: dict) -> dict:
                 kind=item.kind,
                 section_index=item.section_index,
             )
-            return {"drawn": {payload["n"]: visual}}
+            if item.kind != "diagram":
+                return {"drawn": {payload["n"]: visual}}
+            problem = diagram_lint.problem(code)
+            if problem is None and attempt < MAX_ATTEMPTS:  # no redraw left to act on a review
+                problem = review(req, item, code)
+            if problem is None:
+                return {"drawn": {payload["n"]: visual}}
+            kept = visual
         log.info("%s visual rejected (attempt %d)", item.kind, attempt)
         feedback = f"Your previous attempt was rejected: {problem}. Fix that.\nPrevious code:\n{code[:4000]}"
-    return {"drawn": {}}  # never passed validation: drop it rather than show something broken
+    # never passed validation: drop it rather than show something broken
+    return {"drawn": {payload["n"]: kept} if kept else {}}
 
 
 def assemble(state: State) -> dict:

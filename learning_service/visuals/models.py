@@ -6,7 +6,15 @@ from pydantic import BaseModel, Field
 
 from learning_service.lesson import MAX_VISUALS, Lesson, SectionVisual, VisualKind
 
-__all__ = ["Visual", "VisualDraft", "VisualKind", "VisualPlan", "VisualPlanItem", "VisualRequest"]
+__all__ = [
+    "DiagramReview",
+    "Visual",
+    "VisualDraft",
+    "VisualKind",
+    "VisualPlan",
+    "VisualPlanItem",
+    "VisualRequest",
+]
 
 
 class VisualRequest(BaseModel):
@@ -42,6 +50,16 @@ class VisualDraft(BaseModel):
     caption: str = Field(..., description="One sentence: what to notice")
     alt: str = Field(..., description="Text description for screen readers")
     code: str = Field(..., description="The visual's source, in the format the skill specifies")
+
+
+class DiagramReview(BaseModel):
+    """A second model's verdict on a drawn diagram."""
+
+    ok: bool = Field(..., description="True only if the diagram passes every check")
+    problems: list[str] = Field(
+        default_factory=list,
+        description="When not ok: 1-3 short instructions naming the boxes to change or add",
+    )
 
 
 class Visual(VisualDraft):

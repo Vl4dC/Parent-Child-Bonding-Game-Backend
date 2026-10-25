@@ -480,7 +480,8 @@ def get_lesson(lesson_id: LessonId) -> PublicLesson:
     dependencies=[Depends(generation_permit, scope="function")],
 )
 def create_visuals(lesson_id: LessonId, body: VisualsBody) -> VisualsOut:
-    """Draw diagrams, charts and interactive widgets for the lesson.
+    """Draw diagrams, charts and interactive widgets for the lesson, and illustrations when
+    `ILLUSTRATIONS_ENABLED` is on (pictures from an image model, stored in the lesson as WebP data URLs).
 
     Without `ask`: draws the visuals the lesson planned, **once per lesson** (repeat calls return an empty
     list). With `ask`: draws one visual answering that request, every time.

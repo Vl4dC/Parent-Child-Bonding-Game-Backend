@@ -98,6 +98,39 @@ def test_make_lesson_caps_planned_visuals(monkeypatch):
     assert sum(1 for s in out.sections if s.visual) == lesson.MAX_VISUALS
 
 
+def test_illustrations_are_offered_only_while_switched_on(monkeypatch):
+    off = lesson.lesson_prompt(lesson.LessonRequest(topic="volcanoes", age=12))
+    assert "illustration:" not in off and "illustration(s)" not in off
+    monkeypatch.setenv("ILLUSTRATIONS_ENABLED", "true")
+    monkeypatch.setenv("ILLUSTRATIONS_PER_LESSON", "1")
+    on = lesson.lesson_prompt(lesson.LessonRequest(topic="volcanoes", age=12))
+    assert "- illustration:" in on and "At most 1 illustration(s)" in on
+
+
+def planned(kinds):
+    sections = [
+        lesson.LessonSection(
+            heading=f"S{i}", body="b", visual=lesson.SectionVisual(kind=k, purpose="p", brief="b")
+        )
+        for i, k in enumerate(kinds)
+    ]
+    return FAKE_LESSON.model_copy(update={"sections": sections})
+
+
+def test_make_lesson_caps_illustrations(monkeypatch):
+    kinds = ["illustration", "diagram", "illustration", "illustration"]
+
+    def made():
+        monkeypatch.setattr(lesson, "_llm", lambda: RecordingLLM(planned(kinds)))
+        out = lesson.make_lesson(lesson.LessonRequest(topic="x", age=10))
+        return [s.visual.kind if s.visual else None for s in out.sections]
+
+    assert made() == [None, "diagram", None, None]  # switched off: none
+    monkeypatch.setenv("ILLUSTRATIONS_ENABLED", "true")
+    monkeypatch.setenv("ILLUSTRATIONS_PER_LESSON", "2")
+    assert made() == ["illustration", "diagram", "illustration", None]
+
+
 def test_lesson_prompt_steers_kind_choice():
     p = lesson.lesson_prompt(lesson.LessonRequest(topic="x", age=12))
     assert "use an interactive so the learner can try it" in p and "use a chart" in p

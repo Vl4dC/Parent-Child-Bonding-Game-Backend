@@ -79,6 +79,9 @@ The role is a label, not authentication. A saved chat whose PDF was deleted stil
 Visual HTML belongs inside a sandboxed frame with scripts allowed and no same-origin permission.
 `/view` requests need no credentials; include X-Player-ID when selecting nondefault player state.
 Use the response body in the sandbox. Sandbox/structural validation does not prove scientific correctness.
+With `ILLUSTRATIONS_ENABLED`, a visual's `kind` may also be `illustration`: a picture from an image model,
+stored in the lesson as a WebP data URL and shown by the same `html` page, so the frame code is unchanged.
+It has no words in it; show `caption` next to it.
 
 Private lobbies have eight-character invite codes, readiness, host transfer, closure, expiry, and
 versioned snapshots. They do not start an imposter game or family duel. On Supabase, optional private

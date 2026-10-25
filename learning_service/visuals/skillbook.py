@@ -34,6 +34,7 @@ def load_skills(directory: Path = SKILLS_DIR) -> dict[str, Skill]:
 SKILLS = load_skills()
 
 
-def menu() -> str:
-    """One line per visual kind: what a planner sees when choosing (descriptions only)."""
-    return "\n".join(f"- {s.name}: {s.description}" for s in SKILLS.values())
+def menu(skip: tuple[str, ...] = ()) -> str:
+    """One line per visual kind: what a planner sees when choosing (descriptions only).
+    `skip`: kinds switched off, which the planner must not be offered."""
+    return "\n".join(f"- {s.name}: {s.description}" for s in SKILLS.values() if s.name not in skip)
