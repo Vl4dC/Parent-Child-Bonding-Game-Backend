@@ -34,9 +34,14 @@ def create_app(
             )
         if settings.app_env == "production" and not repository.durable:
             raise RuntimeError("Production requires PostgreSQL persistence")
+        if settings.app_env == "production" and not settings.clerk_issuer:
+            raise RuntimeError(
+                "Production API requires CLERK_ISSUER and authorized frontend origins"
+            )
         try:
             yield
         finally:
+            app.state.clerk_verifier.close()
             if owns_repository and hasattr(repository, "close"):
                 await asyncio.to_thread(repository.close)
 
@@ -45,7 +50,15 @@ def create_app(
 
     app = FastAPI(
         title="Family Learning API (LOCAL DEMO)" if settings.demo_mode else "Family Learning API",
-        description=DESCRIPTION,
+        description=DESCRIPTION
+        + (
+            "\n\nCurrent Clerk configuration supersedes older public-mode wording: protected /api routes "
+            "require a verified Clerk Bearer session. X-Player-ID cannot override identity. "
+            "GET /api/me/player returns the mapped database player UUID. Public registration intake "
+            "and process/readiness checks keep their separate existing contracts."
+            if settings.clerk_issuer
+            else ""
+        ),
         openapi_tags=TAGS,
         swagger_ui_parameters=SWAGGER_UI,
         version="0.2.0",
@@ -53,6 +66,9 @@ def create_app(
     )
     app.state.repository = repository
     app.state.settings = settings
+    from app.clerk_auth import ClerkVerifier
+
+    app.state.clerk_verifier = ClerkVerifier(settings)
     app.state.generation_slots = threading.BoundedSemaphore(settings.generation_concurrency)
     app.add_middleware(BodyLimit)
     app.add_middleware(
@@ -127,19 +143,33 @@ def create_app(
                 app.state.diagram_preflight.check, repository, settings
             )
         ok = ok and diagram["ready"]
+        features = {"diagram_assembly": diagram}
+        if settings.clerk_issuer:
+            features["clerk"] = await asyncio.to_thread(app.state.clerk_verifier.readiness)
+            ok = ok and features["clerk"]["ready"]
+        from app.practice_readiness import check as practice_readiness
+
+        for feature in ("duels", "flashcard_attempts"):
+            if getattr(settings, feature + "_enabled"):
+                features[feature] = await asyncio.to_thread(
+                    practice_readiness, repository, settings, feature
+                )
+                ok = ok and features[feature]["ready"]
         return JSONResponse(
             status_code=200 if ok else 503,
             content={
                 "ready": ok,
                 "durable": bool(repository and repository.durable),
-                "features": {"diagram_assembly": diagram},
+                "features": features,
             },
             headers={"Cache-Control": "no-store"},
         )
 
     from app.diagram_api import install as install_diagram_assembly
+    from app.duel_api import router as duel_router
     from app.jobs import router as jobs_router
     from app.platform import router as platform_router
+    from app.practice_api import router as practice_router
     from app.quiz_practice import install as install_quiz_practice
     from app.rooms import router as rooms_router
     from learning_service.routes import app as learning_router
@@ -155,8 +185,13 @@ def create_app(
     app.include_router(platform_router, responses=common_errors)
     app.include_router(jobs_router, responses=common_errors)
     app.include_router(rooms_router, responses=common_errors)
+    app.include_router(practice_router, responses=common_errors)
+    app.include_router(duel_router, responses=common_errors)
     from app.approval_api import install as install_approval
 
     install_approval(app)
     use_file_pickers(app)
+    from app.clerk_auth import install as install_clerk
+
+    install_clerk(app)
     return app

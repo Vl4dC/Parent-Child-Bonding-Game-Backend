@@ -9,6 +9,10 @@ class Settings(BaseSettings):
 
     app_env: Literal["development", "test", "production"] = "production"
     demo_mode: bool = False
+    clerk_issuer: str | None = None
+    clerk_jwt_key: SecretStr | None = None
+    clerk_authorized_parties: list[str] = Field(default_factory=list)
+    clerk_audience: str | None = None
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
     database_url: SecretStr | None = None
     database_pool_size: int = Field(8, ge=1, le=64)
@@ -23,6 +27,8 @@ class Settings(BaseSettings):
     job_attempt_limit: int = Field(2, ge=1, le=5)
     learner_approval_enabled: bool = False
     learner_approval_secret: SecretStr | None = None
+    duels_enabled: bool = False
+    flashcard_attempts_enabled: bool = False
     diagram_assembly_enabled: bool = False
     diagram_node_executable: str = "node"
     diagram_browser_executable: str | None = None
@@ -45,6 +51,41 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_runtime(self):
+        if self.clerk_issuer:
+            from urllib.parse import urlsplit
+
+            issuer = urlsplit(self.clerk_issuer)
+            if (
+                issuer.scheme != "https"
+                or not issuer.hostname
+                or issuer.username
+                or issuer.password
+                or issuer.query
+                or issuer.fragment
+                or issuer.path not in ("", "/")
+            ):
+                raise ValueError("CLERK_ISSUER must be an HTTPS origin")
+            self.clerk_issuer = self.clerk_issuer.rstrip("/")
+            if not self.clerk_authorized_parties:
+                raise ValueError("Clerk requires explicit CLERK_AUTHORIZED_PARTIES")
+            for party in self.clerk_authorized_parties:
+                origin = urlsplit(party)
+                local = origin.hostname in ("localhost", "127.0.0.1", "[::1]", "::1")
+                if (
+                    not origin.hostname
+                    or origin.username
+                    or origin.password
+                    or origin.path
+                    or origin.query
+                    or origin.fragment
+                    or (
+                        origin.scheme != "https"
+                        and not (origin.scheme == "http" and local and self.app_env != "production")
+                    )
+                ):
+                    raise ValueError("Clerk authorized parties must be exact frontend origins")
+        elif self.clerk_jwt_key or self.clerk_authorized_parties or self.clerk_audience:
+            raise ValueError("Clerk options require CLERK_ISSUER")
         if self.learner_approval_enabled and (
             self.learner_approval_secret is None
             or len(self.learner_approval_secret.get_secret_value().encode()) < 32

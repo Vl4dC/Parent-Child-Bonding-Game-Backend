@@ -56,3 +56,19 @@ exposed Supabase schemas; it contains answer keys.
 Use new migrations rather than editing already-applied SQL. Never run destructive test fixtures
 against a hosted/shared database. TEST_DATABASE_URL must name a disposable database ending in _test.
 Keep the original learning-service/static artifacts unchanged under backend-only requests.
+
+
+## Latest user instruction — Clerk and deterministic practice, 25 October 2026
+
+The user now requires Clerk for the backend. This supersedes earlier instructions above that
+forbade Bearer verification or described production APIs as anonymous. Preserve the historical
+text; follow [CLERK_BACKEND.md](docs/CLERK_BACKEND.md) for the active contract. Production requires
+verified Clerk sessions, exact issuer/authorized parties and derived player UUIDs; never trust
+X-Player-ID to override a Clerk identity. No login/signup/password or session-cookie APIs are added.
+Explicit local development/test mode can retain the unverified selector for isolated regression.
+
+Duel and card-attempt services reuse reviewed/saved content without provider calls. Keep frontend,
+learning_service/ and learning-service/static/ unchanged for this batch. Use new migrations and
+feature flags; preserve source/participant deletion and idempotency. Existing Markdown and OpenAPI
+snapshots must remain exact prefixes/unchanged; append supplements or add new docs. The user
+explicitly requested no merge to main and no deployment; prepare an unmerged PR and handoff only.

@@ -182,6 +182,10 @@ def delete_own_data():
             unit.delete("material_vectors", f"{key}:{revision}")
     if unit.connection:
         if unit.connection.execute(
+            "select to_regprocedure('api_private.duel_forget_player()') is not null"
+        ).fetchone()[0]:
+            unit.forget_duel_player = True
+        if unit.connection.execute(
             "select to_regprocedure('api_private.diagram_forget_player()') is not null"
         ).fetchone()[0]:
             unit.connection.execute(

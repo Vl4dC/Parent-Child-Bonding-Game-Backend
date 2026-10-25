@@ -231,3 +231,14 @@ by this API after extraction; extracted text persists until explicit deletion.
 Automated content retention periods, guardian permissions, reward economies, public matchmaking,
 rankings, gameplay, and the proposed age-safety output gate remain pending. No frontend files or
 hosted database were changed by this API implementation.
+
+
+## Current Clerk/practice supplement — 25 October 2026
+
+Production identity now comes from verified Clerk session tokens, mapped to the UUID partitions
+used by existing SQL/RLS. Older public-selector wording is historical. See [Clerk](CLERK_BACKEND.md).
+New [duel and card-attempt APIs](DUELS_AND_FLASHCARD_ATTEMPTS.md) add independent two-player sheets,
+finish-gated results/solutions, fresh room readiness, rematches and deterministic saved-card
+attempts/restarts/history. They do not reuse a solo tournament as two player attempts or call AI.
+Legacy API bodies/results remain compatible; `flashcard_reviews` totals additionally include new
+accepted attempt reviews. Hosted rollout remains unperformed; see [release preparation](DEPLOYMENT_READINESS_DUELS.md).

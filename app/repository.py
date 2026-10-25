@@ -138,13 +138,13 @@ class UnitOfWork:
             row = self.connection.execute("""select
                 count(*) filter (where kind='completions'),
                 coalesce(sum(q.answered),0), coalesce(sum(q.correct),0),
-                coalesce(sum(case when kind='decks' then (data#>>'{progress,reviews}')::bigint else 0 end),0),
+                coalesce(sum(case when kind in ('decks','card_attempts') then (data#>>'{progress,reviews}')::bigint else 0 end),0),
                 count(*) filter (where kind='tournaments' and data->'submission' <> 'null'::jsonb)
                 from api_private.records
                 left join lateral (select count(*) answered,
                     count(*) filter (where value->>'correct'='true') correct
                     from jsonb_each(case when kind='quizzes' then data->'attempts' else '{}'::jsonb end)) q on true
-                where kind in ('completions','quizzes','decks','tournaments')""").fetchone()
+                where kind in ('completions','quizzes','decks','card_attempts','tournaments')""").fetchone()
             return dict(zip(keys, map(int, row)))
         totals = dict.fromkeys(keys, 0)
         with self.repository.lock:
@@ -158,7 +158,7 @@ class UnitOfWork:
                     totals["correct_answers"] += sum(
                         a["correct"] for a in data["attempts"].values()
                     )
-                elif kind == "decks":
+                elif kind in ("decks", "card_attempts"):
                     totals["flashcard_reviews"] += data["progress"]["reviews"]
                 elif kind == "tournaments" and data.get("submission"):
                     totals["tournaments_submitted"] += 1
@@ -206,6 +206,15 @@ class UnitOfWork:
                 self.repository.data[(self.owner, kind, key)] = copy.deepcopy(data)
         if self.connection and getattr(self, "forget_diagram_player", False):
             self.connection.execute("select api_private.diagram_forget_player()")
+        if self.connection and getattr(self, "forget_duel_player", False):
+            self.connection.execute("select api_private.duel_forget_player()")
+        if not self.connection:
+            from app.practice_store import cleanup_memory as cleanup_practice
+
+            cleanup_practice(
+                self.repository,
+                self.owner if getattr(self, "forget_diagram_player", False) else None,
+            )
         if not self.connection and hasattr(self.repository, "diagram_state"):
             from app.diagram_store import cleanup_memory
 

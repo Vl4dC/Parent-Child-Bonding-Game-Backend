@@ -41,3 +41,17 @@ PostgreSQL data/control connections use bounded pools with transaction-local ide
 read-only MVCC access. Progress and metadata projections are computed by SQL. Durable workers
 generate into an isolated buffer after releasing source reads, then validate row versions and
 the lease in a short commit transaction. See [server performance](SERVER_PERFORMANCE.md).
+
+
+## Clerk, duel state and saved-card attempts — 25 October 2026 addition
+
+`app/clerk_auth.py` verifies issuer-pinned Clerk sessions and caches bounded verification keys;
+`app/player.py` derives the internal UUID. `app/duel_game.py`, `duel_store.py` and `duel_api.py`
+implement shared match state and private sheets. `app/card_practice.py`, `practice_store.py` and
+`practice_api.py` keep independent saved-card progress with source deletion links.
+`practice_readiness.py` checks feature migrations; `release_check.py` is the read-only operator gate.
+Existing deterministic grading/public-render helpers are reused; AI modules are unchanged.
+Creation shares the room serialization key with diagram races. Match writes lock room then match
+and refresh the server clock after contention. New attempts use short owner-scoped units; there
+are no provider calls inside them. Production now requires Clerk; older anonymous-mode sections
+are retained as historical descriptions. See [API guide](DUELS_AND_FLASHCARD_ATTEMPTS.md).
