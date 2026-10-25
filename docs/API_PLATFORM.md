@@ -289,7 +289,7 @@ tables behind the same `MemoryStore` interface.
 A **match** is one played instance of a challenge: the server runs the clock and ranks the players. There are no
 background timers. The server stores when play begins and works out everything else from the time of each request, so
 clients only send actions and poll `GET /api/matches/{id}` about once a second. **Clients never send times**; use the
-returned `server_time_ms` to line a countdown up with the server. All matches are casual (times include network delay;
+returned `server_time_ms` to line a countdown up with the server. Every poll counts towards the player's request limit (`API_REQUESTS_PER_MINUTE`, 120 by default), so poll once a second, not faster. All matches are casual (times include network delay;
 nothing here is an anti-cheat boundary) and expire after 24 hours.
 
 **Flow.** `POST /api/matches` with `challenge_id` (your own) and `mode` creates it; the creator calls `POST .../start`,
