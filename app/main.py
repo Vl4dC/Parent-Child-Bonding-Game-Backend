@@ -166,6 +166,7 @@ def create_app(
     from app.platform import router as platform_router
     from app.quiz_practice import install as install_quiz_practice
     from app.rooms import router as rooms_router
+    from app.social_api import router as social_router
     from learning_service.routes import app as learning_router
 
     install_quiz_practice(app)
@@ -181,6 +182,7 @@ def create_app(
     app.include_router(economy_router, responses=common_errors)
     app.include_router(jobs_router, responses=common_errors)
     app.include_router(rooms_router, responses=common_errors)
+    app.include_router(social_router, responses=common_errors)
     from app.approval_api import install as install_approval
 
     install_approval(app)

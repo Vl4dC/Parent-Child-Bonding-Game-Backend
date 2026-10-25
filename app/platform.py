@@ -179,6 +179,9 @@ def delete_own_data(request: Request):
     unit = current_session.get()
     request.app.state.memory.forget_player(unit.owner)
     request.app.state.home.forget_player(unit.owner)
+    from app.game_invites import forget_player as forget_invites
+
+    forget_invites(unit)
     for key, data in all_records(unit, "materials"):
         for revision in range(1, data["revision"] + 1):
             unit.delete("material_vectors", f"{key}:{revision}")

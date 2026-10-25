@@ -28,6 +28,7 @@ from typing import Annotated, Callable, Iterator, Literal
 from pydantic import BaseModel, Field
 
 from learning_service.home_rules import RULES
+from learning_service.presence import SCHEMA as PRESENCE_SCHEMA
 from learning_service.shop import CATALOG, ITEMS
 
 Visibility = Literal["family", "friends", "nobody"]
@@ -205,7 +206,7 @@ class HomeStore:
         self._db.execute("pragma foreign_keys = on")
         if path != ":memory:":
             self._db.execute("pragma journal_mode = wal")
-        self._db.executescript(SCHEMA)
+        self._db.executescript(SCHEMA + PRESENCE_SCHEMA)
 
     def close(self) -> None:
         with self._lock:
@@ -639,26 +640,35 @@ class HomeStore:
             ).fetchone()
             if row is None:
                 raise HomeError(404, "No player has that friend code.")
-            other = row[0]
-            if other == pid:
-                raise HomeError(422, "That is your own friend code.")
-            a, b = self._pair(pid, other)
-            existing = db.execute(
-                "select status, requested_by from friendships where a = ? and b = ?", (a, b)
-            ).fetchone()
-            if existing is None:
-                db.execute(
-                    "insert into friendships (a, b, status, requested_by, created_at) "
-                    "values (?, ?, 'pending', ?, ?)",
-                    (a, b, pid, now()),
-                )
-                return self._friend(db, other, "outgoing")
-            if existing["status"] == "accepted":
-                return self._friend(db, other, "accepted")
-            if existing["requested_by"] == pid:
-                return self._friend(db, other, "outgoing")
-            db.execute("update friendships set status = 'accepted' where a = ? and b = ?", (a, b))
+            return self._request_friend(db, pid, row[0])
+
+    def request_friend_id(self, pid: str, other: str) -> Friend:
+        with self._tx() as db:
+            self._ensure(db, pid)
+            if not db.execute("select 1 from homes where player_id=?", (other,)).fetchone():
+                raise HomeError(404, "Player not found.")
+            return self._request_friend(db, pid, other)
+
+    def _request_friend(self, db: sqlite3.Connection, pid: str, other: str) -> Friend:
+        if other == pid:
+            raise HomeError(422, "That is your own friend code.")
+        a, b = self._pair(pid, other)
+        existing = db.execute(
+            "select status, requested_by from friendships where a = ? and b = ?", (a, b)
+        ).fetchone()
+        if existing is None:
+            db.execute(
+                "insert into friendships (a, b, status, requested_by, created_at) "
+                "values (?, ?, 'pending', ?, ?)",
+                (a, b, pid, now()),
+            )
+            return self._friend(db, other, "outgoing")
+        if existing["status"] == "accepted":
             return self._friend(db, other, "accepted")
+        if existing["requested_by"] == pid:
+            return self._friend(db, other, "outgoing")
+        db.execute("update friendships set status = 'accepted' where a = ? and b = ?", (a, b))
+        return self._friend(db, other, "accepted")
 
     def respond(self, pid: str, requester: str, accept: bool) -> Friend | None:
         """Accept or decline a pending request that `requester` sent to `pid`."""
@@ -676,6 +686,48 @@ class HomeStore:
                 return None
             db.execute("update friendships set status = 'accepted' where a = ? and b = ?", (a, b))
             return self._friend(db, requester, "accepted")
+
+    def pending_friend_requests(self, pid: str) -> dict:
+        with self._lock:
+            result = {"incoming": [], "outgoing": []}
+            for row in self._db.execute(
+                "select a,b,requested_by,created_at from friendships "
+                "where status='pending' and (a=? or b=?) order by created_at desc,a,b",
+                (pid, pid),
+            ).fetchall():
+                other = row["b"] if row["a"] == pid else row["a"]
+                direction = "outgoing" if row["requested_by"] == pid else "incoming"
+                result[direction].append(
+                    self._friend(self._db, other, direction).model_dump()
+                    | {"requested_at": row["created_at"]}
+                )
+            return result
+
+    def answer_friend_request(self, pid: str, other: str, action: str) -> Friend | None:
+        """Natural pair-key idempotency; cancelling a request never removes an accepted friend."""
+        if pid == other:
+            raise HomeError(422, "Choose another player.")
+        a, b = self._pair(pid, other)
+        with self._tx() as db:
+            row = db.execute(
+                "select status,requested_by from friendships where a=? and b=?", (a, b)
+            ).fetchone()
+            if row is None:
+                if action == "accept":
+                    raise HomeError(404, "Friend request not found.")
+                return None
+            if row["status"] == "accepted":
+                if action == "accept":
+                    return self._friend(db, other, "accepted")
+                raise HomeError(409, "Already friends. Use remove friend to end the friendship.")
+            expected_sender = pid if action == "cancel" else other
+            if row["requested_by"] != expected_sender:
+                raise HomeError(403, "Only the recipient can accept/decline or the sender cancel.")
+            if action == "accept":
+                db.execute("update friendships set status='accepted' where a=? and b=?", (a, b))
+                return self._friend(db, other, "accepted")
+            db.execute("delete from friendships where a=? and b=?", (a, b))
+            return None
 
     def remove_friend(self, pid: str, other: str) -> bool:
         """Remove a friend, or cancel a request either way."""

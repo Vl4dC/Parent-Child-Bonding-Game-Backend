@@ -1,0 +1,1809 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Friend requests, presence and game invitations",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/me/friend-requests": {
+      "get": {
+        "tags": [
+          "Friends and invitations"
+        ],
+        "summary": "Friend Requests",
+        "description": "Separate incoming and outgoing requests with timestamps; accepted friends use /me/friends.",
+        "operationId": "friend_requests_api_me_friend_requests_get",
+        "parameters": [
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FriendRequests"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Presence or invitation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "404": {
+            "description": "Friend/invitation/lobby not found"
+          },
+          "409": {
+            "description": "Invitation or lobby state changed"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Friends and invitations"
+        ],
+        "summary": "Request Friend",
+        "description": "Send by known player UUID or friend code. Replays do not duplicate requests.\nIf the other player already requested you, mutual requests establish friendship.",
+        "operationId": "request_friend_api_me_friend_requests_post",
+        "parameters": [
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/app__social_api__FriendRequestIn"
+              },
+              "examples": {
+                "code": {
+                  "summary": "Send a request using your friend's code",
+                  "value": {
+                    "code": "ABCD2345"
+                  }
+                },
+                "player": {
+                  "summary": "Send a request to a known player UUID",
+                  "value": {
+                    "friend_id": "00000000-0000-4000-8000-000000000002"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Friend"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Presence or invitation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "404": {
+            "description": "Friend/invitation/lobby not found"
+          },
+          "409": {
+            "description": "Invitation or lobby state changed"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/friend-requests/{player_id}": {
+      "delete": {
+        "tags": [
+          "Friends and invitations"
+        ],
+        "summary": "Cancel Friend Request",
+        "description": "Cancel an outgoing request only. Accepted friendships require the existing remove-friend route.",
+        "operationId": "cancel_friend_request_api_me_friend_requests__player_id__delete",
+        "parameters": [
+          {
+            "name": "player_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Player Id"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "429": {
+            "description": "Presence or invitation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "404": {
+            "description": "Friend/invitation/lobby not found"
+          },
+          "409": {
+            "description": "Invitation or lobby state changed"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/friend-requests/{player_id}/accept": {
+      "post": {
+        "tags": [
+          "Friends and invitations"
+        ],
+        "summary": "Accept Friend",
+        "description": "Accept the selected player's incoming request; already-accepted replays return the friend.",
+        "operationId": "accept_friend_api_me_friend_requests__player_id__accept_post",
+        "parameters": [
+          {
+            "name": "player_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Player Id"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Friend"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Presence or invitation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "404": {
+            "description": "Friend/invitation/lobby not found"
+          },
+          "409": {
+            "description": "Invitation or lobby state changed"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/friend-requests/{player_id}/decline": {
+      "post": {
+        "tags": [
+          "Friends and invitations"
+        ],
+        "summary": "Decline Friend",
+        "description": "Decline an incoming request. A missing/already-declined request is a harmless replay.",
+        "operationId": "decline_friend_api_me_friend_requests__player_id__decline_post",
+        "parameters": [
+          {
+            "name": "player_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Player Id"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "429": {
+            "description": "Presence or invitation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "404": {
+            "description": "Friend/invitation/lobby not found"
+          },
+          "409": {
+            "description": "Invitation or lobby state changed"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/friends/presence": {
+      "get": {
+        "tags": [
+          "Friends and invitations"
+        ],
+        "summary": "Friends Presence",
+        "description": "Accepted friends only. Hidden/stale status is offline; hidden last-seen is always null.",
+        "operationId": "friends_presence_api_me_friends_presence_get",
+        "parameters": [
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresenceList"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Presence or invitation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "404": {
+            "description": "Friend/invitation/lobby not found"
+          },
+          "409": {
+            "description": "Invitation or lobby state changed"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/game-invites": {
+      "post": {
+        "tags": [
+          "Friends and invitations"
+        ],
+        "summary": "Invite",
+        "description": "Only the current lobby host invites accepted friends. Offline friends may be invited too.\nNo membership is reserved and no game/content generation is started.",
+        "operationId": "invite_api_me_game_invites_post",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteIn"
+              },
+              "examples": {
+                "duel": {
+                  "summary": "Invite a friend into a two-player quiz lobby",
+                  "value": {
+                    "friend_id": "00000000-0000-4000-8000-000000000002",
+                    "room_id": "00000000-0000-4000-8000-000000000003",
+                    "game": "mcq",
+                    "mode": "friends"
+                  }
+                },
+                "group": {
+                  "summary": "Invite a friend into a heads-up lobby",
+                  "value": {
+                    "friend_id": "00000000-0000-4000-8000-000000000002",
+                    "room_id": "00000000-0000-4000-8000-000000000003",
+                    "game": "heads_up",
+                    "mode": "friends"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InviteOut"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Presence or invitation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "404": {
+            "description": "Friend/invitation/lobby not found"
+          },
+          "409": {
+            "description": "Invitation or lobby state changed"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Friends and invitations"
+        ],
+        "summary": "Invitations",
+        "operationId": "invitations_api_me_game_invites_get",
+        "parameters": [
+          {
+            "name": "direction",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "incoming",
+                "outgoing",
+                "all"
+              ],
+              "type": "string",
+              "default": "all",
+              "title": "Direction"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "pending",
+                    "accepted",
+                    "declined",
+                    "cancelled",
+                    "expired"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitePage"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Presence or invitation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "404": {
+            "description": "Friend/invitation/lobby not found"
+          },
+          "409": {
+            "description": "Invitation or lobby state changed"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/game-invites/{invite_id}": {
+      "get": {
+        "tags": [
+          "Friends and invitations"
+        ],
+        "summary": "Invitation",
+        "operationId": "invitation_api_me_game_invites__invite_id__get",
+        "parameters": [
+          {
+            "name": "invite_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invite Id"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InviteOut"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Presence or invitation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "404": {
+            "description": "Friend/invitation/lobby not found"
+          },
+          "409": {
+            "description": "Invitation or lobby state changed"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/game-invites/{invite_id}/accept": {
+      "post": {
+        "tags": [
+          "Friends and invitations"
+        ],
+        "summary": "Accept",
+        "description": "Recipient accepts and joins the still-open lobby atomically in PostgreSQL. Replays never rejoin after leaving.",
+        "operationId": "accept_api_me_game_invites__invite_id__accept_post",
+        "parameters": [
+          {
+            "name": "invite_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invite Id"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InviteAction"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Presence or invitation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "404": {
+            "description": "Friend/invitation/lobby not found"
+          },
+          "409": {
+            "description": "Invitation or lobby state changed"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/game-invites/{invite_id}/cancel": {
+      "post": {
+        "tags": [
+          "Friends and invitations"
+        ],
+        "summary": "Cancel",
+        "operationId": "cancel_api_me_game_invites__invite_id__cancel_post",
+        "parameters": [
+          {
+            "name": "invite_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invite Id"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InviteAction"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Presence or invitation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "404": {
+            "description": "Friend/invitation/lobby not found"
+          },
+          "409": {
+            "description": "Invitation or lobby state changed"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/game-invites/{invite_id}/decline": {
+      "post": {
+        "tags": [
+          "Friends and invitations"
+        ],
+        "summary": "Decline",
+        "operationId": "decline_api_me_game_invites__invite_id__decline_post",
+        "parameters": [
+          {
+            "name": "invite_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invite Id"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InviteAction"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Presence or invitation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "404": {
+            "description": "Friend/invitation/lobby not found"
+          },
+          "409": {
+            "description": "Invitation or lobby state changed"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/presence/sessions/{session_id}": {
+      "put": {
+        "tags": [
+          "Friends and invitations"
+        ],
+        "summary": "Heartbeat",
+        "description": "Use one UUID per tab/device. Server timestamps and a renewable TTL determine online status.",
+        "operationId": "heartbeat_api_me_presence_sessions__session_id__put",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeartbeatIn"
+              },
+              "examples": {
+                "online": {
+                  "summary": "Renew this tab's presence lease",
+                  "value": {
+                    "status": "online"
+                  }
+                },
+                "away": {
+                  "summary": "This tab is inactive",
+                  "value": {
+                    "status": "away"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeartbeatOut"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Presence or invitation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "404": {
+            "description": "Friend/invitation/lobby not found"
+          },
+          "409": {
+            "description": "Invitation or lobby state changed"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Friends and invitations"
+        ],
+        "summary": "Disconnect",
+        "description": "Idempotently end this tab's lease; other live sessions stay online.",
+        "operationId": "disconnect_api_me_presence_sessions__session_id__delete",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "429": {
+            "description": "Presence or invitation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "404": {
+            "description": "Friend/invitation/lobby not found"
+          },
+          "409": {
+            "description": "Invitation or lobby state changed"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/social-settings": {
+      "get": {
+        "tags": [
+          "Friends and invitations"
+        ],
+        "summary": "Get Settings",
+        "operationId": "get_settings_api_me_social_settings_get",
+        "parameters": [
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SocialSettings"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Presence or invitation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "404": {
+            "description": "Friend/invitation/lobby not found"
+          },
+          "409": {
+            "description": "Invitation or lobby state changed"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Friends and invitations"
+        ],
+        "summary": "Set Settings",
+        "description": "Replace social preferences. Hiding presence also hides last-seen timestamps from friends.",
+        "operationId": "set_settings_api_me_social_settings_put",
+        "parameters": [
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SocialSettings"
+              },
+              "examples": {
+                "visible": {
+                  "summary": "Share status with friends and allow invitations",
+                  "value": {
+                    "share_presence": true,
+                    "allow_game_invites": true
+                  }
+                },
+                "quiet": {
+                  "summary": "Hide status and stop new invitations",
+                  "value": {
+                    "share_presence": false,
+                    "allow_game_invites": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SocialSettings"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Presence or invitation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "404": {
+            "description": "Friend/invitation/lobby not found"
+          },
+          "409": {
+            "description": "Invitation or lobby state changed"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "FriendRequests": {
+        "properties": {
+          "incoming": {
+            "items": {
+              "$ref": "#/components/schemas/PendingFriend"
+            },
+            "type": "array",
+            "title": "Incoming"
+          },
+          "outgoing": {
+            "items": {
+              "$ref": "#/components/schemas/PendingFriend"
+            },
+            "type": "array",
+            "title": "Outgoing"
+          },
+          "server_now": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Server Now"
+          },
+          "poll_after_seconds": {
+            "type": "integer",
+            "title": "Poll After Seconds",
+            "default": 15
+          }
+        },
+        "type": "object",
+        "required": [
+          "incoming",
+          "outgoing",
+          "server_now"
+        ],
+        "title": "FriendRequests"
+      },
+      "PendingFriend": {
+        "properties": {
+          "player_id": {
+            "type": "string",
+            "title": "Player Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "avatar": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "incoming",
+              "outgoing"
+            ],
+            "title": "Status"
+          },
+          "requested_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Requested At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "player_id",
+          "display_name",
+          "status",
+          "requested_at"
+        ],
+        "title": "PendingFriend"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "app__social_api__FriendRequestIn": {
+        "properties": {
+          "friend_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Friend Id"
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 8,
+                "minLength": 8,
+                "pattern": "^[A-Za-z0-9]{8}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "FriendRequestIn"
+      },
+      "Friend": {
+        "properties": {
+          "player_id": {
+            "type": "string",
+            "title": "Player Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "avatar": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "incoming",
+              "outgoing"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "player_id",
+          "display_name",
+          "status"
+        ],
+        "title": "Friend"
+      },
+      "PresenceList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/FriendPresence"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "server_now": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Server Now"
+          },
+          "poll_after_seconds": {
+            "type": "integer",
+            "title": "Poll After Seconds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "server_now",
+          "poll_after_seconds"
+        ],
+        "title": "PresenceList"
+      },
+      "FriendPresence": {
+        "properties": {
+          "player_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Player Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "avatar": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "online",
+              "away",
+              "busy",
+              "offline"
+            ],
+            "title": "Status"
+          },
+          "last_seen": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen"
+          }
+        },
+        "type": "object",
+        "required": [
+          "player_id",
+          "display_name",
+          "avatar",
+          "status",
+          "last_seen"
+        ],
+        "title": "FriendPresence"
+      },
+      "InviteIn": {
+        "properties": {
+          "friend_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Friend Id"
+          },
+          "room_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Room Id"
+          },
+          "game": {
+            "type": "string",
+            "enum": [
+              "mcq",
+              "heads_up",
+              "diagram"
+            ],
+            "title": "Game",
+            "default": "mcq"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "friends",
+              "parent_child",
+              "duo"
+            ],
+            "title": "Mode",
+            "default": "friends"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "friend_id",
+          "room_id"
+        ],
+        "title": "InviteIn"
+      },
+      "InviteOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "sender_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Sender Id"
+          },
+          "recipient_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Recipient Id"
+          },
+          "room_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Room Id"
+          },
+          "game": {
+            "type": "string",
+            "enum": [
+              "mcq",
+              "heads_up",
+              "diagram"
+            ],
+            "title": "Game"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "friends",
+              "parent_child",
+              "duo"
+            ],
+            "title": "Mode"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "accepted",
+              "declined",
+              "cancelled",
+              "expired"
+            ],
+            "title": "Status"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "sender_id",
+          "recipient_id",
+          "room_id",
+          "game",
+          "mode",
+          "status",
+          "created_at",
+          "expires_at",
+          "updated_at"
+        ],
+        "title": "InviteOut"
+      },
+      "InvitePage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/InviteOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "server_now": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Server Now"
+          },
+          "poll_after_seconds": {
+            "type": "integer",
+            "title": "Poll After Seconds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "next_cursor",
+          "server_now",
+          "poll_after_seconds"
+        ],
+        "title": "InvitePage"
+      },
+      "InviteAction": {
+        "properties": {
+          "invite": {
+            "$ref": "#/components/schemas/InviteOut"
+          },
+          "room": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoomSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "invite"
+        ],
+        "title": "InviteAction"
+      },
+      "RoomSnapshot": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "host_id": {
+            "type": "string",
+            "title": "Host Id"
+          },
+          "capacity": {
+            "type": "integer",
+            "title": "Capacity"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "closed": {
+            "type": "boolean",
+            "title": "Closed"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/Member"
+            },
+            "type": "array",
+            "title": "Members"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "host_id",
+          "capacity",
+          "version",
+          "closed",
+          "expires_at",
+          "members"
+        ],
+        "title": "RoomSnapshot"
+      },
+      "Member": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "user_id",
+          "display_name",
+          "ready"
+        ],
+        "title": "Member"
+      },
+      "HeartbeatIn": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "online",
+              "away",
+              "busy"
+            ],
+            "title": "Status",
+            "default": "online"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "HeartbeatIn"
+      },
+      "HeartbeatOut": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          },
+          "heartbeat_after_seconds": {
+            "type": "integer",
+            "title": "Heartbeat After Seconds"
+          },
+          "server_now": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Server Now"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "expires_at",
+          "heartbeat_after_seconds",
+          "server_now"
+        ],
+        "title": "HeartbeatOut"
+      },
+      "SocialSettings": {
+        "properties": {
+          "share_presence": {
+            "type": "boolean",
+            "title": "Share Presence",
+            "default": true
+          },
+          "allow_game_invites": {
+            "type": "boolean",
+            "title": "Allow Game Invites",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SocialSettings"
+      }
+    }
+  }
+}
