@@ -213,4 +213,5 @@ def models(monkeypatch):
     monkeypatch.setattr(challenges, "make_quiz", fake.make_quiz)
     monkeypatch.setattr(challenges, "ask_deck", fake.ask_deck)
     monkeypatch.setattr(challenges, "ask_flow", fake.ask_flow)
+    monkeypatch.setattr(challenges, "ask_same_topic", fake.ask_same_topic)
     return fake

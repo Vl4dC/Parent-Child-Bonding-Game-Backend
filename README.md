@@ -82,7 +82,7 @@ Challenges can be played: `POST /api/matches` runs a timed quiz, heads-up turns 
 parent-child (the parent gets less time) or duo play. `GET /api/weekly/next` previews next week's tournament (show only). See
 [Playing a challenge](docs/API_PLATFORM.md#playing-a-challenge-matches).
 
-Friends can compete on topics they both studied: `GET /api/challenges/shared-topics`, then `POST /api/challenges` has the AI write a timed quiz,
+Friends can compete on topics they both studied, even if they worded them differently: `GET /api/challenges/shared-topics`, then `POST /api/challenges` has the AI write a timed quiz,
 a heads-up deck or a fill-in-the-blanks diagram for the room. See [Friend challenges](docs/API_PLATFORM.md#friend-challenges-games-made-from-memory).
 
 Chats can be remembered per player: `POST /api/memory/conversations`, then pass `conversation_id` to the chat endpoints. They are

@@ -50,7 +50,15 @@ class FakeEmbedder:
 
 
 # ---------------------------------------------------------------- the challenge writers (challenges.py)
-from learning_service.challenges import DeckDraft, EdgeDraft, FlowDraft, NodeDraft, TermDraft  # noqa: E402
+from learning_service.challenges import (  # noqa: E402
+    DeckDraft,
+    EdgeDraft,
+    FlowDraft,
+    NodeDraft,
+    SamePair,
+    SameTopics,
+    TermDraft,
+)
 from learning_service.quiz_graph import Question, Quiz  # noqa: E402
 
 
@@ -133,6 +141,10 @@ class Models:
         self.deck = draft_deck()
         self.flow = draft_flow()
         self.fail = None
+        self.same_topic_prompts: list[str] = []
+        self.same_topic_rule = lambda a, b: (
+            True
+        )  # what the model says about each pair of topic names
 
     def make_quiz(self, request):
         self.quizzes.append(request)
@@ -151,6 +163,15 @@ class Models:
         if self.fail == "flow":
             raise RuntimeError("provider key sk-secret-123 rejected")
         return self.flow
+
+    def ask_same_topic(self, prompt):
+        self.same_topic_prompts.append(prompt)
+        if self.fail == "same_topic":
+            raise RuntimeError("provider key sk-secret-123 rejected")
+        pairs = re.findall(r'^(\d+)\. "(.*)" \| "(.*)"$', prompt, re.M)
+        return SameTopics(
+            verdicts=[SamePair(pair=int(n), same=self.same_topic_rule(a, b)) for n, a, b in pairs]
+        )
 
     @property
     def calls(self):
