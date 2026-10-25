@@ -13,6 +13,7 @@ The play engines (timers, scoring, who wins) come later; this is the frozen cont
 from __future__ import annotations
 
 import logging
+from contextlib import ExitStack, contextmanager
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Request
@@ -22,6 +23,7 @@ from app.generation import generation_permit
 from app.repository import current_session
 from app.rooms import command as room_command
 from learning_service import challenges as ch
+from learning_service import embeddings
 from learning_service.api_docs import CHALLENGES, ChallengeId, errors
 from learning_service.challenges import (
     CASUAL_LABEL,
@@ -114,6 +116,11 @@ class SharedTopics(BaseModel):
         ...,
         description="Topics every player studied, most recent first. Nothing else about anyone's memory is shown",
     )
+    by_meaning: bool = Field(
+        False,
+        description="Whether matching by meaning took part (an embedding model is configured and answered). When "
+        "False, topics were matched by their words only",
+    )
 
 
 def memory_of(request: Request) -> MemoryStore:
@@ -122,6 +129,29 @@ def memory_of(request: Request) -> MemoryStore:
 
 def player_id() -> str:
     return current_session.get().owner
+
+
+def topic_meaning(request: Request) -> ch.TopicMeaning | None:
+    """Matching topics by meaning, when model calls are allowed and an embedding model is configured. The models are
+    called only when the words did not settle it, and that spends a generation attempt like any other model call;
+    with none left, or the server busy, the picker uses words alone instead of failing."""
+    if not request.app.state.settings.generation_enabled:
+        return None
+    embedder = embeddings.model_embedder()
+    if embedder is None:
+        return None
+
+    @contextmanager
+    def permit():
+        with ExitStack() as stack:
+            try:
+                stack.enter_context(contextmanager(generation_permit)(request))
+            except HTTPException:
+                yield False
+                return
+            yield True
+
+    return ch.TopicMeaning(embedder, permit)
 
 
 def room_members(room_id: str) -> list[dict]:
@@ -188,9 +218,13 @@ NewBody = Annotated[
 )
 def get_shared_topics(room_id: str, request: Request) -> SharedTopics:
     """Compare the memory of everyone in a room you belong to and return only the topics all of them have studied
-    (a chat counts once it has had an answer). Topics are matched by meaning of their words, so "Photosynthesis"
-    and "Plant photosynthesis" are the same. Nobody sees anything about topics only they studied, and nothing from
-    anyone's chats. Use one as the `topic` of a challenge."""
+    (a chat counts once it has had an answer). Topics match when their words overlap ("Photosynthesis" and "Plant
+    photosynthesis") and, when an embedding model is configured, by meaning ("Photosynthesis" and "How plants make
+    food": `reworded` is true and `by_meaning` says it was used). Meaning-based matching sends only topic names to the
+    model, never chats, and can add roughly 2 to 8 seconds when players have look-alike topics (show a spinner). It
+    only calls the models when the words did not settle it, and then spends one of the caller's daily generation
+    attempts; with none left, or the server busy, the answer uses words only (`by_meaning` is false). Nobody sees
+    anything about topics only they studied, and nothing from anyone's chats. Use one as the `topic` of a challenge."""
     store = memory_of(request)
     members = room_members(room_id)
     ids = [m["user_id"] for m in members]
@@ -204,7 +238,11 @@ def get_shared_topics(room_id: str, request: Request) -> SharedTopics:
                 role=profile.role if profile else None,
             )
         )
-    return SharedTopics(room_id=room_id, players=people, topics=ch.shared_topics(store, ids))
+    meaning = topic_meaning(request)
+    topics = ch.shared_topics(store, ids, meaning)
+    return SharedTopics(
+        room_id=room_id, players=people, topics=topics, by_meaning=bool(meaning and meaning.used)
+    )
 
 
 @router.post(

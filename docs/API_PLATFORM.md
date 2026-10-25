@@ -40,7 +40,7 @@ from the actual routes and typed models at `/openapi.json`.
 | POST | `/api/me/coins/claim-quiz` | 10 coins per first-correct answer of a quiz, once per question of its set |
 | POST | `/api/me/coins/demo-topup` | Add coins to try the home; 404 unless `DEMO_MODE=true` |
 | GET | `/api/memory/digest` | Subjects and topics this player has studied, with no chat text |
-| GET | `/api/challenges/shared-topics?room_id=` | Topics every member of a room has studied (from memory), and nothing else |
+| GET | `/api/challenges/shared-topics?room_id=` | Topics every member of a room has studied (from memory, matched by words and by meaning), and nothing else |
 | POST | `/api/challenges` | The AI writes a game (`mcq`, `heads_up` or `diagram`) for a topic and it is frozen for the room |
 | GET | `/api/challenges/{id}` | The challenge without answers (the creator and the room's members) |
 | GET / DELETE | `/api/challenges/{id}/review`, `/api/challenges/{id}` | Full content with answers (creator only) / forget it |
@@ -302,9 +302,24 @@ frozen, and everyone in the room gets exactly the same content. **No play engine
 winners or rematches); this is the content those engines will run.
 
 **Finding the topic.** `GET /api/challenges/shared-topics?room_id=` compares the memory of everyone in a room you belong to
-and returns only the topics **all** of them have studied (a chat counts once it has had an answer). Topics are matched
-by their words, so "Photosynthesis" and "Plant photosynthesis" are the same. Nothing about a topic only one player
-studied, and nothing from anyone's chats, is shown; each player's display name and memory role are listed.
+and returns only the topics **all** of them have studied (a chat counts once it has had an answer). Nothing about a topic
+only one player studied, and nothing from anyone's chats, is shown; each player's display name and memory role are listed.
+
+Topics are matched in two steps. **By words:** one name's words contain the other's, so "Photosynthesis" and "Plant
+photosynthesis" are the same; numbers count, so "World War 1" and "World War 2" are not. **By meaning**, when an embedding
+model is configured and model calls are on: names worded differently ("Photosynthesis" and "How plants make food") are
+matched, the topic comes back with `reworded: true`, and the response has `by_meaning: true`. Embeddings only shortlist
+look-alike names, because they rate neighbouring topics as close as rewordings ("Ancient Egypt" and "Ancient Rome" 0.74,
+"Photosynthesis" and "How plants make food" 0.50); a small model then confirms each shortlisted pair. If it cannot, only
+names with a similarity of 0.80 or more count; if the embedding model fails, words alone are used and `by_meaning` is
+false. Only topic names are sent to the models: no chats, subjects or player ids. The check adds roughly 2 to 8 seconds
+when players have look-alike topics and nothing when their words already match, so show a spinner. It spends one of
+the caller's daily generation attempts only when the models are needed, and shares the server's generation slots; with no
+attempt left, or the server busy, the answer uses words only (`by_meaning` false) instead of failing.
+
+The confirming step is deliberately strict, so a miss is likelier than a wrong match. Measured on pairs it was not tuned
+on, 11 of 12 rewordings matched and none of 14 neighbouring topics did. It does not treat a small part of a topic as the
+topic ("Pyramids and pharaohs" is not "Ancient Egypt"), and "Climate change" and "Global warming" were not matched.
 
 **Making a game.** `POST /api/challenges` takes `game`, `topic`, `age` (use the **lowest** age in the room, so it is fair and
 suitable for everyone), an optional `room_id` (the room's members at that moment can read it; later joiners cannot) and

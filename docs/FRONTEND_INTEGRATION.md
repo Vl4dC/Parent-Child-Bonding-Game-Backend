@@ -78,7 +78,8 @@ The role is a label, not authentication. A saved chat whose PDF was deleted stil
 ## Friend challenges
 
 Flow for a competition screen: two or more friends join a room (`/api/rooms`), then
-`GET /api/challenges/shared-topics?room_id=` lists the topics they have all studied. Pick one and call
+`GET /api/challenges/shared-topics?room_id=` lists the topics they have all studied, including ones worded differently
+(`reworded`; it can take a few seconds, so show a spinner). Pick one and call
 `POST /api/challenges` with the game, the topic, the **lowest** player age and the `room_id`; every member then reads
 the same content from `GET /api/challenges/{id}` (no answers). Show the returned `label` ("Written by AI for casual play
 and not reviewed"). For `diagram`, render the returned `mermaid` and put a drop target on each id in `slots`; the word

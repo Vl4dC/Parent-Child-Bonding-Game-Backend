@@ -143,6 +143,227 @@ def test_words_with_nothing_in_them_never_match():
     assert ch.shared_topics(store, [ALEX, SAM]) == []
 
 
+# ---------------------------------------------------------------- topics worded differently (by meaning)
+# The fake embedder (tests/learning/fakes.py) knows two meanings, plants and volcanoes; the fake model that
+# confirms a pair (models.same_topic_rule) says whatever the test scripts.
+def by_meaning(store, *players, embedder, fail=False):
+    embedder.fail = fail
+    meaning = ch.TopicMeaning(embedder)
+    return ch.shared_topics(store, list(players), meaning), meaning
+
+
+def test_differently_worded_topics_match_by_meaning(embedder, models):
+    store = MemoryStore()
+    studied(store, ALEX, "How plants make food")
+    studied(store, SAM, "Photosynthesis")
+    assert ch.shared_topics(store, [ALEX, SAM]) == []  # no shared words
+    shared, meaning = by_meaning(store, ALEX, SAM, embedder=embedder)
+    assert [(s.topic, s.players, s.reworded) for s in shared] == [("Photosynthesis", 2, True)]
+    assert meaning.used and len(models.same_topic_prompts) == 1  # one question for all the pairs
+
+
+def test_the_model_can_say_that_look_alike_topics_are_different(embedder, models):
+    store = MemoryStore()
+    studied(store, ALEX, "Photosynthesis")
+    studied(store, SAM, "Plant respiration")  # next to each other, but not the same
+    models.same_topic_rule = lambda a, b: False
+    shared, meaning = by_meaning(store, ALEX, SAM, embedder=embedder)
+    assert shared == [] and meaning.used
+    assert '1. "Photosynthesis" | "Plant respiration"' in models.same_topic_prompts[0]
+    models.same_topic_rule = lambda a, b: True
+    assert [s.topic for s in by_meaning(store, ALEX, SAM, embedder=embedder)[0]] == [
+        "Photosynthesis"
+    ]
+
+
+def test_shared_words_are_tried_first_and_cost_no_model_call(embedder, models):
+    store = MemoryStore()
+    studied(store, ALEX, "Plant photosynthesis")
+    studied(store, SAM, "Photosynthesis")
+    shared, meaning = by_meaning(store, ALEX, SAM, embedder=embedder)
+    assert [(s.topic, s.reworded) for s in shared] == [("Photosynthesis", False)]
+    assert embedder.documents == [] and models.same_topic_prompts == [] and not meaning.used
+
+
+def test_topics_about_different_things_are_never_put_to_the_model(embedder, models):
+    store = MemoryStore()
+    studied(store, ALEX, "Photosynthesis")
+    studied(store, SAM, "Volcano eruptions", subject="Geography")
+    shared, meaning = by_meaning(store, ALEX, SAM, embedder=embedder)
+    assert shared == [] and meaning.used
+    assert models.same_topic_prompts == []  # too far apart to be worth asking
+
+
+def test_only_topic_names_are_sent_to_the_models(embedder, models):
+    from learning_service.memory_store import NewMessage
+
+    store = MemoryStore()
+    for player, topic in ((ALEX, "How plants make food"), (SAM, "Photosynthesis")):
+        chat = studied(store, player, topic, subject="Geography")
+        store.append_turn(
+            player,
+            chat.id,
+            NewMessage(role="user", content="my private question about Dana"),
+            NewMessage(role="assistant", content="a private answer"),
+        )
+    shared, _ = by_meaning(store, ALEX, SAM, embedder=embedder)
+    assert len(shared) == 1
+    sent = " ".join(embedder.documents) + " ".join(models.same_topic_prompts)
+    assert "private" not in sent and "Dana" not in sent and "Geography" not in sent
+    assert sorted(embedder.documents) == ["how plants make food", "photosynthesis"]
+
+
+def test_numbered_parts_are_different_topics(embedder, models):
+    store = MemoryStore()
+    studied(store, ALEX, "Photosynthesis part 1")
+    studied(store, SAM, "Photosynthesis part 2")
+    assert ch.shared_topics(store, [ALEX, SAM]) == []  # the words alone used to match these
+    shared, _ = by_meaning(store, ALEX, SAM, embedder=embedder)
+    assert shared == [] and models.same_topic_prompts == []  # and meaning is not even asked
+    studied(store, SAM, "Photosynthesis")  # a plain topic still covers a numbered part
+    assert [s.topic for s in ch.shared_topics(store, [ALEX, SAM])] == ["Photosynthesis"]
+
+
+def test_without_a_model_to_confirm_only_very_close_names_count(embedder, models):
+    store = MemoryStore()
+    studied(store, ALEX, "Sunlight and lava")  # half plants, half volcanoes: similarity 0.71
+    studied(store, SAM, "Photosynthesis")
+    models.fail = "same_topic"
+    shared, meaning = by_meaning(store, ALEX, SAM, embedder=embedder)
+    assert shared == [] and meaning.used  # close enough to ask about, not close enough to trust
+    studied(
+        store, ALEX, "Leaves and chlorophyll"
+    )  # the same meaning as Photosynthesis: similarity 1.0
+    shared, _ = by_meaning(store, ALEX, SAM, embedder=embedder)
+    assert [(s.topic, s.reworded) for s in shared] == [("Photosynthesis", True)]
+
+
+def test_a_failing_embedding_model_leaves_word_matching(embedder, models):
+    store = MemoryStore()
+    studied(store, ALEX, "How plants make food")
+    studied(store, ALEX, "Volcano eruptions", subject="Geography")
+    studied(store, SAM, "Photosynthesis")
+    studied(store, SAM, "Volcano eruptions", subject="Geography")
+    shared, meaning = by_meaning(store, ALEX, SAM, embedder=embedder, fail=True)
+    assert [s.topic for s in shared] == ["Volcano eruptions"] and not meaning.used
+
+
+def test_two_chats_about_one_topic_are_listed_once(embedder, models):
+    store = MemoryStore()
+    studied(store, ALEX, "Photosynthesis")
+    studied(store, ALEX, "How plants make food")
+    studied(store, SAM, "Photosynthesis")
+    shared, _ = by_meaning(store, ALEX, SAM, embedder=embedder)
+    assert [s.topic for s in shared] == ["Photosynthesis"]
+
+
+def test_three_players_must_all_have_it_by_words_or_by_meaning(embedder, models):
+    store = MemoryStore()
+    studied(store, ALEX, "How plants make food")
+    studied(store, SAM, "Photosynthesis")
+    studied(store, KIM, "Sunlight and leaves")
+    shared, _ = by_meaning(store, ALEX, SAM, KIM, embedder=embedder)
+    assert [(s.topic, s.players, s.reworded) for s in shared] == [("Photosynthesis", 3, True)]
+    store2 = MemoryStore()
+    studied(store2, ALEX, "How plants make food")
+    studied(store2, SAM, "Photosynthesis")
+    studied(store2, KIM, "Volcano eruptions", subject="Geography")
+    assert by_meaning(store2, ALEX, SAM, KIM, embedder=embedder)[0] == []
+
+
+def test_the_closest_confirmed_topic_is_the_match(embedder, models):
+    store = MemoryStore()
+    studied(store, ALEX, "Sunlight and lava")  # half plants, half volcanoes
+    studied(store, SAM, "Photosynthesis")  # similarity 0.71
+    studied(store, SAM, "Leaf and lava")  # similarity 1.0
+    shared, _ = by_meaning(store, ALEX, SAM, embedder=embedder)
+    assert [s.topic for s in shared] == ["Leaf and lava"]
+
+
+def test_a_players_many_topics_are_capped_before_they_reach_the_model(embedder, models):
+    store = MemoryStore()
+    for i in range(ch.MEANING_TOPICS + 20):
+        studied(store, ALEX, f"Volcano {chr(97 + i // 26)}{chr(97 + i % 26)}", subject="Geography")
+    studied(store, SAM, "Magma and lava", subject="Geography")
+    shared, _ = by_meaning(store, ALEX, SAM, embedder=embedder)
+    assert (
+        len(embedder.documents) == ch.MEANING_TOPICS + 1
+    )  # the newest 60 of Alex's, and Sam's one
+    assert len(shared) == 1
+
+
+def test_the_room_reports_meaning_matches_and_says_when_it_was_used(
+    client, models, store, embedder
+):
+    store.set_profile(ALEX, "parent", "Alex")
+    store.set_profile(SAM, "learner", "Sam")
+    studied(store, ALEX, "How plants make food")
+    studied(store, ALEX, "Mortgage rates", subject="Other")
+    studied(store, SAM, "Photosynthesis")
+    room_id = make_room(client, (OTHER, "Sam"))
+    body = client.get(f"/api/challenges/shared-topics?room_id={room_id}").json()
+    assert body["by_meaning"] is True
+    assert [(t["topic"], t["reworded"]) for t in body["topics"]] == [("Photosynthesis", True)]
+    assert "Mortgage" not in json.dumps(body)  # a topic only Alex studied is never shown to Sam
+
+
+def test_the_room_falls_back_to_words_when_no_embedding_model_is_configured(client, models, store):
+    studied(store, ALEX, "How plants make food")
+    studied(store, ALEX, "Volcano eruptions", subject="Geography")
+    studied(store, SAM, "Photosynthesis")
+    studied(store, SAM, "Volcano eruptions", subject="Geography")
+    room_id = make_room(client, (OTHER, "Sam"))
+    body = client.get(f"/api/challenges/shared-topics?room_id={room_id}").json()
+    assert body["by_meaning"] is False
+    assert [(t["topic"], t["reworded"]) for t in body["topics"]] == [("Volcano eruptions", False)]
+    assert models.same_topic_prompts == []
+
+
+def test_the_picker_spends_a_generation_attempt_only_when_it_asks_the_models(
+    client, models, store, embedder
+):
+    client.app.state.settings.generation_daily_limit = 1
+    studied(store, ALEX, "Photosynthesis")
+    studied(store, SAM, "Photosynthesis")
+    room_id = make_room(client, (OTHER, "Sam"))
+    url = f"/api/challenges/shared-topics?room_id={room_id}"
+    first = client.get(url).json()  # the words settle it: no model call, nothing spent
+    assert first["by_meaning"] is False and [t["topic"] for t in first["topics"]] == [
+        "Photosynthesis"
+    ]
+    assert embedder.documents == []
+    studied(store, ALEX, "How plants make food")  # now the models are needed
+    second = client.get(url).json()
+    assert second["by_meaning"] is True and second["topics"][0]["reworded"] is True
+    third = client.get(url)  # the day's one attempt is gone: still an answer, by words alone
+    assert third.status_code == 200 and third.json()["by_meaning"] is False
+    assert [(t["topic"], t["reworded"]) for t in third.json()["topics"]] == [
+        ("Photosynthesis", False)
+    ]
+    assert len(models.same_topic_prompts) == 1
+
+
+def test_the_picker_uses_words_when_the_server_is_busy_generating(client, models, store, embedder):
+    studied(store, ALEX, "How plants make food")
+    studied(store, SAM, "Photosynthesis")
+    room_id = make_room(client, (OTHER, "Sam"))
+    url = f"/api/challenges/shared-topics?room_id={room_id}"
+    slots = client.app.state.generation_slots
+    taken = 0
+    while slots.acquire(blocking=False):  # every generation slot is in use
+        taken += 1
+    try:
+        busy = client.get(url)
+    finally:
+        for _ in range(taken):
+            slots.release()
+    assert busy.status_code == 200 and busy.json()["by_meaning"] is False
+    assert (
+        busy.json()["topics"] == [] and embedder.documents == [] and models.same_topic_prompts == []
+    )
+    assert client.get(url).json()["by_meaning"] is True  # and it works again once a slot is free
+
+
 # ---------------------------------------------------------------- game 1: timed multiple choice
 def test_questions_come_from_the_quiz_writer_with_the_right_answer_marked(models):
     content = ch.mcq_content("Photosynthesis", 12, 10, 30)
