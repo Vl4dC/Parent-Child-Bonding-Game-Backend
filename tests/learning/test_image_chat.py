@@ -78,6 +78,10 @@ def test_the_model_is_shown_the_picture_and_the_answer_says_so(client, vision):
         "used_image": True,
         "images": 1,
         "label": "Looked at your image for this answer",
+        "conversation_id": None,
+        "title": None,
+        "subject": None,
+        "notice": None,
     }
     ((prompt, jpegs),) = vision.calls
     assert len(jpegs) == 1 and jpegs[0][:2] == b"\xff\xd8"  # a JPEG

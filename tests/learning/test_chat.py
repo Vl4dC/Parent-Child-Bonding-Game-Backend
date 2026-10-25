@@ -54,6 +54,10 @@ def test_an_ordinary_question_is_answered_without_a_pdf(client, model):
         "pages": [],
         "label": None,
         "mode": "auto",
+        "conversation_id": None,
+        "title": None,
+        "subject": None,
+        "notice": None,
     }
     prompt = model.prompts[0]
     assert "no PDF attached" in prompt and "<pdf>" not in prompt
@@ -134,6 +138,10 @@ def test_pdf_only_says_so_when_the_pdf_does_not_have_it(client, model):
         "pages": [],
         "label": None,
         "mode": "pdf_only",
+        "conversation_id": None,
+        "title": None,
+        "subject": None,
+        "notice": None,
     }
 
 

@@ -24,6 +24,10 @@ from the actual routes and typed models at `/openapi.json`.
 | GET | `/api/materials/{id}/revisions/{revision}` | Read the immutable extracted-text revision referenced by an older lesson |
 | POST | `/api/materials/{id}/confirm` | Explicitly confirm the current extracted-text revision |
 | POST | `/api/chat` | Chat, optionally with a confirmed upload: answers from the PDF when it helps and says so (`used_pdf`, `pages`, `label`) |
+| GET / PUT | `/api/memory/profile` | The player's role label (`parent` or `learner`) and display name |
+| POST / GET | `/api/memory/conversations` | Start a remembered chat / list this player's chats with a count per subject |
+| GET / PATCH / DELETE | `/api/memory/conversations/{id}` | Open a chat with every message / rename it or change its subject / forget it |
+| GET | `/api/memory/digest` | Subjects and topics this player has studied, with no chat text |
 | POST | `/api/chat/image` | Chat about 1-4 pictures (multipart): the model looks at the picture itself; nothing is stored |
 | GET | `/api/materials/{id}/find?topic=…` | Preview selected pages/chapter/source text; no lesson is written (`by_meaning` says whether embeddings took part) |
 | POST / GET | `/api/lessons`, `/api/lessons/{id}` | Generate draft lesson / read owned lesson |
@@ -191,6 +195,44 @@ keeps what matters. A scanned book is different and still goes through `POST /ap
   for the same age policy is remembered by its fingerprint only (never the picture, bounded, in memory) so follow-ups
   about it are not checked again. Text written inside a picture is treated as data, never instructions.
 - One generation attempt per message against `GENERATION_DAILY_LIMIT`; the request body limit for this route is 36 MiB.
+
+## Saved chats (memory)
+
+Chats can be remembered per player and continued later. This is one SQLite file (`MEMORY_DB_PATH`, default
+`memory.db`, in memory for tests), separate from the records store, so it survives a restart of the demo server.
+Every row carries the player id (`X-Player-ID`); one id can never read another's chats. A parent and a child just use
+two ids. `PUT /api/memory/profile` stores a **role label** (`parent` or `learner`, the repo's word for the child) and
+a display name for each id. The role is a label for the app and for later features, **not** a login or proof of who is
+using the id, and there is no parent-to-child link.
+
+**Using it.** `POST /api/memory/conversations` (optionally with a `material_id`) returns a chat id. Send it as
+`conversation_id` to `POST /api/chat` or `POST /api/chat/image` (a form field there). The server then loads the chat's
+own memory for the model (so `history` is ignored), saves the question and answer together, and returns
+`conversation_id`, `title`, `subject` and an optional `notice`. A chat about a PDF carries on with that PDF without
+`material_id`; if the PDF is gone (uploads are not part of this store) `notice` says so and `pdf_only` is a 422.
+A picture is never saved: only the text, flagged `used_image` (a picture sent without a message is saved as the note
+"(sent a picture)"). Without `conversation_id` chat stays stateless.
+
+**Subjects.** After the first answer the model files the chat under one of Science, Math, History, Geography, Languages,
+Computing, Arts or Other and names it after its topic (2 to 6 words). `PATCH` changes the title or subject; if
+filing fails the chat goes under Other. The list endpoint returns the chats, newest first, and a count per subject for a
+sidebar. Empty chats count under Other.
+
+**Long chats.** The whole transcript is always kept and shown. What the model is given is bounded: once the unsummarised
+part holds more than 6000 characters or 24 messages, all but the last 6 messages are folded into a rolling summary
+(plain text, at most 1500 characters, written by the model, no personal details). The model then sees that summary
+plus the recent turns. `GET .../conversations/{id}` returns `summary` and `summarized_messages`. Filing and folding
+cost one small extra model call each, only when they happen, and never block an answer: if memory fails the answer is
+still returned with a `notice`.
+
+**Digest.** `GET /api/memory/digest` returns the player's subjects and, under each, the topics studied with
+timestamps and message counts: no chat text, no model call. It exists so friend competitions can later match two
+players on subjects they have both studied; reading another player's digest is not implemented and would be a
+separate product decision.
+
+**Limits and deletion.** 500 chats per player, 2000 messages per chat (a full chat says so in `notice`; creating
+more is a 409). `DELETE /api/memory/conversations/{id}` forgets one chat; `DELETE /api/me/data` forgets all of a
+player's chats and profile.
 
 ## Private room contract
 

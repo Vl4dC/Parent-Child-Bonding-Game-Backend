@@ -11,9 +11,10 @@ from typing import Annotated
 from fastapi import FastAPI, Path
 from pydantic import BaseModel
 
-UPLOAD, CHAT, LEARN, QUIZ, CARDS, WEAK, TOURNAMENT = (
+UPLOAD, CHAT, MEMORY, LEARN, QUIZ, CARDS, WEAK, TOURNAMENT = (
     "Your book",
     "Chat",
+    "Memory",
     "Learn",
     "Quiz",
     "Flashcards",
@@ -30,6 +31,10 @@ TAGS = [
     {
         "name": CHAT,
         "description": "Ask questions in a chat. With an uploaded PDF the answer can come from it, and says so; with a picture, the model looks at the picture itself.",
+    },
+    {
+        "name": MEMORY,
+        "description": "Saved chats, kept per player and filed by subject, so a chat can be continued later. Long chats are summarised.",
     },
     {
         "name": LEARN,
@@ -166,5 +171,8 @@ QuizId = Annotated[
     Path(description="A quiz `id`, from `POST /api/lessons/{lesson_id}/quiz` or a follow-up quiz"),
 ]
 DeckId = Annotated[str, Path(description="A deck `id`, from a flashcards endpoint")]
+ConversationId = Annotated[
+    str, Path(description="A chat `id`, from `POST /api/memory/conversations` or the chat list")
+]
 MaterialId = Annotated[str, Path(description="The material `id` returned by `POST /api/materials`")]
 TournamentId = Annotated[str, Path(description="The `id` returned by `POST /api/tournament`")]

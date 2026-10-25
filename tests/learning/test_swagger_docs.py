@@ -47,7 +47,16 @@ def test_the_page_has_a_walkthrough_and_ordered_tags(spec):
     assert (
         [t["name"] for t in spec["tags"]]
         == [t["name"] for t in TAGS]
-        == ["Your book", "Chat", "Learn", "Quiz", "Flashcards", "Weak spots", "Tournament"]
+        == [
+            "Your book",
+            "Chat",
+            "Memory",
+            "Learn",
+            "Quiz",
+            "Flashcards",
+            "Weak spots",
+            "Tournament",
+        ]
     )
     assert all(t["description"] for t in spec["tags"])
 

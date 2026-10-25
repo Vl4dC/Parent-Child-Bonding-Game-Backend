@@ -78,6 +78,10 @@ Uploaded books are also embedded (`EMBEDDING_MODEL`, default `openrouter:openai/
 `OPENROUTER_API_KEY`; a few cents at most per book) so a topic is found by meaning as well as by words. Leave
 `EMBEDDING_MODEL` empty for keyword search only. See [Platform API](docs/API_PLATFORM.md#search-by-meaning-embeddings).
 
+Chats can be remembered per player: `POST /api/memory/conversations`, then pass `conversation_id` to the chat endpoints. They are
+saved in a SQLite file (`MEMORY_DB_PATH`, default `memory.db`), filed by subject, and long ones are summarised. See
+[Saved chats](docs/API_PLATFORM.md#saved-chats-memory).
+
 `POST /api/chat/image` explains 1-4 pictures, or answers a question about them when a `message` is sent (the model looks at them directly, nothing is stored, each picture is
 checked for the learner's age first). `POST /api/chat` chats with an uploaded PDF (or without one): it answers from the book when that helps and reports `used_pdf` and the pages,
 or, in `pdf_only` mode, only from the book. See [Platform API](docs/API_PLATFORM.md#chat-with-a-pdf).

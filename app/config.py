@@ -37,6 +37,8 @@ class Settings(BaseSettings):
     illustrations_enabled: bool = False
     illustration_model: str = "anthropic/claude-haiku-5.5"
     illustrations_per_lesson: int = Field(2, ge=0, le=5)
+    # SQLite file for chat memory (conversations kept per player). Unset: memory.db, or in memory for tests.
+    memory_db_path: str | None = None
     model_timeout_seconds: int = Field(60, ge=1, le=300)
 
     @field_validator("cors_origins")

@@ -11,3 +11,6 @@ __pycache__/
 htmlcov/
 tools/diagram-renderer/node_modules/
 .DS_Store
+memory.db
+memory.db-shm
+memory.db-wal

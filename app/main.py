@@ -17,9 +17,17 @@ from app.repository import MemoryRepository, PostgresRepository
 def create_app(
     settings: Settings | None = None,
     repository=None,
+    memory_store=None,
 ):
     settings = settings or Settings()
     owns_repository = repository is None
+    owns_memory = memory_store is None
+    if memory_store is None:
+        from learning_service.memory_store import MemoryStore
+
+        memory_store = MemoryStore(
+            settings.memory_db_path or (":memory:" if settings.app_env == "test" else "memory.db")
+        )
     if repository is None:
         if settings.database_url:
             repository = PostgresRepository.from_settings(settings)
@@ -39,6 +47,8 @@ def create_app(
         finally:
             if owns_repository and hasattr(repository, "close"):
                 await asyncio.to_thread(repository.close)
+            if owns_memory:
+                await asyncio.to_thread(memory_store.close)
 
     from learning_service.api_docs import DESCRIPTION, SWAGGER_UI, TAGS, use_file_pickers
     from learning_service.safety import AgeBlocked, SafetyUnavailable
@@ -52,6 +62,7 @@ def create_app(
         lifespan=lifespan,
     )
     app.state.repository = repository
+    app.state.memory = memory_store
     app.state.settings = settings
     app.state.generation_slots = threading.BoundedSemaphore(settings.generation_concurrency)
     app.add_middleware(BodyLimit)

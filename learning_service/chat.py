@@ -19,15 +19,18 @@ import logging
 import math
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, StringConstraints
 
 import learning_service.embeddings as embeddings
+import learning_service.memory as memory
 import learning_service.safety as safety
 from app.generation import generation_permit
+from app.repository import current_session
 from learning_service.api_docs import CHAT, errors
 from learning_service.lesson import reading_level
 from learning_service.materials import Material, Page, bm25, fuse, page_label, tokens
+from learning_service.memory_store import NewMessage
 from learning_service.quiz_graph import _llm
 from learning_service.safety import AgeBlocked, SafetyUnavailable, content_rules, ensure_safe
 from learning_service.store import MATERIALS, get_or_404
@@ -76,6 +79,11 @@ class ChatRequest(BaseModel):
         max_length=20,
         description=f"The conversation so far, oldest first. Only the last {MAX_HISTORY} turns are used.",
     )
+    conversation_id: str | None = Field(
+        None,
+        description="Continue, and save into, this remembered chat (`POST /api/memory/conversations`). Its saved "
+        "memory is used and `history` is ignored.",
+    )
 
 
 class Answer(BaseModel):
@@ -101,6 +109,15 @@ class ChatOut(BaseModel):
         description="Ready-to-show text such as 'Used the PDF for this answer (pages 2-3)'; null if not used",
     )
     mode: Literal["auto", "pdf_only"]
+    conversation_id: str | None = Field(
+        None, description="The remembered chat this answer was saved in, if any"
+    )
+    title: str | None = Field(None, description="That chat's title, named after its first answer")
+    subject: str | None = Field(None, description="The subject that chat is filed under")
+    notice: str | None = Field(
+        None,
+        description="Something to tell the learner, e.g. the chat's PDF is no longer available",
+    )
 
 
 class Passage(BaseModel):
@@ -111,10 +128,12 @@ class Passage(BaseModel):
 # --------------------------------------------------------------------------
 # Retrieval
 # --------------------------------------------------------------------------
-def retrieval_query(request: ChatRequest) -> str:
+def retrieval_query(request: ChatRequest, history: list[ChatTurn] | None = None) -> str:
     """What to search for. A short follow-up ("and the second one?") is searched with the question before it."""
     if len(request.message.split()) < SHORT_QUESTION_WORDS:
-        earlier = [t.content for t in request.history if t.role == "user"]
+        earlier = [
+            t.content for t in (request.history if history is None else history) if t.role == "user"
+        ]
         if earlier:
             return f"{earlier[-1]} {request.message}"
     return request.message
@@ -206,8 +225,14 @@ def transcript(history: list[ChatTurn]) -> str:
 
 
 def build_prompt(
-    request: ChatRequest, material: Material | None, found: list[Passage], outline_text: str
+    request: ChatRequest,
+    material: Material | None,
+    found: list[Passage],
+    outline_text: str,
+    history: list[ChatTurn] | None = None,
+    summary: str = "",
 ) -> str:
+    history = request.history if history is None else history
     rules = NO_PDF if material is None else PDF_ONLY if request.mode == "pdf_only" else AUTO
     prompt = (
         f"You are a friendly study helper in a school learning app, chatting with a {request.age}-year-old "
@@ -218,8 +243,13 @@ def build_prompt(
         excerpts = "\n\n".join(f"[Page {p.page}]\n{p.text}" for p in found) or "(nothing matched)"
         pdf = f"{outline_text}\n\nExcerpts most related to the question:\n{excerpts}"
         prompt += f"\n<pdf>\n{pdf.replace('</pdf', '< /pdf')}\n</pdf>\n"
-    if request.history:
-        prompt += f"\n<conversation>\n{transcript(request.history)}\n</conversation>\n"
+    if summary:
+        prompt += (
+            "\n<memory>\nA summary of the earlier part of this chat, which is no longer shown word for word:\n"
+            f"{summary.replace('</memory', '< /memory')}\n</memory>\n"
+        )
+    if history:
+        prompt += f"\n<conversation>\n{transcript(history)}\n</conversation>\n"
     return prompt + f"\nThe learner's new message: {request.message}"
 
 
@@ -231,14 +261,18 @@ def ask_model(prompt: str) -> Answer:
 # One chat turn
 # --------------------------------------------------------------------------
 def respond(
-    request: ChatRequest, material: Material | None, search: embeddings.SemanticSearch | None
+    request: ChatRequest,
+    material: Material | None,
+    search: embeddings.SemanticSearch | None,
+    history: list[ChatTurn] | None = None,
+    summary: str = "",
 ) -> ChatOut:
     found: list[Passage] = []
     outline_text, sampled = "", []
     if material is not None:
-        found = passages(material, retrieval_query(request), search)
+        found = passages(material, retrieval_query(request, history), search)
         outline_text, sampled = outline(material)
-    prompt = build_prompt(request, material, found, outline_text)
+    prompt = build_prompt(request, material, found, outline_text, history, summary)
     answer = ensure_safe(
         lambda: ask_model(prompt), lambda a: a.answer, request.age, request.message
     )
@@ -312,7 +346,7 @@ ChatBody = Annotated[
     responses=errors(404, 409, 422, 502),
     dependencies=[Depends(generation_permit, scope="function")],
 )
-def chat(body: ChatBody) -> ChatOut:
+def chat(body: ChatBody, request: Request) -> ChatOut:
     """Answer a question, using the learner's uploaded PDF when `material_id` is given.
 
     The PDF is searched by words and by meaning, and the best pieces (plus a short outline of the whole file)
@@ -321,22 +355,64 @@ def chat(body: ChatBody) -> ChatOut:
     from the PDF and says so when the PDF does not contain the answer. `used_pdf` and `pages` say whether and
     where the answer drew on the PDF, and `label` is the text to show ("Used the PDF for this answer").
 
-    Stateless: send the recent turns in `history`. The upload must be confirmed first (409 otherwise).
+    **Memory:** send `conversation_id` (from `POST /api/memory/conversations`) and the chat is remembered: its saved
+    summary and recent turns are given to the model (so `history` is ignored), the question and answer are saved,
+    and after the first answer the chat is filed under a subject. A chat about a PDF carries on with that PDF
+    without `material_id`; if the PDF is gone, `notice` says so. Without `conversation_id` it is stateless: send the
+    recent turns in `history`. The upload must be confirmed first (409 otherwise).
     **Child safety:** the question is screened and the answer checked for the learner's age; a blocked one is
     a friendly 422. Takes about 5-15 s."""
+    store, player = request.app.state.memory, current_session.get().owner
+    conversation, history, summary, notice = None, body.history, "", None
+    if body.conversation_id:
+        conversation = store.get_conversation(player, body.conversation_id)
+        if conversation is None:
+            raise HTTPException(404, "Conversation not found or unavailable to this player.")
+        summary, saved = memory.context(store, player, conversation)
+        history = [ChatTurn(role=m.role, content=m.content[:TURN_CHARS]) for m in saved]
     material = None
     if body.material_id:
         material = get_or_404(MATERIALS, body.material_id, "Material")
-        if not material.confirmed:
-            raise HTTPException(409, "Confirm the extracted material before chatting with it.")
-    elif body.mode == "pdf_only":
-        raise HTTPException(422, "Attach a PDF (material_id) to answer only from it.")
+    elif conversation is not None and conversation.material_id:
+        material = MATERIALS.get(conversation.material_id)
+        if material is None:
+            notice = (
+                "The PDF this chat was about isn't available any more. Attach it again to use it."
+            )
+    if material is not None and not material.confirmed:
+        raise HTTPException(409, "Confirm the extracted material before chatting with it.")
+    if material is None and body.mode == "pdf_only":
+        raise HTTPException(422, notice or "Attach a PDF (material_id) to answer only from it.")
     safety.screen_request(body.message, body.age)
     search = embeddings.semantic_search(material) if material is not None else None
     try:
-        return respond(body, material, search)
+        out = respond(body, material, search, history, summary)
     except (AgeBlocked, SafetyUnavailable):
         raise
     except Exception as exc:
         log.warning("chat answer failed")
         raise HTTPException(502, "The answer couldn't be written. Try again later.") from exc
+    if conversation is None:
+        return out.model_copy(update={"notice": notice})
+    if material is not None and material.id != conversation.material_id:
+        conversation = (
+            store.update_conversation(
+                player, conversation.id, material=(material.id, material.name)
+            )
+            or conversation
+        )
+    conversation, not_saved = memory.remember_turn(
+        store,
+        player,
+        conversation,
+        NewMessage(role="user", content=body.message),
+        NewMessage(role="assistant", content=out.answer, used_pdf=out.used_pdf, pages=out.pages),
+    )
+    return out.model_copy(
+        update={
+            "conversation_id": conversation.id,
+            "title": conversation.title,
+            "subject": conversation.subject,
+            "notice": not_saved or notice,
+        }
+    )

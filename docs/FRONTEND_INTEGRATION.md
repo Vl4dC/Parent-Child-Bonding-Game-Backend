@@ -63,6 +63,17 @@ photo, diagram or handwritten problem directly. Send the picture again with each
 the browser first (the server accepts up to 8 MiB each), and show `label` under the answer. Pictures that fail the
 child-safety check come back as the usual friendly 422. No frontend for this exists in this repository.
 
+## Saved chats
+
+Memory lets a chat screen show a sidebar of past chats grouped by subject and continue any of them: call
+`GET /api/memory/conversations` (it returns the chats and a count per subject), open one with
+`GET /api/memory/conversations/{id}` (every message plus `used_pdf`/`used_image` flags and `pages`), and keep chatting by
+sending its id as `conversation_id` to `/api/chat` or `/api/chat/image`; do not resend `history`. Create a chat first with
+`POST /api/memory/conversations` (pass `material_id` for a PDF chat). Each player id has its own memory, so a parent and a
+child use different `X-Player-ID` values; `PUT /api/memory/profile` stores their role label and display name.
+The role is a label, not authentication. A saved chat whose PDF was deleted still opens: the next answer carries a
+`notice` asking for the PDF again. See [API_PLATFORM.md](API_PLATFORM.md#saved-chats-memory).
+
 ## Visuals and rooms
 
 Visual HTML belongs inside a sandboxed frame with scripts allowed and no same-origin permission.
