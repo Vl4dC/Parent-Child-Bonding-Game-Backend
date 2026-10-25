@@ -1,117 +1,55 @@
-# Parent–Child Bonding Game API
+# QuestNest backend
 
-Backend-only FastAPI API for owned learning data, reviewed content, generation jobs,
-and private lobbies. Frontend context lives in the
-[main repository](https://github.com/RahulRohidasPatil/Parent-Child-Bonding-Game).
+FastAPI backend for learning from uploaded notes, saved practice, chat, private games, rewards and homes. The [frontend repository](https://github.com/RahulRohidasPatil/Parent-Child-Bonding-Game) owns the web application and Clerk sign-in.
 
-## Local demo without services
+## Run a local API demo
 
-Python **3.13+** and [uv](https://docs.astral.sh/uv/) are required. Run from this repository's root:
+Python 3.13+ and uv are required. Run from this repository root:
 
 ```sh
 cp .env.demo.example .env
 uv sync --locked
-uv run uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000 --no-access-log
+uv run uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8001 --no-access-log
 ```
 
-Generation defaults off, so this command makes no model calls. Demo storage is in memory, resets
-on restart, and cannot be used in production. Legacy API calls need no login, token or auth configuration; `/api/social` is the separate Clerk-verified exception.
+Generation defaults off: no model calls. With no database URL, application records use memory and reset on restart. Chat/home SQLite stores still default to files outside test mode; set their paths to `:memory:` for a fully ephemeral demo. Demo mode cannot run in production.
+
+Open [Swagger](http://127.0.0.1:8001/docs), [OpenAPI](http://127.0.0.1:8001/openapi.json) or call `GET /api/me/profile`. Port 8001 matches frontend examples; the backend does not require that particular port.
+
+## Durable setup
+
+Copy `.env.example` to `.env`, configure a private PostgreSQL `DATABASE_URL`, and explicitly apply the ordered SQL in `supabase/migrations/`. The schema expects Supabase-compatible roles and `auth.uid()`; a plain empty PostgreSQL database needs equivalent prerequisites. Startup never applies migrations.
+
+Retain both `MEMORY_DB_PATH` and `HOME_DB_PATH` on persistent storage. They hold conversations, challenges/matches, homes, wallets and social data outside PostgreSQL. Keep `api_private` out of exposed Supabase Data API schemas because it contains private text and answer keys.
+
+Enable generation only after configuring provider credentials and budget. Long work can use durable jobs and a separate worker:
 
 ```sh
-curl http://127.0.0.1:8000/api/me/profile
-```
-
-Optional `X-Player-ID: <UUID>` selects separate player state for profiles, practice and multiplayer.
-Without it, requests share player `00000000-0000-4000-8000-000000000001`. The ID is caller-selected
-and unverified: anyone can select the same ID and access or delete that partition's data.
-
-## Supabase and durable storage
-
-```sh
-cp .env.example .env
-# Configure DATABASE_URL and exact CORS origins. No Supabase Auth keys are needed.
-uv sync --locked
-uv run uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000 --no-access-log
-```
-
-Apply the versioned SQL migrations in `supabase/migrations/` to a **development** project before
-starting data routes. Migration/hosted database changes are explicit operator actions; application
-startup never applies migrations. See [database setup and tests](docs/DATABASE.md).
-
-`DATABASE_URL` is a private, server-only PostgreSQL credential with ownership of the migration
-objects. Request transactions retain the existing `authenticated` SQL role and player-ID claims
-for partitioned storage; this does not authenticate callers. Job claiming and quota reservation
-use server-only database functions. Never put the database credential in browser configuration.
-
-**Keep `api_private` outside Supabase's exposed Data API schemas.** It stores private text and
-answer keys. Application data is accessed through the public FastAPI routes.
-
-FastAPI has no password login, registration or session-management routes. Legacy endpoints stay
-unauthenticated; `/api/social` verifies Clerk session JWTs using its configured issuer’s public JWKS.
-Swagger’s Authorize button and security locks apply only to those social routes. Frontend login/register remains
-outside this repository and is unchanged. Learner approval keeps its request receipts and decision
-proofs as a separate workflow; guardian mailbox filters are supplied by the caller and unverified.
-
-## API and documentation
-
-- [API.md](API.md): public API and player-state contract plus links to the full platform contract.
-- [Platform API](docs/API_PLATFORM.md): learning, review, attempts, profiles, jobs, progress, rooms.
-- [Game backend roadmap](docs/GAME_BACKEND_ROADMAP.md): pending Forbidden Clues/heads-up actions and tests.
-- [Server performance](docs/SERVER_PERFORMANCE.md): pools, query optimization, worker resource use, and local measurements.
-- [Database and verification](docs/DATABASE.md): migrations, roles, integration tests, operational limits.
-- [Frontend integration](docs/FRONTEND_INTEGRATION.md): frontend source locations and integration boundary.
-- [Architecture](docs/ARCHITECTURE.md): current module responsibilities and invariants.
-- [Contributor instructions](AGENTS.md): backend scope and continuation workflow.
-
-Swagger: http://127.0.0.1:8000/docs. OpenAPI: http://127.0.0.1:8000/openapi.json.
-`GET /health` is process health; `GET /ready` verifies application storage and reports whether it is durable.
-
-## Learning and generation
-
-Upload PDF/photos → text is extracted and embedded for search by meaning → correct extracted pages →
-confirm material → generate a draft lesson → review
-and approve it → generate private practice quizzes or flashcards → record individual results.
-Edits create new lesson IDs; historical attempts retain their original immutable question set.
-Approval records **owner confirmation**, not verified guardian/teacher authority or independent fact checking.
-Scored solo submissions also require an explicit question-set review/approval step.
-
-Uploaded books are also embedded (`EMBEDDING_MODEL`, default `openrouter:openai/text-embedding-3-small`, using the same
-`OPENROUTER_API_KEY`; a few cents at most per book) so a topic is found by meaning as well as by words. Leave
-`EMBEDDING_MODEL` empty for keyword search only. See [Platform API](docs/API_PLATFORM.md#search-by-meaning-embeddings).
-
-Challenges can be played: `POST /api/matches` runs a timed quiz, heads-up turns or a diagram race on the server's clock for solo, friends,
-parent-child (the parent gets less time) or duo play. `GET /api/weekly/next` previews next week's tournament (show only). See
-[Playing a challenge](docs/API_PLATFORM.md#playing-a-challenge-matches).
-
-Friends can compete on topics they both studied, even if they worded them differently: `GET /api/challenges/shared-topics`, then `POST /api/challenges` has the AI write a timed quiz,
-a heads-up deck or a fill-in-the-blanks diagram for the room. See [Friend challenges](docs/API_PLATFORM.md#friend-challenges-games-made-from-memory).
-
-Chats can be remembered per player: `POST /api/memory/conversations`, then pass `conversation_id` to the chat endpoints. They are
-saved in a SQLite file (`MEMORY_DB_PATH`, default `memory.db`), filed by subject, and long ones are summarised. See
-[Saved chats](docs/API_PLATFORM.md#saved-chats-memory).
-
-A player's home (rooms, item levels, positions), coin wallet, friends, visits and cheers are saved in a second SQLite
-file (`HOME_DB_PATH`, default `home.db`): `GET /api/me/home`, then build, place and upgrade with coins. Demo players
-and friends for a local run: `APP_ENV=development uv run python scripts/seed_home_demo.py`. See
-[Home, wallet and friends](docs/API_PLATFORM.md#home-wallet-and-friends).
-
-`POST /api/chat/image` explains 1-4 pictures, or answers a question about them when a `message` is sent (the model looks at them directly, nothing is stored, each picture is
-checked for the learner's age first). `POST /api/chat` chats with an uploaded PDF (or without one): it answers from the book when that helps and reports `used_pdf` and the pages,
-or, in `pdf_only` mode, only from the book. See [Platform API](docs/API_PLATFORM.md#chat-with-a-pdf).
-
-Set `GENERATION_ENABLED=true` only after configuring the model provider and budget. Direct generation
-routes remain available for compatibility. Durable jobs are preferred for long operations:
-
-```sh
-uv run python -m app.worker --once
-# or run continuously:
 uv run python -m app.worker
 ```
 
-Workers require PostgreSQL and explicit generation enablement. They do not start automatically with
-the API. Jobs have idempotency keys, a ten-pending-job limit per owner, retry limits, and expiring leases.
-Workflow attempt budgets count failures too; one workflow can make several provider calls. These
-limits are not a currency spending guarantee: configure the provider's own budget as well.
+Clerk verification applies only to `/api/social/*`. Configure `CLERK_ISSUER`, exact `CLERK_AUTHORIZED_PARTIES`, and signed `player_id`/`username` session claims. Other routes use an unverified player UUID; no backend login/signup service is provided.
+
+## Documentation
+
+| Guide | Purpose |
+| --- | --- |
+| [Architecture](docs/ARCHITECTURE.md) | Modules, storage, request flow and trust boundaries |
+| [Decisions](docs/DECISIONS.md) | Reasons, tradeoffs and revisit conditions |
+| [Operations](docs/OPERATIONS.md) | Configuration, workers, verification and recovery |
+| [API index](API.md) | Endpoint families and detailed contracts |
+| [Platform API](docs/API_PLATFORM.md) | Learning, chat, home and game endpoints |
+| [Database](docs/DATABASE.md) | Migrations, RLS and disposable database tests |
+| [Quiz lifecycle](docs/QUIZ_PRACTICE_API.md) | First answers, immutable snapshots, retries and review |
+| [Economy](docs/ECONOMY.md) | Wallet, quests, purchases and reward eligibility |
+| [Verified social](docs/FRONTEND_SOCIAL_CONTRACT.md) | Friends, presence and live duels |
+| [Lobby invitations](docs/FRIENDS_PRESENCE_INVITES.md) | Separate legacy presence/invitation APIs |
+| [Saved diagrams](docs/DIAGRAM_ASSEMBLY.md) / [lifecycle](docs/DIAGRAM_LIFECYCLE_READINESS.md) | Frozen diagrams, races and readiness |
+| [Learner requests](docs/LEARNER_APPROVAL.md) | Optional receipts/proofs and approval worker |
+| [Performance](docs/SERVER_PERFORMANCE.md) | Pools, query projections and worker execution |
+| [Frontend context](docs/FRONTEND_INTEGRATION.md) | Repository ownership and integration references |
+
+Older feature documents preserve implementation history. Statements such as “no frontend change” describe that backend patch, not the current whole product. The reviewed frontend now connects core learning, economy, home, social and supported games.
 
 ## Checks
 
@@ -122,98 +60,12 @@ uv run ruff format --check app learning_service scripts tests
 uv run pytest -q
 ```
 
-Without `TEST_DATABASE_URL`, database-specific cases skip. For the full suite:
+Database cases skip without `TEST_DATABASE_URL`. Full database verification requires a disposable database ending in `_test`; its private schema is reset. Never use a hosted/shared database. CI provisions PostgreSQL 17 and separately checks the optional renderer. Tests fake model calls; they do not prove real model quality or email delivery.
 
-```sh
-# This MUST be a disposable database whose name ends in _test. Its api_private schema is reset.
-TEST_DATABASE_URL=postgresql://localhost/questnest_api_test uv run pytest -q
-```
+## Current limits
 
-CI uses a disposable PostgreSQL service and runs the full test tree. Model and vision calls are
-faked in tests; no real emails or paid generation are exercised. PostgreSQL tests include real RLS,
-transactions, quotas, room concurrency, job retries, and restart persistence. They use a test-only
-`auth.uid()` compatibility function; they do not prove a hosted Supabase Realtime connection.
+Legacy `X-Player-ID` is a partition selector, not authentication: a reachable caller can select another UUID. Parent/learner labels do not prove family linkage. Content approval records owner confirmation, not independent fact checking. Model-backed safety exists, but age is user-supplied and correctness is not guaranteed.
 
-## Deliberately pending
+SQLite stores target a single application host; independent files split state. Cross-store operations are not distributed transactions. Weekly play is a preview/sample feature. Saved-diagram assembly and learner requests default off and need their own dependencies. `/health` reports process health; `/ready` checks the application repository plus enabled diagram prerequisites, not every external service.
 
-Private room APIs support lobby membership, readiness, host transfer, expiry, change notifications,
-and reconnect snapshots. They do not start games or implement public matchmaking, teams, scoring,
-rankings, or rewards. Private Supabase notifications carry only a room ID; refetch the authorized snapshot.
-
-Guardian approval, family access rules, coins/boxes/badges, purchases, base upgrades, individual game
-rules, and the proposed AI age-safety gate remain pending product decisions. Role labels grant no
-access to another person's learning data. There is no deployment or frontend change in this work.
-
-The old `learning-service/static/` files are retained unchanged as historical development artifacts;
-the unified API does not serve them. The old Python project has been consolidated into
-`learning_service/`, with one root dependency lock and one test suite.
-
-
-## Deterministic quiz backend — 24 October 2026 addition
-
-Existing private quizzes now support saved lifecycle/results, idempotent first-answer recording,
-finish/review, independent all/missed retries, exact-snapshot history and review-card creation.
-Owning authors can review, correct into a new immutable version, and confirm that snapshot.
-See [non-AI quiz API](docs/QUIZ_PRACTICE_API.md). This adds no model calls, AI changes, frontend
-changes, rewards, ranking or multiplayer. Existing production/generation contracts remain intact.
-
-
-## Learner approval workflow — 24 October 2026 addition
-
-An opt-in pending-request workflow now supports private status receipts, bounded notification
-resends and request-specific guardian decisions with caller-selected player/mailbox context. See
-[learner approval](docs/LEARNER_APPROVAL.md) for the five endpoints, migration 006, explicit mail
-worker and authority-review bridge. This records decisions only; it does not activate accounts,
-create Supabase accounts or establish mandatory app-wide guardian consent. Feature defaults
-off. No frontend or hosted service was changed.
-
-
-## Rebuild the diagram — 24 October 2026 addition
-
-A new backend can freeze an existing reviewed lesson flowchart, remove its labels without
-rerunning layout, and run a simultaneous room race with shuffled label trays and independent
-submissions. Study/review and repeat rounds reuse the same snapshot with no model call.
-See [diagram assembly](docs/DIAGRAM_ASSEMBLY.md) for fourteen routes, migration 008, Node/Chromium
-setup and limits. This feature defaults off; no frontend, AI harness or hosted service was changed.
-
-
-## Diagram lifecycle and readiness — 25 October 2026 addition
-
-The first fix batch protects finished/expired results, atomically cancels active races when their
-approved source changes, adds minimal current-host management, and makes `/ready` check enabled
-diagram dependencies. Apply migration 009 after 008; nothing applies migrations automatically.
-Use `uv run python -m app.diagram_preflight --probe` to check before enabling.
-See [lifecycle, API, rollout and remaining work](docs/DIAGRAM_LIFECYCLE_READINESS.md).
-This entry is append-only; no frontend or AI changes or hosted deployment are included.
-
-
-## Coins, quests and wardrobe — 25 October 2026
-
-The [economy contract](docs/ECONOMY.md) adds server-scored same-device duel submissions, parent-child
-MCQ reward claims, 20 participation coins per completed backend game, daily/weekly quests with Europe/Berlin calendar resets, shared wallet history,
-server-priced purchases, inventory and equipment. Clothing/accessories cost 100 coins each.
-This supersedes earlier statements that duel/quest rewards and shop purchases are pending.
-The frontend remains unchanged and needs API wiring. See the contract for request examples,
-activity definitions, migration 010, storage boundaries, and the existing unverified player selector.
-
-
-## Friend requests, presence and game invitations — 25 October 2026
-
-[Presence and invitations](docs/FRIENDS_PRESENCE_INVITES.md) adds friend-request send/inbox/outbox/accept/decline/cancel APIs,
-expiring multi-session online/away/busy status,
-friend-only presence reads, visibility/invite preferences, and idempotent lobby invitations.
-Recipients accept/decline; senders cancel. Acceptance atomically joins the lobby in PostgreSQL.
-The existing challenge/match and reward APIs handle play after everyone joins. Apply migration
-011 before deploying; readiness checks it. Frontend wiring, push delivery, async saved-question
-duels, and verified account authentication are outside this backend-only addition.
-
-
-## Frontend social contract — 25 October 2026
-
-The [frontend-compatible social API](docs/FRONTEND_SOCIAL_CONTRACT.md) implements all sixteen `/api/social` operations
-from frontend `2ff2ec5`: verified Clerk JWTs, signed username/player binding, search, friend
-requests, presence and server-clocked live duels with automatic wallet/quest integration.
-Only this prefix requires Clerk tokens, per the user's updated decision; legacy APIs remain
-unchanged. Swagger has typed schemas, examples and a scoped Bearer authorization scheme.
-Configure the issuer and signed claims before switching `SOCIAL_API=backend`. This supersedes
-earlier statements that these routes and scoped token verification were still pending.
+Reviewed 25 October 2026 at backend `a85ec74`, with frontend context `67b663f`.

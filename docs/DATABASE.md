@@ -1,5 +1,12 @@
 # Database and integration verification
 
+Current overview: [architecture](ARCHITECTURE.md) and [operations](OPERATIONS.md).
+PostgreSQL, MEMORY_DB_PATH and HOME_DB_PATH are three separate persistence domains; retain all
+three. MemoryStore also holds challenges, matches and weekly samples. HomeStore also holds
+inventory/equipment, presence and verified social bindings/live duels. Only /api/social verifies
+Clerk tokens; all other player selectors remain unverified. Historical additions below describe
+their original backend patch scope, not current frontend integration status.
+
 ## Runtime contract
 
 Use the existing Supabase PostgreSQL schema; FastAPI no longer uses Supabase Auth. Keep the `api_private` schema out

@@ -1,5 +1,9 @@
 # Backend API reference
 
+For the current system overview, read [architecture](docs/ARCHITECTURE.md) and
+[operations](docs/OPERATIONS.md). Feature additions below preserve implementation history;
+statements about frontend work describe those backend patches, not the current integrated product.
+
 The backend exposes owned learning, review, profiles, attempts, progress, jobs, and private rooms:
 see [Platform API](docs/API_PLATFORM.md). Python 3.13+ and the root environment are required.
 
@@ -72,7 +76,7 @@ and timing are deterministic/server-owned. Feature defaults off; frontend and de
 
 ## Diagram lifecycle/readiness supplement — 25 October 2026
 
-Added verified-session `GET /api/diagram-assembly/rooms/{room_id}/management`: current room host
+Added selected-player `GET /api/diagram-assembly/rooms/{room_id}/management`: current room host
 only, returning latest `room_id`, `race_id`, `version`, `status`, `reason`. A late host may cancel
 without participant content access. Cancel now returns 409 for finished/expired races; cancelled
 retries stay stable. Active source withdrawal/change persists cancellation through migration 009.
