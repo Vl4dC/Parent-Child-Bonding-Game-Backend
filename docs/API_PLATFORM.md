@@ -173,8 +173,9 @@ never instructions to the model. The first chat with a book that was uploaded be
 
 ## Chat about an image
 
-`POST /api/chat/image` is multipart: `message`, `age`, `images` (1-4 files: JPG, PNG or WebP, up to 8 MiB each) and
-optional `history` (a JSON string of `{"role","content"}` turns, as for `/api/chat`). It returns
+`POST /api/chat/image` is multipart: `age`, `images` (1-4 files: JPG, PNG or WebP, up to 8 MiB each), an optional
+`message` (up to 1000 characters; leave it out or blank and the picture is simply explained, otherwise the question is
+what gets answered) and optional `history` (a JSON string of `{"role","content"}` turns, as for `/api/chat`). It returns
 `{"answer", "used_image", "images", "label"}` (`label`: "Looked at your image for this answer"). The model is shown the
 picture itself, with no text extraction and no search index: a labelled diagram, a graph or a handwritten problem
 keeps what matters. A scanned book is different and still goes through `POST /api/materials` and `/api/chat`.
