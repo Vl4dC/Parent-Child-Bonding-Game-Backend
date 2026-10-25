@@ -208,7 +208,9 @@ def lesson_prompt(request: LessonRequest, pages: str | None = None) -> str:
         "For a section with a visual, set `visual` (kind, purpose, brief) and write the body to work WITH "
         "the picture (e.g. 'In the picture, follow the arrows from the Sun to the leaf...'). Never write a "
         "section that only describes a picture in words. The brief must say exactly what to draw: the "
-        "elements, their labels in the learner's words, and for an interactive the control and what it changes.\n"
+        "elements, their labels in the learner's words, and for an interactive the control and what it changes. "
+        "For a diagram, list every box in order and what each arrow does (a verb), from where the process starts "
+        "to where it ends: 5-9 boxes that tell the whole story of that section, never only its first step.\n"
         f"{illustration_rule()}"
         f"Visual kinds (pick the one whose description fits the section best):\n{visual_menu()}"
     )

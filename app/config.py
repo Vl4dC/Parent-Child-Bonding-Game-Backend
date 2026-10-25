@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     embedding_model: str | None = "openrouter:openai/text-embedding-3-small"
     embedding_dimensions: int = Field(512, ge=64, le=3072)
     illustrations_enabled: bool = False
-    illustration_model: str = "google/gemini-3.1-flash-lite-image"
+    illustration_model: str = "anthropic/claude-haiku-5.5"
     illustrations_per_lesson: int = Field(2, ge=0, le=5)
     model_timeout_seconds: int = Field(60, ge=1, le=300)
 

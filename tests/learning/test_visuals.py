@@ -6,8 +6,9 @@ import httpx
 import pytest
 
 from learning_service.lesson import LessonSection, SectionVisual
-from learning_service.visuals import harness, illustrate, render
+from learning_service.visuals import diagram_lint, harness, illustrate, render
 from learning_service.visuals.models import (
+    DiagramReview,
     Visual,
     VisualDraft,
     VisualPlan,
@@ -17,7 +18,13 @@ from learning_service.visuals.models import (
 from tests.learning.conftest import FAKE_LESSON
 
 GOOD = {
-    "diagram": 'flowchart LR\n  a["Sun"] -->|"energy"| b["Leaf"]',
+    "diagram": (
+        "flowchart TD\n"
+        '  sun["Sunlight"]:::start -->|"gives energy to"| leaf["Leaf"]:::key\n'
+        '  water["Water"] -->|"travels up to"| leaf\n'
+        '  leaf -->|"makes"| sugar["Sugar"]:::result\n'
+        '  leaf -->|"releases"| air["Oxygen"]'
+    ),
     "chart": json.dumps(
         {
             "data": {"values": [{"x": "A", "y": 1}]},
@@ -182,9 +189,15 @@ def draft(code):
 
 
 def run(monkeypatch, script, **kw):
-    llm = ScriptedLLM(script)
-    monkeypatch.setattr(harness, "_llm", lambda: llm)
+    """Draw with a scripted model. The reviewer approves every diagram unless the script says otherwise."""
+    llm = ScriptedLLM({DiagramReview: lambda prompt: DiagramReview(ok=True), **script})
+    monkeypatch.setattr(harness, "_llm", lambda *args, **kwargs: llm)
     return harness.make_visuals(request(**kw)), llm
+
+
+def draws(llm):
+    """The prompts that asked a model to draw (not to review)."""
+    return [p for p in llm.prompts if "You check a diagram" not in p]
 
 
 def by_skill(prompt):
@@ -199,7 +212,7 @@ def test_lesson_planned_visuals_are_drawn_without_a_planner_call(monkeypatch):
         monkeypatch, {VisualDraft: by_skill}, lesson=lesson_with(["diagram", None, "chart"])
     )
     assert [(v.kind, v.section_index) for v in visuals] == [("diagram", 0), ("chart", 2)]
-    assert len(llm.prompts) == 2  # two draws, no planning call
+    assert len(draws(llm)) == 2  # two draws, no planning call
     assert any("draw 2" in p for p in llm.prompts)  # the lesson's own brief reaches the drawer
 
 
@@ -261,11 +274,137 @@ def test_max_visuals_cap(monkeypatch):
 
 def test_drawer_uses_the_separate_visual_model_only_when_one_is_set(monkeypatch):
     asked = []
-    monkeypatch.setattr(harness, "_llm", lambda model=None: asked.append(model) or "llm")
+    monkeypatch.setattr(
+        harness,
+        "_llm",
+        lambda model=None, temperature=1.0: asked.append((model, temperature)) or "llm",
+    )
     harness.drawer_llm()
     monkeypatch.setenv("VISUAL_MODEL", "openrouter:anthropic/claude-haiku-5.5")
     harness.drawer_llm()
-    assert asked == [None, "openrouter:anthropic/claude-haiku-5.5"]
+    steady = harness.DRAW_TEMPERATURE  # drawing code is steadier than the chat default of 1.0
+    assert asked == [(None, steady), ("openrouter:anthropic/claude-haiku-5.5", steady)]
+    assert steady < 1.0
+
+
+# ---------------------------------------------------------------- diagram quality
+FRAGMENT = 'flowchart LR\n  a["Sun"] --> b["Leaf"]'
+BETTER = GOOD["diagram"].replace("Oxygen", "Oxygen gas")
+
+
+def reviews(llm):
+    return [p for p in llm.prompts if "You check a diagram" in p]
+
+
+def test_a_whole_mechanism_passes_and_other_diagram_types_are_left_alone():
+    assert diagram_lint.problem(GOOD["diagram"]) is None  # the :::roles are not boxes
+    assert diagram_lint.problem("mindmap\n  root((Water))\n    Ice") is None
+    assert diagram_lint.problem("sequenceDiagram\n  A->>B: hi") is None
+
+
+@pytest.mark.parametrize(
+    "code, words",
+    [
+        (FRAGMENT, "only 2 boxes"),
+        (GOOD["diagram"] + '\n  note["Just a note"]', "no arrows"),
+        (GOOD["diagram"] + '\n  x["Cloud"] --> y["Rain"]', "separate pieces"),
+        (
+            "flowchart TD\n"
+            + "\n".join(f'  n{i}["Step {i}"] --> n{i + 1}["Step {i + 1}"]' for i in range(12)),
+            "too many",
+        ),
+        (GOOD["diagram"].replace('"Water"', '"' + "very " * 9 + 'long label"'), "label too long"),
+        (GOOD["diagram"].replace('"makes"', '"' + "so " * 9 + 'it makes"'), "arrow label too long"),
+    ],
+)
+def test_a_weak_flowchart_says_what_to_fix(code, words):
+    assert words in diagram_lint.problem(code)
+
+
+def test_a_label_mermaid_cannot_parse_is_a_hard_rejection():
+    code = 'flowchart TD\n  a[Sun (star)] --> b["Leaf"]'
+    assert "double quotes" in render.validate("diagram", code)
+    assert render.validate("diagram", code.replace("[Sun (star)]", '["Sun (star)"]')) is None
+
+
+def test_a_fragment_is_sent_back_with_the_reason(monkeypatch):
+    visuals, llm = run(
+        monkeypatch,
+        {VisualDraft: [draft(FRAGMENT), draft(GOOD["diagram"])]},
+        lesson=lesson_with(["diagram"]),
+    )
+    assert [v.code for v in visuals] == [GOOD["diagram"]]
+    assert "rejected: only 2 boxes" in draws(llm)[1] and FRAGMENT in draws(llm)[1]
+    assert len(reviews(llm)) == 1  # only the structurally sound draft is worth a review
+
+
+def test_the_reviewer_can_send_a_diagram_back(monkeypatch):
+    verdicts = [
+        DiagramReview(ok=False, problems=["Add where the water reaches the leaf", " "]),
+        DiagramReview(ok=True),
+    ]
+    visuals, llm = run(
+        monkeypatch,
+        {VisualDraft: [draft(GOOD["diagram"]), draft(BETTER)], DiagramReview: verdicts},
+        lesson=lesson_with(["diagram"]),
+    )
+    assert [v.code for v in visuals] == [BETTER]
+    assert "rejected: Add where the water reaches the leaf." in draws(llm)[1]
+    asked = reviews(llm)[0]
+    assert (
+        "Section 0" in asked and "Body 0" in asked and GOOD["diagram"] in asked
+    )  # judged against the lesson
+    assert "whole mechanism" in asked
+
+
+def test_a_failing_reviewer_never_costs_the_learner_their_diagram(monkeypatch):
+    def down(prompt):
+        raise RuntimeError("provider down")
+
+    visuals, llm = run(
+        monkeypatch,
+        {VisualDraft: [draft(GOOD["diagram"])], DiagramReview: down},
+        lesson=lesson_with(["diagram"]),
+    )
+    assert [v.code for v in visuals] == [GOOD["diagram"]] and len(draws(llm)) == 1
+
+
+def test_when_the_retries_run_out_the_last_drawable_diagram_is_kept(monkeypatch):
+    visuals, llm = run(
+        monkeypatch,
+        {VisualDraft: [draft(FRAGMENT)] * harness.MAX_ATTEMPTS},
+        lesson=lesson_with(["diagram"]),
+    )
+    assert [v.code for v in visuals] == [FRAGMENT]  # weak, but it draws: better than no diagram
+    assert len(draws(llm)) == harness.MAX_ATTEMPTS
+
+
+def test_no_review_is_paid_for_when_no_redraw_is_left(monkeypatch):
+    picky = DiagramReview(ok=False, problems=["Add another step"])
+    visuals, llm = run(
+        monkeypatch,
+        {
+            VisualDraft: [draft(GOOD["diagram"])] * harness.MAX_ATTEMPTS,
+            DiagramReview: lambda p: picky,
+        },
+        lesson=lesson_with(["diagram"]),
+    )
+    assert len(visuals) == 1 and len(reviews(llm)) == harness.MAX_ATTEMPTS - 1
+
+
+def test_charts_and_interactives_are_not_reviewed(monkeypatch):
+    _, llm = run(monkeypatch, {VisualDraft: by_skill}, lesson=lesson_with(["chart", "interactive"]))
+    assert reviews(llm) == []
+
+
+def test_the_diagram_page_uses_the_app_colours_and_stands_a_wide_chain_up():
+    doc = render.document(visual("diagram"), "v")
+    assert (
+        'theme: "base"' in doc and 'v("--accent")' in doc
+    )  # the page's own colours, light and dark
+    assert "classDef start" in doc and "classDef key" in doc and "classDef result" in doc
+    assert '"$1 TD"' in doc  # a left-to-right chain wider than the page is redrawn top to bottom
+    assert "prefers-color-scheme: dark" in doc
 
 
 # ---------------------------------------------------------------- illustrations

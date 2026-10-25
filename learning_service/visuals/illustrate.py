@@ -33,7 +33,7 @@ from app.generation import model_settings
 log = logging.getLogger("visuals")
 
 ENDPOINT = "https://openrouter.ai/api/v1/images"
-DEFAULT_MODEL = "google/gemini-3.1-flash-lite-image"
+DEFAULT_MODEL = "anthropic/claude-haiku-5.5"
 DEFAULT_PER_LESSON = 2
 ASPECT_RATIO = "4:3"
 RESOLUTION = "1K"
