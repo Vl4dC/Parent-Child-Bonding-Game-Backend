@@ -82,6 +82,11 @@ Chats can be remembered per player: `POST /api/memory/conversations`, then pass 
 saved in a SQLite file (`MEMORY_DB_PATH`, default `memory.db`), filed by subject, and long ones are summarised. See
 [Saved chats](docs/API_PLATFORM.md#saved-chats-memory).
 
+A player's home (rooms, item levels, positions), coin wallet, friends, visits and cheers are saved in a second SQLite
+file (`HOME_DB_PATH`, default `home.db`): `GET /api/me/home`, then build, place and upgrade with coins. Demo players
+and friends for a local run: `APP_ENV=development uv run python scripts/seed_home_demo.py`. See
+[Home, wallet and friends](docs/API_PLATFORM.md#home-wallet-and-friends).
+
 `POST /api/chat/image` explains 1-4 pictures, or answers a question about them when a `message` is sent (the model looks at them directly, nothing is stored, each picture is
 checked for the learner's age first). `POST /api/chat` chats with an uploaded PDF (or without one): it answers from the book when that helps and reports `used_pdf` and the pages,
 or, in `pdf_only` mode, only from the book. See [Platform API](docs/API_PLATFORM.md#chat-with-a-pdf).

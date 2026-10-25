@@ -27,6 +27,18 @@ from the actual routes and typed models at `/openapi.json`.
 | GET / PUT | `/api/memory/profile` | The player's role label (`parent` or `learner`) and display name |
 | POST / GET | `/api/memory/conversations` | Start a remembered chat / list this player's chats with a count per subject |
 | GET / PATCH / DELETE | `/api/memory/conversations/{id}` | Open a chat with every message / rename it or change its subject / forget it |
+| GET | `/api/me/home` | My home, coin balance, cheers received and `version`; the first call creates the living room, its starter items and 240 coins |
+| POST | `/api/me/home/rooms` | Build the next room (every item of the newest room at level 3+; 250 coins × rooms built) |
+| POST | `/api/me/home/items/{room}/{item}/place` | Place a non-starter item at level 1 for 30 coins, with `at` and `rot` |
+| POST | `/api/me/home/items/{room}/{item}/upgrade` | Level +1 for 20 × the new level in coins, up to level 10 |
+| PUT | `/api/me/home/rooms/{room}/layout` | Replace one room's positions and rotations (free) |
+| PUT | `/api/me/home/visibility`, `/api/me/home/card` | Who may visit (advisory) / the name and avatar friends see |
+| GET | `/api/me/friends` | My friend code, friends and pending requests |
+| POST / DELETE | `/api/me/friends/requests`, `/api/me/friends/requests/{player_id}/accept` or `decline`, `/api/me/friends/{player_id}` | Ask by friend code / answer a request / remove a friend or cancel a request |
+| GET | `/api/homes?scope=friends` or `family`, `/api/homes/{player_id}` | Cards of homes I may visit / visit one (read-only, no coins) |
+| POST | `/api/homes/{player_id}/cheers` | Cheer a room or the whole home, once a day |
+| POST | `/api/me/coins/claim-quiz` | 10 coins per first-correct answer of a quiz, once per question of its set |
+| POST | `/api/me/coins/demo-topup` | Add coins to try the home; 404 unless `DEMO_MODE=true` |
 | GET | `/api/memory/digest` | Subjects and topics this player has studied, with no chat text |
 | POST | `/api/chat/image` | Chat about 1-4 pictures (multipart): the model looks at the picture itself; nothing is stored |
 | GET | `/api/materials/{id}/find?topic=…` | Preview selected pages/chapter/source text; no lesson is written (`by_meaning` says whether embeddings took part) |
@@ -233,6 +245,43 @@ separate product decision.
 **Limits and deletion.** 500 chats per player, 2000 messages per chat (a full chat says so in `notice`; creating
 more is a 409). `DELETE /api/memory/conversations/{id}` forgets one chat; `DELETE /api/me/data` forgets all of a
 player's chats and profile.
+
+## Home, wallet and friends
+
+The home is stored per player in a SQLite file (`HOME_DB_PATH`, default `home.db`, in memory for tests), separate
+from the records store and the chat memory. Only what a player chose is saved: rooms built, each placed item's
+level (1-10), and where it was moved and turned (`at` in floor tiles 0-2.7, `rot` 0-3). Room art, item looks,
+default spots and the numbers come from the frontend's `lib/home-data.ts`, copied into
+`learning_service/home_rules.json` (its `source` field names the commit). Item ids repeat across rooms (`plant`,
+`sink`), so an item is always addressed as room + item.
+
+**Spending.** Building, placing and upgrading each run in one transaction: the wallet is debited only if it holds
+enough, the change is written, a row is appended to the coin ledger and `version` goes up, or nothing happens.
+`402` not enough coins ("You need 40 coins."), `422` a rule is broken (the message says which), `404` unknown room
+or item, `409` `expected_version` is out of date (send the `version` you last saw; omit it to skip the check).
+The first two items of each room are starters: they begin at level 1 for free when the room is built. Every
+change returns the whole home and the balance. `PUT .../layout` replaces the room's layout: placed items left out
+go back to their default spot. The server checks that items are placed and positions are on the floor; it cannot
+check furniture footprints, so the app still resolves overlaps when it draws.
+
+**Coins.** A new wallet holds 240 coins. `POST /api/me/coins/claim-quiz {"quiz_id": "..."}` pays 10 per question
+answered correctly on the first try, read from the answers the server recorded; each question of a question set
+pays once, so claiming again or retrying the same questions adds nothing. Every coin change is a row in an
+append-only ledger. Duel and quest rewards and shop purchases are **not** on the server: they still change the
+browser's own balance and will not match this one.
+
+**Friends and visits.** `GET /api/me/friends` returns my friend code; another player sends it to
+`POST /api/me/friends/requests` and I accept or decline (the path id is the player who sent the request). Visibility
+`friends` (the default) lets accepted friends visit; `family` and `nobody` admit only the owner, because no family
+link exists. A stranger, a private home and a missing home all answer the same 404. Visitors get no coins. One cheer
+per room (or `home`) per visitor per day (409 on a repeat). `PUT /api/me/home/card` sets the name and avatar shown
+to friends; the default name is `Player`, and a card change does not change the home `version`.
+
+**Not verified.** `X-Player-ID` selects a data partition; it does not prove who is calling, so anyone who knows a
+player's UUID can act as them, and a friend is whoever shared a code. Friendships and `visibility` are an advisory
+privacy setting, not access control. A parent does not approve friends here, and nothing links a parent to a child.
+`DELETE /api/me/data` also removes the player's home, wallet, friend code, friendships and cheers. It is a
+single-process store, like chat memory.
 
 ## Private room contract
 

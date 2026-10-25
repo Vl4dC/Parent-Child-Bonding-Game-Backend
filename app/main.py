@@ -18,15 +18,23 @@ def create_app(
     settings: Settings | None = None,
     repository=None,
     memory_store=None,
+    home_store=None,
 ):
     settings = settings or Settings()
     owns_repository = repository is None
     owns_memory = memory_store is None
+    owns_home = home_store is None
     if memory_store is None:
         from learning_service.memory_store import MemoryStore
 
         memory_store = MemoryStore(
             settings.memory_db_path or (":memory:" if settings.app_env == "test" else "memory.db")
+        )
+    if home_store is None:
+        from learning_service.home_store import HomeStore
+
+        home_store = HomeStore(
+            settings.home_db_path or (":memory:" if settings.app_env == "test" else "home.db")
         )
     if repository is None:
         if settings.database_url:
@@ -49,6 +57,8 @@ def create_app(
                 await asyncio.to_thread(repository.close)
             if owns_memory:
                 await asyncio.to_thread(memory_store.close)
+            if owns_home:
+                await asyncio.to_thread(home_store.close)
 
     from learning_service.api_docs import DESCRIPTION, SWAGGER_UI, TAGS, use_file_pickers
     from learning_service.safety import AgeBlocked, SafetyUnavailable
@@ -63,6 +73,7 @@ def create_app(
     )
     app.state.repository = repository
     app.state.memory = memory_store
+    app.state.home = home_store
     app.state.settings = settings
     app.state.generation_slots = threading.BoundedSemaphore(settings.generation_concurrency)
     app.add_middleware(BodyLimit)
@@ -149,6 +160,7 @@ def create_app(
         )
 
     from app.diagram_api import install as install_diagram_assembly
+    from app.home_api import router as home_router
     from app.jobs import router as jobs_router
     from app.platform import router as platform_router
     from app.quiz_practice import install as install_quiz_practice
@@ -164,6 +176,7 @@ def create_app(
     }
     app.include_router(learning_router, responses=common_errors)
     app.include_router(platform_router, responses=common_errors)
+    app.include_router(home_router, responses=common_errors)
     app.include_router(jobs_router, responses=common_errors)
     app.include_router(rooms_router, responses=common_errors)
     from app.approval_api import install as install_approval
