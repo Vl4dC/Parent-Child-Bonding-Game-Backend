@@ -32,7 +32,7 @@ def public_client(monkeypatch):
         yield client
 
 
-def test_auth_routes_and_security_schemes_are_absent(public_client):
+def test_login_routes_stay_absent_and_only_social_has_security(public_client):
     schema = public_client.get("/openapi.json").json()
     for method, path in REMOVED_ROUTES:
         assert (
@@ -41,8 +41,11 @@ def test_auth_routes_and_security_schemes_are_absent(public_client):
         )
         assert path not in schema["paths"]
     assert not schema.get("security")
-    assert not schema.get("components", {}).get("securitySchemes")
-    for path in schema["paths"].values():
+    assert set(schema["components"]["securitySchemes"]) == {"ClerkSession"}
+    for url, path in schema["paths"].items():
+        if url.startswith("/api/social/"):
+            assert all(op.get("security") == [{"ClerkSession": []}] for op in path.values())
+            continue
         for operation in path.values():
             if isinstance(operation, dict):
                 assert not operation.get("security")

@@ -15,7 +15,7 @@ uv run uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000 --no-a
 ```
 
 Generation defaults off, so this command makes no model calls. Demo storage is in memory, resets
-on restart, and cannot be used in production. API calls need no login, token or auth configuration.
+on restart, and cannot be used in production. Legacy API calls need no login, token or auth configuration; `/api/social` is the separate Clerk-verified exception.
 
 ```sh
 curl http://127.0.0.1:8000/api/me/profile
@@ -46,8 +46,9 @@ use server-only database functions. Never put the database credential in browser
 **Keep `api_private` outside Supabase's exposed Data API schemas.** It stores private text and
 answer keys. Application data is accessed through the public FastAPI routes.
 
-FastAPI has no password login, registration, session management, Bearer checks or authentication
-provider calls. Swagger has no Authorize button or security locks. Frontend login/register remains
+FastAPI has no password login, registration or session-management routes. Legacy endpoints stay
+unauthenticated; `/api/social` verifies Clerk session JWTs using its configured issuer’s public JWKS.
+Swagger’s Authorize button and security locks apply only to those social routes. Frontend login/register remains
 outside this repository and is unchanged. Learner approval keeps its request receipts and decision
 proofs as a separate workflow; guardian mailbox filters are supplied by the caller and unverified.
 
@@ -205,3 +206,14 @@ Recipients accept/decline; senders cancel. Acceptance atomically joins the lobby
 The existing challenge/match and reward APIs handle play after everyone joins. Apply migration
 011 before deploying; readiness checks it. Frontend wiring, push delivery, async saved-question
 duels, and verified account authentication are outside this backend-only addition.
+
+
+## Frontend social contract — 25 October 2026
+
+The [frontend-compatible social API](docs/FRONTEND_SOCIAL_CONTRACT.md) implements all sixteen `/api/social` operations
+from frontend `2ff2ec5`: verified Clerk JWTs, signed username/player binding, search, friend
+requests, presence and server-clocked live duels with automatic wallet/quest integration.
+Only this prefix requires Clerk tokens, per the user's updated decision; legacy APIs remain
+unchanged. Swagger has typed schemas, examples and a scoped Bearer authorization scheme.
+Configure the issuer and signed claims before switching `SOCIAL_API=backend`. This supersedes
+earlier statements that these routes and scoped token verification were still pending.

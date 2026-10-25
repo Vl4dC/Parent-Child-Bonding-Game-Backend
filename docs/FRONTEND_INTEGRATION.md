@@ -22,7 +22,8 @@ lobbies. Full game rules, public matchmaking, rewards, and family permissions re
 
 ## Public API and player state
 
-FastAPI requires no login, access token, session cookie or Supabase Auth configuration. Frontend
+Legacy FastAPI routes require no access token, session cookie or Supabase Auth configuration.
+The `/api/social` exception verifies Clerk JWTs; see FRONTEND_SOCIAL_CONTRACT.md. Frontend
 login/register code is unchanged. Omit Authorization; old values are ignored. The optional
 `X-Player-ID: <UUID>` selects player state; no header uses the shared default UUID documented in
 [API.md](../API.md). Use a different ID for each multiplayer participant. These are unverified
@@ -207,3 +208,14 @@ Recipients accept/decline; senders cancel. Acceptance atomically joins the lobby
 The existing challenge/match and reward APIs handle play after everyone joins. Apply migration
 011 before deploying; readiness checks it. Frontend wiring, push delivery, async saved-question
 duels, and verified account authentication are outside this backend-only addition.
+
+
+## Frontend social contract — 25 October 2026
+
+The [frontend-compatible social API](FRONTEND_SOCIAL_CONTRACT.md) implements all sixteen `/api/social` operations
+from frontend `2ff2ec5`: verified Clerk JWTs, signed username/player binding, search, friend
+requests, presence and server-clocked live duels with automatic wallet/quest integration.
+Only this prefix requires Clerk tokens, per the user's updated decision; legacy APIs remain
+unchanged. Swagger has typed schemas, examples and a scoped Bearer authorization scheme.
+Configure the issuer and signed claims before switching `SOCIAL_API=backend`. This supersedes
+earlier statements that these routes and scoped token verification were still pending.

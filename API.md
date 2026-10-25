@@ -8,10 +8,10 @@ The running `/openapi.json` is generated from the actual routes and typed models
 
 ## Public API and player state
 
-All FastAPI endpoints are available without account login, passwords, Bearer tokens or auth cookies.
-There are no authentication provider calls or required Supabase Auth settings. Swagger/OpenAPI
-contains no security schemes, Authorize button or padlocks. Former login/signup/session routes
-remain removed (404). An obsolete Authorization header is ignored.
+Legacy endpoints outside `/api/social` are available without Bearer tokens or auth cookies.
+The new `/api/social` endpoints require verified Clerk session JWTs and use cached public JWKS;
+Swagger exposes a `ClerkSession` Bearer scheme only for those routes. Supabase Auth is not required.
+Former login/signup/session routes remain removed (404). Legacy routes still ignore Authorization.
 
 An optional `X-Player-ID` UUID selects the state partition for profiles, learning, jobs, rooms and
 diagram races. Omitting it selects `00000000-0000-4000-8000-000000000001`. Use a different UUID per
@@ -37,7 +37,8 @@ whether it is durable. Neither calls an authentication provider.
 403: gameplay or approval-workflow rule rejected. 404: absent record or wrong player partition.
 409: stale state or conflicting replay. 422: invalid input. 429: quota/concurrency limit.
 502: generation failure. 503: storage unavailable, generation or an optional feature disabled.
-There are no account-authentication 401 responses. Errors omit raw submitted values and secrets.
+Social routes return 401 for missing/invalid session JWTs; legacy routes retain their existing statuses.
+Errors omit raw submitted values and secrets.
 
 All `/api/` responses retain no-store/no-cache and no-referrer headers. CORS keeps
 exact origins and allows Content-Type, X-Player-ID, Idempotency-Key and workflow receipt headers;
@@ -112,3 +113,14 @@ Recipients accept/decline; senders cancel. Acceptance atomically joins the lobby
 The existing challenge/match and reward APIs handle play after everyone joins. Apply migration
 011 before deploying; readiness checks it. Frontend wiring, push delivery, async saved-question
 duels, and verified account authentication are outside this backend-only addition.
+
+
+## Frontend social contract — 25 October 2026
+
+The [frontend-compatible social API](docs/FRONTEND_SOCIAL_CONTRACT.md) implements all sixteen `/api/social` operations
+from frontend `2ff2ec5`: verified Clerk JWTs, signed username/player binding, search, friend
+requests, presence and server-clocked live duels with automatic wallet/quest integration.
+Only this prefix requires Clerk tokens, per the user's updated decision; legacy APIs remain
+unchanged. Swagger has typed schemas, examples and a scoped Bearer authorization scheme.
+Configure the issuer and signed claims before switching `SOCIAL_API=backend`. This supersedes
+earlier statements that these routes and scoped token verification were still pending.

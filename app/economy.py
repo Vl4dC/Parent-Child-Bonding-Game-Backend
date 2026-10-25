@@ -61,7 +61,7 @@ def quiz_answered(quiz, index: int) -> None:
         record("weak", f"quiz/{quiz.id}")
 
 
-def counts(at: datetime) -> dict[tuple[str, str], int]:
+def counts(at: datetime, home=None) -> dict[tuple[str, str], int]:
     """Only committed activity is eligible. POST claims cannot count their own pending writes."""
     unit = current_session.get()
     bounds = {kind: period(kind, at) for kind in ("daily", "weekly")}
@@ -81,6 +81,14 @@ def counts(at: datetime) -> dict[tuple[str, str], int]:
                 for (owner, kind, _), data in unit.repository.data.items()
                 if owner == unit.owner and kind == "economy_events" and data["at"] >= earliest
             ]
+    if home is not None:
+        from itertools import chain
+
+        extra = home._query(
+            "select kind,at from live_social_events where player_id=? and at>=?",
+            (unit.owner, earliest),
+        )
+        events = chain(events, (dict(row) for row in extra))
     for event in events:
         occurred = datetime.fromisoformat(event["at"])
         for kind, (_, start, end) in bounds.items():

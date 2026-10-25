@@ -118,13 +118,20 @@ def all_records(unit, kind):
         cursor = rows[-1][0]
 
 
-def delete_material_data(material_id):
+def delete_material_data(material_id, home=None):
     unit = current_session.get()
     lesson_ids = {
         key
         for key, data in all_records(unit, "lessons")
         if data.get("source") and data["source"].get("material_id") == material_id
     }
+    if home is not None:
+        with home._tx() as db:
+            for lesson_id in lesson_ids:
+                db.execute(
+                    "delete from live_social_duels where challenger=? and lesson_id=?",
+                    (unit.owner, lesson_id),
+                )
     derived = set(lesson_ids)
     question_sets = set()
     for kind in ("lessons", "quizzes", "tournaments", "decks", "completions", "material_revisions"):

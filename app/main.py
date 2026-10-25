@@ -75,6 +75,9 @@ def create_app(
     app.state.memory = memory_store
     app.state.home = home_store
     app.state.settings = settings
+    from app.clerk_social import ClerkVerifier
+
+    app.state.clerk_social = ClerkVerifier(settings)
     app.state.generation_slots = threading.BoundedSemaphore(settings.generation_concurrency)
     app.add_middleware(BodyLimit)
     app.add_middleware(
@@ -100,6 +103,15 @@ def create_app(
 
     # Child-safety failures (learning_service/safety.py): the learner gets a fixed, friendly message,
     # never the unsafe text or anything the model provider said.
+    from learning_service.live_social import SocialError
+
+    @app.exception_handler(SocialError)
+    async def social_error(request: Request, exc: SocialError):
+        return JSONResponse(
+            status_code=exc.status,
+            content={"detail": exc.detail, **({"code": exc.code} if exc.code else {})},
+        )
+
     @app.exception_handler(AgeBlocked)
     async def age_blocked(request: Request, exc: AgeBlocked):
         return JSONResponse(status_code=422, content={"detail": exc.message})
@@ -161,6 +173,7 @@ def create_app(
 
     from app.diagram_api import install as install_diagram_assembly
     from app.economy_api import router as economy_router
+    from app.frontend_social_api import router as frontend_social_router
     from app.home_api import router as home_router
     from app.jobs import router as jobs_router
     from app.platform import router as platform_router
@@ -183,6 +196,7 @@ def create_app(
     app.include_router(jobs_router, responses=common_errors)
     app.include_router(rooms_router, responses=common_errors)
     app.include_router(social_router, responses=common_errors)
+    app.include_router(frontend_social_router, responses=common_errors)
     from app.approval_api import install as install_approval
 
     install_approval(app)

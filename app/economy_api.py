@@ -175,7 +175,7 @@ def equip(slot: Slot, body: EquipBody, request: Request):
 @router.get("/me/quests", response_model=QuestsOut)
 def quests(request: Request):
     at = economy.clock()
-    counts = economy.counts(at)
+    counts = economy.counts(at, store_of(request))
     claimed = store_of(request).claimed_quests(me())
     items = []
     for id, title, kind, event, target, reward in economy.QUESTS:
@@ -209,7 +209,7 @@ def claim_quest(quest_id: str, body: QuestClaimBody, request: Request):
     period, _, _ = economy.period(kind, at)
     if body.period != period:
         raise HTTPException(409, "Quest period changed. Refresh the quest list.")
-    if economy.counts(at).get((kind, event), 0) < target:
+    if economy.counts(at, store_of(request)).get((kind, event), 0) < target:
         raise HTTPException(409, "Finish the quest before claiming its reward.")
     coins, credited = store_of(request).credit(me(), "quest", [(f"{id}/{period}", reward)])
     return CoinsOut(coins=coins, credited=credited)

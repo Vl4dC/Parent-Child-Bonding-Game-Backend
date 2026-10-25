@@ -39,7 +39,8 @@ Homes live in a second SQLite file (`HOME_DB_PATH`, default `home.db`, in memory
 (`STRICT`, SQLite 3.37 or newer): `homes` (visibility, version, name, avatar), `home_rooms`, `home_items`
 (level 1-10, `x`/`y`, `rot`), `wallets`, `coin_ledger` (append-only, `UNIQUE(player_id, reason, ref)` so a credit or
 purchase cannot repeat), `friend_codes`, `friendships` (each pair once, smaller id first) and `home_cheers`. Every
-row is scoped by player id; there is no users table. It needs no migration and the PostgreSQL tests do not touch it.
+row is scoped by player id. The frontend social layer additionally stores verified Clerk
+subject/UUID bindings and usernames; it does not create provider accounts. It needs no migration and the PostgreSQL tests do not touch it.
 A deployment with several API processes or hosts would put the same tables in PostgreSQL behind the same `HomeStore`
 interface. `DELETE /api/me/data` clears it. Seed synthetic demo players with
 `APP_ENV=development uv run python scripts/seed_home_demo.py` (it refuses production and never runs at startup).
@@ -143,3 +144,14 @@ Recipients accept/decline; senders cancel. Acceptance atomically joins the lobby
 The existing challenge/match and reward APIs handle play after everyone joins. Apply migration
 011 before deploying; readiness checks it. Frontend wiring, push delivery, async saved-question
 duels, and verified account authentication are outside this backend-only addition.
+
+
+## Frontend social contract — 25 October 2026
+
+The [frontend-compatible social API](FRONTEND_SOCIAL_CONTRACT.md) implements all sixteen `/api/social` operations
+from frontend `2ff2ec5`: verified Clerk JWTs, signed username/player binding, search, friend
+requests, presence and server-clocked live duels with automatic wallet/quest integration.
+Only this prefix requires Clerk tokens, per the user's updated decision; legacy APIs remain
+unchanged. Swagger has typed schemas, examples and a scoped Bearer authorization scheme.
+Configure the issuer and signed claims before switching `SOCIAL_API=backend`. This supersedes
+earlier statements that these routes and scoped token verification were still pending.
