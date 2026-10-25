@@ -18,12 +18,16 @@ The product plan is a backlog, not proof of implemented features. Keep changes t
 ## Invariants
 
 - Use the `create_app` factory and run commands from this repository's root.
-- The FastAPI API has no login/signup or authentication requirement, by explicit product request.
-- Optional X-Player-ID selects a UUID data partition; absent headers use the shared default player.
+- Existing routes outside `/api/social` have no authentication requirement. By explicit user decision
+  on 25 October 2026, `/api/social/*` requires verified Clerk session JWTs. No login/signup or
+  provider-account management endpoints are introduced.
+- On legacy routes, optional X-Player-ID selects a UUID data partition; absent headers use the shared default player.
   This is not a verified identity or an access-control boundary. Never describe it as one.
 - Preserve request-local transactions, gameplay membership/host rules, expiry and idempotency.
 - Demo mode stays off by default and cannot start in production. It controls ephemeral storage only.
-- Do not reintroduce account/session endpoints, token checks, or Supabase Auth configuration.
+- Keep token verification scoped to `/api/social`; its signed player_id claim selects existing
+  learning/wallet data. Reject a conflicting X-Player-ID. Do not add auth requirements to legacy
+  routes or reintroduce login/account-management endpoints or Supabase Auth configuration.
 - `learner` is the child account label. Neither this label nor a parent label proves consent or linkage.
 - Keep data grouped by the selected player and preserve existing gameplay rules.
 - Keep secret values out of validation errors, logs, examples, commits, and URLs.
@@ -51,7 +55,8 @@ or the explicitly synthetic demo fixtures. Report implemented behavior, checks, 
 
 Read docs/API_PLATFORM.md and docs/DATABASE.md. Generation engines live in learning_service/;
 there is one app factory, one root lockfile, and one test tree. Data routes use the selected player
-partition and a request-local unit of work; no caller identity is verified. Keep api_private out of
+partition and a request-local unit of work; legacy callers are not verified, while /api/social uses
+verified Clerk claims as described above. Keep api_private out of
 exposed Supabase schemas; it contains answer keys.
 Use new migrations rather than editing already-applied SQL. Never run destructive test fixtures
 against a hosted/shared database. TEST_DATABASE_URL must name a disposable database ending in _test.

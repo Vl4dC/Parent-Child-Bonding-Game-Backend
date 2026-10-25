@@ -4,7 +4,17 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Body, Depends, File, Header, HTTPException, Query, UploadFile
+from fastapi import (
+    APIRouter,
+    Body,
+    Depends,
+    File,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+)
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field, StringConstraints
 
@@ -393,12 +403,12 @@ def find_pages(
     summary="Remove an upload",
     responses=errors(404),
 )
-def delete_material(material_id: MaterialId) -> None:
+def delete_material(material_id: MaterialId, request: Request) -> None:
     """Forget the uploaded pages now. Owned derived lessons, questions, decks, progress, and jobs are removed too."""
     get_or_404(MATERIALS, material_id, "Material")
     from app.platform import delete_material_data
 
-    delete_material_data(material_id)
+    delete_material_data(material_id, request.app.state.home)
 
 
 # --------------------------------------------------------------------------

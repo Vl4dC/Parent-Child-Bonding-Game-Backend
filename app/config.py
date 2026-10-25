@@ -1,4 +1,5 @@
 from typing import Literal
+from urllib.parse import urlsplit
 
 from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -43,6 +44,9 @@ class Settings(BaseSettings):
     memory_db_path: str | None = None
     # SQLite file for homes, wallets and friends. Unset: home.db, or in memory for tests.
     home_db_path: str | None = None
+    # Only /api/social uses Clerk. Existing APIs keep their player-selector contract.
+    clerk_issuer: str | None = None
+    clerk_authorized_parties: list[str] = Field(default_factory=list)
     presence_ttl_seconds: int = Field(90, ge=30, le=300)
     game_invite_ttl_seconds: int = Field(600, ge=60, le=3600)
     game_invites_per_hour: int = Field(30, ge=1, le=100)
@@ -62,6 +66,31 @@ class Settings(BaseSettings):
         if "*" in value:
             raise ValueError("Use explicit CORS origins")
         return value
+
+    @field_validator("clerk_issuer")
+    @classmethod
+    def trusted_issuer(cls, value):
+        if value is None:
+            return None
+        parsed = urlsplit(value)
+        if (
+            parsed.scheme != "https"
+            or not parsed.hostname
+            or parsed.username
+            or parsed.password
+            or parsed.path not in ("", "/")
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise ValueError("CLERK_ISSUER must be an HTTPS origin without credentials or a path")
+        return value.rstrip("/")
+
+    @field_validator("clerk_authorized_parties")
+    @classmethod
+    def trusted_parties(cls, values):
+        if any(not value or value == "*" for value in values):
+            raise ValueError("Use exact authorized-party origins")
+        return values
 
     @model_validator(mode="after")
     def validate_runtime(self):

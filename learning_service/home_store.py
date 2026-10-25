@@ -28,6 +28,7 @@ from typing import Annotated, Callable, Iterator, Literal
 from pydantic import BaseModel, Field
 
 from learning_service.home_rules import RULES
+from learning_service.live_social import SCHEMA as LIVE_SOCIAL_SCHEMA
 from learning_service.presence import SCHEMA as PRESENCE_SCHEMA
 from learning_service.shop import CATALOG, ITEMS
 
@@ -206,7 +207,7 @@ class HomeStore:
         self._db.execute("pragma foreign_keys = on")
         if path != ":memory:":
             self._db.execute("pragma journal_mode = wal")
-        self._db.executescript(SCHEMA + PRESENCE_SCHEMA)
+        self._db.executescript(SCHEMA + PRESENCE_SCHEMA + LIVE_SOCIAL_SCHEMA)
 
     def close(self) -> None:
         with self._lock:
