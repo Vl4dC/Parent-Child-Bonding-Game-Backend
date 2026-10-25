@@ -108,3 +108,14 @@ The read-only release gate also passed locally with a generated synthetic public
 disposable database, including a synthetic renderer probe. Original feature flags stayed false
 and application-record counts were unchanged. This does not validate an actual Clerk tenant,
 Linux production sandbox, hosted database or public deployment; those staging steps remain above.
+
+
+### Integration refresh after upstream PR 11
+
+Main advanced to `31f2d48e10d81295a8f0e2122015f186c816c167` while this feature's checks ran.
+That upstream change was merged into the feature branch only, preserving its existing image-chat
+and lesson-topic updates. The combined full local suite passed **1,051 tests with 36 intentional
+skips** in 59.61 seconds. Ruff lint/format remained clean (106 Python files). The earlier
+1,037-test result above is historical evidence for the prior base. Relative to current main,
+this feature still has no AI/harness/static-source changes and preserves every existing Markdown
+file as an exact prefix. PR 12 remains unmerged; no deployment was performed.
