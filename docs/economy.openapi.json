@@ -1,0 +1,1358 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Coins, quests and wardrobe API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/me/coins/claim-duel": {
+      "post": {
+        "tags": [
+          "Economy"
+        ],
+        "summary": "Claim Duel",
+        "operationId": "claim_duel_api_me_coins_claim_duel_post",
+        "parameters": [
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DuelClaim"
+              },
+              "examples": {
+                "local": {
+                  "summary": "Collect a same-device duel reward",
+                  "value": {
+                    "tournament_id": "<tournament id>"
+                  }
+                },
+                "match": {
+                  "summary": "Collect my parent-child match reward",
+                  "value": {
+                    "match_id": "<match id>"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoinsOut"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/coins/claim-participation": {
+      "post": {
+        "tags": [
+          "Economy"
+        ],
+        "summary": "Claim Participation",
+        "description": "20 coins once per completed game and participant, regardless of score. No duplicate duel bonus.",
+        "operationId": "claim_participation_api_me_coins_claim_participation_post",
+        "parameters": [
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParticipationClaim"
+              },
+              "examples": {
+                "quiz": {
+                  "summary": "Collect 20 coins after answering the whole quiz",
+                  "value": {
+                    "source": "quiz",
+                    "id": "<quiz id>"
+                  }
+                },
+                "match": {
+                  "summary": "Collect participation coins after a match ends",
+                  "value": {
+                    "source": "match",
+                    "id": "<match id>"
+                  }
+                },
+                "race": {
+                  "summary": "Collect coins after participating in a diagram race",
+                  "value": {
+                    "source": "diagram_race",
+                    "id": "<race id>"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoinsOut"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "404": {
+            "description": "Game unavailable to this player"
+          },
+          "409": {
+            "description": "Game incomplete or player did not participate"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/equipment/{slot}": {
+      "put": {
+        "tags": [
+          "Economy"
+        ],
+        "summary": "Equip",
+        "operationId": "equip_api_me_equipment__slot__put",
+        "parameters": [
+          {
+            "name": "slot",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "look",
+                "pet",
+                "top",
+                "jacket",
+                "bottom",
+                "shoes",
+                "hat",
+                "glasses",
+                "earrings",
+                "tie"
+              ],
+              "type": "string",
+              "title": "Slot"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EquipIn"
+              },
+              "examples": {
+                "wear": {
+                  "summary": "Equip an owned top in the top slot",
+                  "value": {
+                    "item_id": "top.navy"
+                  }
+                },
+                "remove": {
+                  "summary": "Unequip the selected slot",
+                  "value": {}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryOut"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/inventory": {
+      "get": {
+        "tags": [
+          "Economy"
+        ],
+        "summary": "Inventory",
+        "operationId": "inventory_api_me_inventory_get",
+        "parameters": [
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryOut"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/quests": {
+      "get": {
+        "tags": [
+          "Economy"
+        ],
+        "summary": "Quests",
+        "operationId": "quests_api_me_quests_get",
+        "parameters": [
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestsOut"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/quests/{quest_id}/claim": {
+      "post": {
+        "tags": [
+          "Economy"
+        ],
+        "summary": "Claim Quest",
+        "operationId": "claim_quest_api_me_quests__quest_id__claim_post",
+        "parameters": [
+          {
+            "name": "quest_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Quest Id"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestClaim"
+              },
+              "examples": {
+                "claim": {
+                  "summary": "Use the period returned by the quest list",
+                  "value": {
+                    "period": "2026-10-25"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoinsOut"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/shop/purchases": {
+      "post": {
+        "tags": [
+          "Economy"
+        ],
+        "summary": "Purchase",
+        "operationId": "purchase_api_me_shop_purchases_post",
+        "parameters": [
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchaseIn"
+              },
+              "examples": {
+                "shirt": {
+                  "summary": "Buy the navy top for its catalog price",
+                  "value": {
+                    "item_id": "top.navy"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseOut"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "402": {
+            "description": "Insufficient coins"
+          },
+          "404": {
+            "description": "Unknown item"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/wallet": {
+      "get": {
+        "tags": [
+          "Economy"
+        ],
+        "summary": "Wallet",
+        "operationId": "wallet_api_me_wallet_get",
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "After"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletOut"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/shop/catalog": {
+      "get": {
+        "tags": [
+          "Economy"
+        ],
+        "summary": "Catalog",
+        "operationId": "catalog_api_shop_catalog_get",
+        "parameters": [
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShopItem"
+                  },
+                  "title": "Response Catalog Api Shop Catalog Get"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tournament/{tournament_id}/duel": {
+      "post": {
+        "tags": [
+          "Tournament"
+        ],
+        "summary": "Submit Duel",
+        "description": "Freeze both local players' answers before revealing either result. Identical replays are free.\nUse /api/me/coins/claim-duel afterwards to collect player 0's reward.",
+        "operationId": "submit_duel_api_tournament__tournament_id__duel_post",
+        "parameters": [
+          {
+            "name": "tournament_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The `id` returned by `POST /api/tournament`",
+              "title": "Tournament Id"
+            },
+            "description": "The `id` returned by `POST /api/tournament`"
+          },
+          {
+            "name": "X-Player-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional player UUID for state selection, not authentication.",
+              "default": "00000000-0000-4000-8000-000000000001",
+              "title": "X-Player-Id"
+            },
+            "description": "Optional player UUID for state selection, not authentication."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DuelIn"
+              },
+              "examples": {
+                "two_players": {
+                  "summary": "Both players answer a two-question duel",
+                  "value": {
+                    "answers": [
+                      [
+                        1,
+                        0
+                      ],
+                      [
+                        0,
+                        1
+                      ]
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuelOut"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request or generation limit reached"
+          },
+          "503": {
+            "description": "Storage or generation unavailable"
+          },
+          "404": {
+            "description": "Unknown or unowned id. Ephemeral demo records also disappear on restart.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Nothing to practise, review required, stale state, or conflicting replay.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input, or a request the book doesn't cover, or content the child-safety check held back because it isn't suitable for the learner's age. The response never repeats the unsafe text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DuelClaim": {
+        "properties": {
+          "tournament_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tournament Id"
+          },
+          "match_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "DuelClaim"
+      },
+      "CoinsOut": {
+        "properties": {
+          "coins": {
+            "type": "integer",
+            "title": "Coins",
+            "description": "The balance now"
+          },
+          "credited": {
+            "type": "integer",
+            "title": "Credited",
+            "description": "Coins added by this call (0 if all were paid before)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "coins",
+          "credited"
+        ],
+        "title": "CoinsOut"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "ParticipationClaim": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "quiz",
+              "tournament",
+              "match",
+              "diagram_race"
+            ],
+            "title": "Source"
+          },
+          "id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source",
+          "id"
+        ],
+        "title": "ParticipationClaim"
+      },
+      "EquipIn": {
+        "properties": {
+          "item_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "item_id"
+        ],
+        "title": "EquipIn"
+      },
+      "InventoryOut": {
+        "properties": {
+          "owned": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Owned"
+          },
+          "equipped": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Equipped"
+          }
+        },
+        "type": "object",
+        "required": [
+          "owned",
+          "equipped"
+        ],
+        "title": "InventoryOut"
+      },
+      "QuestsOut": {
+        "properties": {
+          "timezone": {
+            "type": "string",
+            "title": "Timezone",
+            "default": "Europe/Berlin"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/QuestOut"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "QuestsOut"
+      },
+      "QuestOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly"
+            ],
+            "title": "Kind"
+          },
+          "period": {
+            "type": "string",
+            "title": "Period"
+          },
+          "resets_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Resets At"
+          },
+          "progress": {
+            "type": "integer",
+            "title": "Progress"
+          },
+          "target": {
+            "type": "integer",
+            "title": "Target"
+          },
+          "reward": {
+            "type": "integer",
+            "title": "Reward"
+          },
+          "claimed": {
+            "type": "boolean",
+            "title": "Claimed"
+          },
+          "claimable": {
+            "type": "boolean",
+            "title": "Claimable"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "kind",
+          "period",
+          "resets_at",
+          "progress",
+          "target",
+          "reward",
+          "claimed",
+          "claimable"
+        ],
+        "title": "QuestOut"
+      },
+      "QuestClaim": {
+        "properties": {
+          "period": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "title": "Period",
+            "description": "The period returned by GET /api/me/quests; stale periods return 409"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "period"
+        ],
+        "title": "QuestClaim"
+      },
+      "PurchaseIn": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Item Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "item_id"
+        ],
+        "title": "PurchaseIn"
+      },
+      "PurchaseOut": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "title": "Item Id"
+          },
+          "charged": {
+            "type": "integer",
+            "title": "Charged"
+          },
+          "coins": {
+            "type": "integer",
+            "title": "Coins"
+          },
+          "inventory": {
+            "$ref": "#/components/schemas/InventoryOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item_id",
+          "charged",
+          "coins",
+          "inventory"
+        ],
+        "title": "PurchaseOut"
+      },
+      "WalletOut": {
+        "properties": {
+          "coins": {
+            "type": "integer",
+            "title": "Coins"
+          },
+          "transactions": {
+            "items": {
+              "$ref": "#/components/schemas/TransactionOut"
+            },
+            "type": "array",
+            "title": "Transactions"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "coins",
+          "transactions",
+          "next_cursor"
+        ],
+        "title": "WalletOut"
+      },
+      "TransactionOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "delta": {
+            "type": "integer",
+            "title": "Delta"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "ref": {
+            "type": "string",
+            "title": "Ref"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "delta",
+          "reason",
+          "ref",
+          "created_at"
+        ],
+        "title": "TransactionOut"
+      },
+      "ShopItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "slot": {
+            "type": "string",
+            "enum": [
+              "look",
+              "pet",
+              "top",
+              "jacket",
+              "bottom",
+              "shoes",
+              "hat",
+              "glasses",
+              "earrings",
+              "tie"
+            ],
+            "title": "Slot"
+          },
+          "price": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Price"
+          },
+          "asset_pack": {
+            "type": "string",
+            "title": "Asset Pack"
+          },
+          "starter": {
+            "type": "boolean",
+            "title": "Starter",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "slot",
+          "price",
+          "asset_pack"
+        ],
+        "title": "ShopItem"
+      },
+      "DuelIn": {
+        "properties": {
+          "answers": {
+            "items": {
+              "items": {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Answers",
+            "description": "Two complete answer sheets. Sheet 0 belongs to the selected wallet; sheet 1 is the local guest."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "answers"
+        ],
+        "title": "DuelIn"
+      },
+      "DuelOut": {
+        "properties": {
+          "players": {
+            "items": {
+              "$ref": "#/components/schemas/SubmitOut"
+            },
+            "type": "array",
+            "title": "Players"
+          },
+          "completed_at": {
+            "type": "string",
+            "title": "Completed At"
+          },
+          "reward_coins": {
+            "type": "integer",
+            "title": "Reward Coins"
+          }
+        },
+        "type": "object",
+        "required": [
+          "players",
+          "completed_at",
+          "reward_coins"
+        ],
+        "title": "DuelOut"
+      },
+      "SubmitOut": {
+        "properties": {
+          "score": {
+            "type": "integer",
+            "title": "Score"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/Result"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "score",
+          "total",
+          "results"
+        ],
+        "title": "SubmitOut"
+      },
+      "Result": {
+        "properties": {
+          "correct": {
+            "type": "boolean",
+            "title": "Correct"
+          },
+          "answer_index": {
+            "type": "integer",
+            "title": "Answer Index"
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation"
+          },
+          "answer_visual_html": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer Visual Html"
+          },
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "choice": {
+            "type": "integer",
+            "title": "Choice"
+          }
+        },
+        "type": "object",
+        "required": [
+          "correct",
+          "answer_index",
+          "explanation",
+          "index",
+          "choice"
+        ],
+        "title": "Result"
+      },
+      "Error": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "title": "Error"
+      }
+    }
+  }
+}

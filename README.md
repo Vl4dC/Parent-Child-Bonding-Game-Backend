@@ -184,3 +184,13 @@ diagram dependencies. Apply migration 009 after 008; nothing applies migrations 
 Use `uv run python -m app.diagram_preflight --probe` to check before enabling.
 See [lifecycle, API, rollout and remaining work](docs/DIAGRAM_LIFECYCLE_READINESS.md).
 This entry is append-only; no frontend or AI changes or hosted deployment are included.
+
+
+## Coins, quests and wardrobe — 25 October 2026
+
+The [economy contract](docs/ECONOMY.md) adds server-scored same-device duel submissions, parent-child
+MCQ reward claims, 20 participation coins per completed backend game, daily/weekly quests with Europe/Berlin calendar resets, shared wallet history,
+server-priced purchases, inventory and equipment. Clothing/accessories cost 100 coins each.
+This supersedes earlier statements that duel/quest rewards and shop purchases are pending.
+The frontend remains unchanged and needs API wiring. See the contract for request examples,
+activity definitions, migration 010, storage boundaries, and the existing unverified player selector.

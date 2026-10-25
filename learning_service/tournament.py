@@ -128,3 +128,69 @@ def submit(tournament_id: TournamentId, body: SubmitBody) -> SubmitOut:
     out = SubmitOut(score=sum(r.correct for r in results), total=len(results), results=results)
     stored.submission = {"answers": body.answers, "result": out.model_dump(mode="json")}
     return out
+
+
+class DuelIn(BaseModel):
+    model_config = {"extra": "forbid"}
+    answers: list[list[Annotated[int, Field(strict=True, ge=0)]]] = Field(
+        min_length=2,
+        max_length=2,
+        description="Two complete answer sheets. Sheet 0 belongs to the selected wallet; sheet 1 is the local guest.",
+    )
+
+
+class DuelOut(BaseModel):
+    players: list[SubmitOut]
+    completed_at: str
+    reward_coins: int
+
+
+DuelBody = Annotated[
+    DuelIn,
+    Body(
+        openapi_examples={
+            "two_players": {
+                "summary": "Both players answer a two-question duel",
+                "value": {"answers": [[1, 0], [0, 1]]},
+            },
+        }
+    ),
+]
+
+
+@router.post("/{tournament_id}/duel", response_model=DuelOut, responses=errors(404, 409, 422))
+def submit_duel(tournament_id: TournamentId, body: DuelBody):
+    """Freeze both local players' answers before revealing either result. Identical replays are free.
+    Use /api/me/coins/claim-duel afterwards to collect player 0's reward."""
+    from app.economy import clock, duel_reward, record
+
+    stored = get_or_404(TOURNAMENTS, tournament_id, "Tournament")
+    if not stored.approved:
+        raise HTTPException(409, "Review and approve the question set before scoring.")
+    if stored.submission is not None:
+        duel = stored.submission.get("duel")
+        if duel and duel["answers"] == body.answers:
+            return duel["result"]
+        raise HTTPException(409, "This tournament has already been submitted.")
+    players = []
+    for sheet in body.answers:
+        if len(sheet) != len(stored.questions):
+            raise HTTPException(422, "Each player must answer every question.")
+        results = [
+            Result(index=q.index, choice=choice, **grade(q, choice).model_dump())
+            for q, choice in zip(stored.questions, sheet)
+        ]
+        players.append(
+            SubmitOut(score=sum(r.correct for r in results), total=len(results), results=results)
+        )
+    at = clock()
+    out = DuelOut(
+        players=players, completed_at=at.isoformat(), reward_coins=duel_reward(players[0].score)
+    )
+    stored.submission = {
+        "answers": body.answers[0],
+        "result": players[0].model_dump(mode="json"),
+        "duel": {"answers": body.answers, "result": out.model_dump(mode="json")},
+    }
+    record("duel", f"tournament/{stored.id}", at)
+    return out

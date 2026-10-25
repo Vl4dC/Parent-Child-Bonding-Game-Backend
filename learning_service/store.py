@@ -218,7 +218,11 @@ def grade(q: IllustratedQuestion, choice: int) -> CheckOut:
 def answer_question(quiz: StoredQuiz, index: int, choice: int) -> CheckOut:
     """Grade an answer and remember the learner's first one (that's what the follow-up quiz is built from)."""
     out = grade(question_at(quiz, index), choice)
-    quiz.attempts.setdefault(index, Attempt(choice=choice, correct=out.correct))
+    if index not in quiz.attempts:
+        from app.economy import quiz_answered
+
+        quiz.attempts[index] = Attempt(choice=choice, correct=out.correct)
+        quiz_answered(quiz, index)
     return out
 
 
@@ -435,6 +439,7 @@ def deck_from_quiz(quiz: StoredQuiz, which: str = "missed") -> StoredDeck:
         raise HTTPException(409, "Nothing to review yet: there are no wrong answers in this quiz")
     cards = [card_from_question(q, picked) for q, picked in pairs]
     return StoredDeck(
+        weak_practice=which == "missed",
         id=new_id(),
         lesson_id=quiz.lesson_id,
         title="Mistakes to remember" if which == "missed" else "Quiz review",
