@@ -20,16 +20,27 @@ The canonical current contracts are [API_PLATFORM.md](API_PLATFORM.md), [API.md]
 `/openapi.json`. The backend supports owned learning, review, profiles, progress, jobs, and private
 lobbies. Full game rules, public matchmaking, rewards, and family permissions remain pending.
 
-## Public API and player state
+## Sign-in and player state
 
-FastAPI requires no login, access token, session cookie or Supabase Auth configuration. Frontend
-login/register code is unchanged. Omit Authorization; old values are ignored. The optional
-`X-Player-ID: <UUID>` selects player state; no header uses the shared default UUID documented in
-[API.md](../API.md). Use a different ID for each multiplayer participant. These are unverified
-selectors: callers can choose another ID, so they provide no account privacy or impersonation defense.
+Every `/api` request must carry `Authorization: Bearer <Clerk session token>`. The API verifies it against the
+Clerk instance's published keys (`JWT_ISSUER`) and serves the request for the token's **`player_id` claim**; the
+`X-Player-ID` header is no longer read, so the frontend may stop sending it. What the frontend must do:
 
-The learner-approval list/decision routes take `guardian_email` as a query filter, plus optional
-X-Player-ID. The email is not verified. Existing receipt/proof and decision-state checks remain.
+1. Add the claim in Clerk (Sessions > Customize session token):
+   `{"player_id": "{{user.public_metadata.player_id}}"}`. `lib/server/learning-session.ts` already stores a random
+   UUID there as `player_id`. A token without a valid one is refused with a 401 that names the claim.
+2. Send `await getToken()` as the Bearer token on every call (the proxy does, in `learningHeaders`).
+3. Treat a 401 as "sign in again" (the `detail` says when the token has expired) and a 503 as "the server cannot
+   check sign-ins right now", not as a bad password. Clerk session tokens are short-lived (about a minute), so ask for a
+   fresh one per request rather than caching one.
+4. Allow the proxy's paths for the routes you use (`me`, `homes`, `memory`, `rooms`, `challenges`, `matches`,
+   `weekly`, ...) and export `PUT`. At `2ff2ec55` both proxies (`app/api/[...path]` and `app/api/learn/[...path]`)
+   already send the token through `forwardToLearning`; they still allow only
+   `materials|lessons|quiz|flashcards|tournament|chat`.
+
+Use a different account for each multiplayer participant. Only the learner-registration intake works without a
+token (a child signing up has none yet). The learner-approval list/decision routes need a token and take
+`guardian_email` as a query filter that is not verified; the receipt/proof and decision-state checks remain.
 
 Backend account labels are `parent` and `learner`. Older Splash labels are `grownup`/`kid`, Kay labels
 are `parent`/`kid`/`solo`, and the signup branch uses `student`/`parent`. Map display terms explicitly.
@@ -70,7 +81,7 @@ Memory lets a chat screen show a sidebar of past chats grouped by subject and co
 `GET /api/memory/conversations/{id}` (every message plus `used_pdf`/`used_image` flags and `pages`), and keep chatting by
 sending its id as `conversation_id` to `/api/chat` or `/api/chat/image`; do not resend `history`. Create a chat first with
 `POST /api/memory/conversations` (pass `material_id` for a PDF chat). Each player id has its own memory, so a parent and a
-child use different `X-Player-ID` values; `PUT /api/memory/profile` stores their role label and display name.
+child sign in as different accounts (different `player_id`); `PUT /api/memory/profile` stores their role label and display name.
 The role is a label, not authentication. A saved chat whose PDF was deleted still opens: the next answer carries a
 `notice` asking for the PDF again. See [API_PLATFORM.md](API_PLATFORM.md#saved-chats-memory).
 
@@ -103,7 +114,7 @@ samples once prepared, and an example leaderboard marked `example: true`). It is
 ## Visuals and rooms
 
 Visual HTML belongs inside a sandboxed frame with scripts allowed and no same-origin permission.
-`/view` requests need no credentials; include X-Player-ID when selecting nondefault player state.
+`/view` requests need the same Bearer token as every other `/api` call, so fetch them from the proxy, not as an `<iframe src>`.
 Use the response body in the sandbox. Sandbox/structural validation does not prove scientific correctness.
 With `ILLUSTRATIONS_ENABLED`, a visual's `kind` may also be `illustration`: a picture from an image model,
 stored in the lesson as a WebP data URL and shown by the same `html` page, so the frame code is unchanged.
@@ -124,7 +135,7 @@ validate phase/turn actions on the server, and choose/freeze rules before implem
 Use the new [deterministic quiz contract](QUIZ_PRACTICE_API.md) to resume first answers, display
 factual results, finish/review, create independent retries and reuse question answers as cards.
 Question corrections return a new quiz/snapshot; approvals are owner confirmations bound to that
-snapshot. Future frontend wiring may supply X-Player-ID and must supply idempotency keys and current answer
+snapshot. Future frontend wiring must send the Bearer token and must supply idempotency keys and current answer
 counts. No frontend file was changed. Generation, safety checking and AI content production are
 untouched; points/coins/badges, multiplayer and family access remain separate pending rules.
 
@@ -143,7 +154,7 @@ No activation, username login or automatic family-link behavior is included.
 
 [The new backend contract](DIAGRAM_ASSEMBLY.md) supports selected saved flowcharts, study, room
 discovery/readiness, a shared five-second countdown, private label placements and first-perfect
-server timing. Frontend work is not included: proxy the new prefix with X-Player-ID/Idempotency-Key and
+server timing. Frontend work is not included: proxy the new prefix with the Bearer token/Idempotency-Key and
 PUT support, map drops to SVG slot IDs, provide keyboard/accessible alternatives, and render
 progress/results/review. The fixed prompt is “How does this work?”; no model generation is invoked.
 
@@ -166,11 +177,8 @@ Frontend reference: `lib/home-data.ts`, `lib/store.ts` and the base, visit and f
 `Parent-Child-Bonding-Game` `main` at `ceb8069`. Nothing in the frontend repository was changed. To use these
 routes the frontend needs to:
 
-1. Send a stable `X-Player-ID` UUID per account. At `ff5eff2` the app signs in with Clerk, whose user ids
-   (`user_…`) are not UUIDs. The `/api/learn/*` proxy only forwards `X-Player-ID` when the id is a UUID and
-   otherwise falls back to the shared default player, and `lib/learn-api.ts` calls `/api/<path>`, whose proxy
-   forwards no `X-Player-ID` at all. Until the frontend derives a UUID from the account (for example a UUIDv5 of
-   the Clerk id) and sends it, every browser shares one player's home, wallet and friend code.
+1. Send the account's Clerk session token as the Bearer token, with a `player_id` claim (see "Sign-in and player
+   state" above). Clerk user ids (`user_…`) are not UUIDs, which is why the claim carries the account's player UUID.
 2. Add `me` and `homes` to the proxy's allowed paths, and export `PUT` (the layout, visibility and card routes use
    it; the proxy exports only GET, POST and DELETE).
 3. Read levels and coins from `GET /api/me/home`: turn each room's `items` back into the level list by walking

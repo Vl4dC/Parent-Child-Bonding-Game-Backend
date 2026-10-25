@@ -74,10 +74,10 @@ TAGS = [
 ]
 
 DESCRIPTION = """
-Public learn -> quiz -> flashcards API. No login or access token is required. Data persists in
-PostgreSQL; the explicit offline demo uses ephemeral storage. Optional X-Player-ID selects separate
-player state; absent headers share one default player. Player IDs are unverified and provide no privacy.
-Model generation is opt-in. The full contract is documented in docs/API_PLATFORM.md.
+Learn -> quiz -> flashcards API. Every `/api` request needs a sign-in token: click **Authorize** and paste the
+session token (a JWT) the sign-in provider gave you, or send `Authorization: Bearer <token>`. The player, and so whose
+data you see, is the token's `player_id` claim; nothing else identifies you. Data persists in PostgreSQL; the explicit
+offline demo uses ephemeral storage. Model generation is opt-in. The full contract is documented in docs/API_PLATFORM.md.
 
 ## Try it in this order
 0. *(optional)* **Your book** - `POST /api/materials` with a PDF, or several photos of pages. Copy the material `id`.
@@ -105,7 +105,7 @@ Model generation is opt-in. The full contract is documented in docs/API_PLATFORM
 ## Good to know
 - **Slow calls:** anything that writes with the model takes 10-40 seconds. Swagger shows a spinner, then the duration.
 - **Pictures:** diagrams come back as complete HTML pages inside JSON (`html`, `visual_html`, `*_visual_html`),
-  which Swagger can't render. Fetch **`/view`** endpoints and render the response in a sandbox. Include X-Player-ID only when selecting a nondefault player.
+  which Swagger can't render. Fetch **`/view`** endpoints and render the response in a sandbox.
 - **Child safety:** the learners are school students (10-18). Everything the model writes is written to rules
   for the learner's age, then checked by a separate safety check before it is kept; what a learner types as a
   topic or picture request is checked first. Anything unsuitable for the age is a friendly `422` that never

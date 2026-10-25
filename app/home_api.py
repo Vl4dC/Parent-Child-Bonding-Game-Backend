@@ -16,8 +16,8 @@ The home: rooms built, item levels and positions, the wallet that pays for them,
   GET  /api/homes/{player_id}                          visit a home (read-only, no coins)
   POST /api/homes/{player_id}/cheers                   cheer a room or the whole home, once a day
 
-Data is kept per X-Player-ID in a SQLite file (learning_service/home_store.py). That header selects a data
-partition; it is not a login. Friends and `visibility` are an advisory privacy setting, not access control.
+Data is kept per player (the sign-in token's `player_id`) in a SQLite file (learning_service/home_store.py).
+Friends and `visibility` are an advisory privacy setting, not a family or consent check.
 Every change may carry `expected_version`; a stale one is a 409 and changes nothing.
 """
 

@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import secrets
 import threading
 from contextlib import asynccontextmanager
@@ -13,14 +14,23 @@ from app.config import Settings
 from app.http_limits import BodyLimit
 from app.repository import MemoryRepository, PostgresRepository
 
+log = logging.getLogger("app")
+
 
 def create_app(
     settings: Settings | None = None,
     repository=None,
     memory_store=None,
     home_store=None,
+    token_verifier=None,
 ):
     settings = settings or Settings()
+    if token_verifier is None:
+        from app.auth import TokenVerifier
+
+        token_verifier = TokenVerifier.from_settings(settings)
+    if token_verifier is None:
+        log.warning("Sign-in is not configured (JWT_ISSUER): every /api request will be refused")
     owns_repository = repository is None
     owns_memory = memory_store is None
     owns_home = home_store is None
@@ -74,6 +84,7 @@ def create_app(
     app.state.repository = repository
     app.state.memory = memory_store
     app.state.home = home_store
+    app.state.token_verifier = token_verifier
     app.state.settings = settings
     app.state.generation_slots = threading.BoundedSemaphore(settings.generation_concurrency)
     app.add_middleware(BodyLimit)
@@ -82,7 +93,7 @@ def create_app(
         allow_origins=settings.cors_origins,
         allow_credentials=False,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
-        allow_headers=["Content-Type", "X-Player-ID", "Authorization"],
+        allow_headers=["Content-Type", "Authorization"],
     )
 
     @app.exception_handler(RequestValidationError)

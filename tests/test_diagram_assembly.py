@@ -481,7 +481,7 @@ def test_raw_database_access_and_restart(game):
         restarted.close()
 
 
-def test_feature_defaults_off_without_authentication():
+def test_feature_defaults_off_and_still_needs_a_token():
     app = create_app(Settings(app_env="test", demo_mode=True, _env_file=None))
     with TestClient(app) as client:
         assert client.get("/api/diagram-assembly/races/missing").status_code == 503
@@ -489,7 +489,7 @@ def test_feature_defaults_off_without_authentication():
             client.get(
                 "/api/diagram-assembly/races/missing", headers={"Authorization": "Bearer bogus"}
             ).status_code
-            == 503
+            == 401
         )
 
 

@@ -61,8 +61,8 @@ are rechecked in a short final transaction so deletion or edits cannot resurrect
 
 ## API inventory
 
-All routes start with `/api/diagram-assembly` and work without login or tokens. Optional
-X-Player-ID selects a participant UUID; anyone can choose that UUID. The feature returns 503 while disabled. Body models reject unknown fields, including
+All routes start with `/api/diagram-assembly` and need the Bearer sign-in token; its `player_id` claim is the
+participant. The feature returns 503 while disabled. Body models reject unknown fields, including
 client-supplied source/SVG, actor IDs, scores and times. Idempotent operations require an 8–128
 character `Idempotency-Key`.
 
@@ -89,8 +89,8 @@ lesson text, uploads, other visuals or account data, and a parent label grants n
 
 ## Flow on separate phones
 
-1. Each player selects a different X-Player-ID UUID and joins the same room. Two tabs using the
-   same UUID are one participant. The caller-selected UUID is not an authenticated identity.
+1. Each player signs in as a different account (a different `player_id`) and joins the same room. Two tabs signed
+   in as the same account are one participant.
 2. The host selects an existing owned diagram from an approved lesson:
 
 ```json
@@ -204,7 +204,7 @@ No frontend was changed. The new game needs a diagram selector/study view, share
 SVG placeholder hit targets, keyboard-accessible card placement, progress/result screens and a
 review/repeat flow. Slots are structured for alternate controls, but no screen-reader/nonvisual or
 real-device UI acceptance is claimed. Current frontend proxy wiring must allow this API prefix,
-forward X-Player-ID and Idempotency-Key, and support PUT; its existing learning proxy does not do all of
+forward the Bearer token and Idempotency-Key, and support PUT; its existing learning proxy does not do all of
 these. Render the sanitized static SVG safely, without scripts or network.
 
 Hosted migration/runtime setup, sandbox verification, real multi-device latency/disconnect testing,

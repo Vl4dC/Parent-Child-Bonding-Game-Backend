@@ -1,8 +1,8 @@
 # Friend requests, presence and game invitations
 
 Backend-only addition based on frontend `main` `1117c7c`. No frontend, authentication, provider,
-email or push-notification service is changed. The player is still the optional `X-Player-ID`
-UUID selector: it is not verified identity. Role labels do not prove a family relationship.
+email or push-notification service is changed. The player is the sign-in token's `player_id` claim
+([API.md](../API.md#sign-in-and-player-state)). Role labels do not prove a family relationship.
 
 ## Flow
 

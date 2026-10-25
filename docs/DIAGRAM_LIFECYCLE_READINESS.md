@@ -39,8 +39,8 @@ that rule or add a per-race readiness acknowledgement.
 
 ## Host management endpoint
 
-`GET /api/diagram-assembly/rooms/{room_id}/management` requires no login or token. The selected
-X-Player-ID must match the current room host; this caller-selected UUID is not verified.
+`GET /api/diagram-assembly/rooms/{room_id}/management` needs the Bearer sign-in token. The token's
+`player_id` must match the current room host.
 It returns only the latest race's management fields:
 
 ```json

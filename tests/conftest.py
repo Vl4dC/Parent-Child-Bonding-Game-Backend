@@ -8,6 +8,32 @@ from app.repository import MemoryRepository, PostgresRepository
 
 
 @pytest.fixture(autouse=True)
+def _signed_in_test_client(monkeypatch):
+    """The API serves only requests with a valid sign-in token. Tests trust a local test key (never the network)
+    and the test client signs a token for each request, for the player named by its `X-Player-ID` header (or the
+    default player), so a test says who is calling without building tokens. A request that already has an
+    Authorization header is sent as it is, and `X-Test-Anonymous` sends none. The token is real: the app verifies
+    its RS256 signature, issuer, expiry and `player_id` claim exactly as in production (tests/jwt_helpers.py)."""
+    from starlette.testclient import TestClient
+
+    from tests import jwt_helpers
+
+    monkeypatch.setenv("JWT_ISSUER", jwt_helpers.ISSUER)
+    monkeypatch.setenv("JWT_JWKS_JSON", jwt_helpers.jwks_json())
+    send = TestClient.send
+
+    def send_signed_in(self, request, *args, **kwargs):
+        if "x-test-anonymous" in request.headers:
+            del request.headers["x-test-anonymous"]
+        elif "authorization" not in request.headers:
+            player = request.headers.get("x-player-id", jwt_helpers.DEFAULT_PLAYER)
+            request.headers["authorization"] = f"Bearer {jwt_helpers.token(player)}"
+        return send(self, request, *args, **kwargs)
+
+    monkeypatch.setattr(TestClient, "send", send_signed_in)
+
+
+@pytest.fixture(autouse=True)
 def _no_embedding_provider(monkeypatch):
     """No test may reach a real embedding provider, whatever keys the developer's .env holds. Tests that need
     vectors install a fake with the `embedder` fixture (tests/learning/test_embeddings.py)."""
