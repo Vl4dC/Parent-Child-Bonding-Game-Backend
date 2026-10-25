@@ -141,3 +141,14 @@ def test_sql_lock_and_statement_timeouts_release_connections(repository):
             assert unit.connection.execute("select 1").fetchone()[0] == 1
     finally:
         limited.close()
+
+
+def test_lesson_library_summary_exposes_nested_title_without_lesson_text(repository):
+    with repository.session(A) as unit:
+        unit.put(
+            "lessons",
+            "nested-title",
+            {"lesson": {"title": "Cells", "summary": "private body"}, "revision": 1},
+        )
+    with repository.session(A, serialize=False) as unit:
+        assert unit.summaries("lessons") == [("nested-title", {"revision": 1, "title": "Cells"})]

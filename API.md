@@ -124,3 +124,13 @@ Only this prefix requires Clerk tokens, per the user's updated decision; legacy 
 unchanged. Swagger has typed schemas, examples and a scoped Bearer authorization scheme.
 Configure the issuer and signed claims before switching `SOCIAL_API=backend`. This supersedes
 earlier statements that these routes and scoped token verification were still pending.
+
+## Frontend integration support — 25 October 2026
+
+- `POST /api/flashcards/{deck_id}/restart` accepts `expected_reviews` and an `Idempotency-Key`,
+  returning a new review pass over the same cards without a model call. The original pass stays unchanged.
+- `GET /api/rooms/{room_id}/match` returns the latest match ID/game/phase only to current room members
+  who were captured as match participants. Clients can enter a newly started room game automatically.
+- Match state includes `can_start`; `GET /api/matches/{match_id}/diagram/view` renders the public masked
+  board in a sandboxed HTML document with slot IDs visible. It never returns the private answer mapping.
+- Resource summaries now expose a lesson's nested title while keeping lesson content private.

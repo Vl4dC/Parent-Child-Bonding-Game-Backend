@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Literal
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from psycopg.types.json import Jsonb
 from pydantic import Field
 
@@ -173,3 +173,29 @@ def snapshot(room_id: str):
 def room_command(room_id: str, body: RoomCommand):
     """Set readiness, leave, or close as host. Reject stale versions with 409; no game is started."""
     return command(body.action, room_id, body.model_dump())
+
+
+class RoomMatch(StrictModel):
+    id: str
+    game: str
+    phase: str
+
+
+@router.get(
+    "/{room_id}/match",
+    response_model=RoomMatch,
+    responses={404: {"description": "No available match for this room participant"}},
+)
+def current_match(room_id: str, request: Request):
+    """Discover the newest room match without exposing answer keys. Both current room membership
+    and inclusion in the match's captured player list are required."""
+    from learning_service import matches
+
+    command("snapshot", room_id)
+    player = current_session.get().owner
+    doc = request.app.state.memory.room_match(player, room_id)
+    if doc is None:
+        raise HTTPException(404, "No match is available for you in this room.")
+    return RoomMatch(
+        id=doc["id"], game=doc["game"], phase=matches.state(doc, player, matches.clock())["phase"]
+    )

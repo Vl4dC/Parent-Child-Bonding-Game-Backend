@@ -97,7 +97,8 @@ class UnitOfWork:
         if self.connection:
             return self.connection.execute(
                 "select id, (select coalesce(jsonb_object_agg(field,data->field),'{}') "
-                "from unnest(%s::text[]) field where data ? field) "
+                "from unnest(%s::text[]) field where data ? field) || "
+                "jsonb_strip_nulls(jsonb_build_object('title',coalesce(data->'title',data#>'{lesson,title}'))) "
                 "from api_private.records where kind=%s and id>%s order by id limit %s",
                 (fields, kind, after, limit),
             ).fetchall()
@@ -108,7 +109,17 @@ class UnitOfWork:
                 if owner == self.owner and k == kind and key > after
             )[:limit]
             return [
-                (key, {f: copy.deepcopy(data[f]) for f in fields if f in data})
+                (
+                    key,
+                    {f: copy.deepcopy(data[f]) for f in fields if f in data}
+                    | (
+                        {"title": data["lesson"]["title"]}
+                        if "title" not in data
+                        and isinstance(data.get("lesson"), dict)
+                        and "title" in data["lesson"]
+                        else {}
+                    ),
+                )
                 for key in keys
                 for data in [self.repository.data[(self.owner, kind, key)]]
             ]

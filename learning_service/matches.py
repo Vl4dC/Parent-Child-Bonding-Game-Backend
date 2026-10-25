@@ -685,6 +685,7 @@ def state(doc: dict, player_id: str, now: int) -> dict:
     return {
         "id": doc["id"],
         "challenge_id": doc["challenge_id"],
+        "can_start": doc["creator_id"] == player_id and doc["play_at_ms"] is None,
         "game": doc["game"],
         "mode": doc["mode"],
         "topic": doc["topic"],

@@ -176,6 +176,7 @@ class StoredDeck(BaseModel):
     progress: DeckProgress
     review_receipts: dict[str, dict] = Field(default_factory=dict)
     weak_practice: bool = False
+    restart_receipts: dict[str, dict] = Field(default_factory=dict)
 
     def state(self) -> DeckState:
         p = self.progress
