@@ -1,0 +1,3195 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Clerk, real duel matches and flashcard attempts",
+    "version": "2026-10-25"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ready": {
+      "get": {
+        "summary": "Ready",
+        "operationId": "ready_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/flashcards/{deck_id}/attempts": {
+      "post": {
+        "tags": [
+          "Flashcard attempts"
+        ],
+        "summary": "Create",
+        "operationId": "create_api_flashcards__deck_id__attempts_post",
+        "parameters": [
+          {
+            "name": "deck_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Deck Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAttempt"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attempt"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request, retained-history or action limit reached"
+          },
+          "503": {
+            "description": "Feature, migration, identity keys or storage unavailable"
+          },
+          "404": {
+            "description": "Saved deck/attempt absent or unavailable to this actor"
+          },
+          "409": {
+            "description": "Stale version, inactive attempt, empty subset or conflicting retry"
+          },
+          "422": {
+            "description": "Invalid input or oversized saved snapshot"
+          },
+          "401": {
+            "description": "Valid Clerk session required"
+          }
+        },
+        "security": [
+          {
+            "ClerkSession": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "Flashcard attempts"
+        ],
+        "summary": "History",
+        "operationId": "history_api_flashcards__deck_id__attempts_get",
+        "parameters": [
+          {
+            "name": "deck_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Deck Id"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 128,
+              "default": "",
+              "title": "After"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttemptHistory"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request, retained-history or action limit reached"
+          },
+          "503": {
+            "description": "Feature, migration, identity keys or storage unavailable"
+          },
+          "404": {
+            "description": "Saved deck/attempt absent or unavailable to this actor"
+          },
+          "409": {
+            "description": "Stale version, inactive attempt, empty subset or conflicting retry"
+          },
+          "422": {
+            "description": "Invalid input or oversized saved snapshot"
+          },
+          "401": {
+            "description": "Valid Clerk session required"
+          }
+        },
+        "security": [
+          {
+            "ClerkSession": []
+          }
+        ]
+      }
+    },
+    "/api/flashcard-attempts/{attempt_id}": {
+      "get": {
+        "tags": [
+          "Flashcard attempts"
+        ],
+        "summary": "Get",
+        "operationId": "get_api_flashcard_attempts__attempt_id__get",
+        "parameters": [
+          {
+            "name": "attempt_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Attempt Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attempt"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request, retained-history or action limit reached"
+          },
+          "503": {
+            "description": "Feature, migration, identity keys or storage unavailable"
+          },
+          "404": {
+            "description": "Saved deck/attempt absent or unavailable to this actor"
+          },
+          "409": {
+            "description": "Stale version, inactive attempt, empty subset or conflicting retry"
+          },
+          "422": {
+            "description": "Invalid input or oversized saved snapshot"
+          },
+          "401": {
+            "description": "Valid Clerk session required"
+          }
+        },
+        "security": [
+          {
+            "ClerkSession": []
+          }
+        ]
+      }
+    },
+    "/api/flashcard-attempts/{attempt_id}/reviews": {
+      "post": {
+        "tags": [
+          "Flashcard attempts"
+        ],
+        "summary": "Review Attempt",
+        "operationId": "review_attempt_api_flashcard_attempts__attempt_id__reviews_post",
+        "parameters": [
+          {
+            "name": "attempt_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Attempt Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__practice_api__AttemptSummary"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request, retained-history or action limit reached"
+          },
+          "503": {
+            "description": "Feature, migration, identity keys or storage unavailable"
+          },
+          "404": {
+            "description": "Saved deck/attempt absent or unavailable to this actor"
+          },
+          "409": {
+            "description": "Stale version, inactive attempt, empty subset or conflicting retry"
+          },
+          "422": {
+            "description": "Invalid input or oversized saved snapshot"
+          },
+          "401": {
+            "description": "Valid Clerk session required"
+          }
+        },
+        "security": [
+          {
+            "ClerkSession": []
+          }
+        ]
+      }
+    },
+    "/api/flashcard-attempts/{attempt_id}/restart": {
+      "post": {
+        "tags": [
+          "Flashcard attempts"
+        ],
+        "summary": "Restart",
+        "operationId": "restart_api_flashcard_attempts__attempt_id__restart_post",
+        "parameters": [
+          {
+            "name": "attempt_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Attempt Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAttempt"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attempt"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request, retained-history or action limit reached"
+          },
+          "503": {
+            "description": "Feature, migration, identity keys or storage unavailable"
+          },
+          "404": {
+            "description": "Saved deck/attempt absent or unavailable to this actor"
+          },
+          "409": {
+            "description": "Stale version, inactive attempt, empty subset or conflicting retry"
+          },
+          "422": {
+            "description": "Invalid input or oversized saved snapshot"
+          },
+          "401": {
+            "description": "Valid Clerk session required"
+          }
+        },
+        "security": [
+          {
+            "ClerkSession": []
+          }
+        ]
+      }
+    },
+    "/api/flashcard-attempts/{attempt_id}/results": {
+      "get": {
+        "tags": [
+          "Flashcard attempts"
+        ],
+        "summary": "Results",
+        "operationId": "results_api_flashcard_attempts__attempt_id__results_get",
+        "parameters": [
+          {
+            "name": "attempt_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Attempt Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__practice_api__AttemptSummary"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request, retained-history or action limit reached"
+          },
+          "503": {
+            "description": "Feature, migration, identity keys or storage unavailable"
+          },
+          "404": {
+            "description": "Saved deck/attempt absent or unavailable to this actor"
+          },
+          "409": {
+            "description": "Stale version, inactive attempt, empty subset or conflicting retry"
+          },
+          "422": {
+            "description": "Invalid input or oversized saved snapshot"
+          },
+          "401": {
+            "description": "Valid Clerk session required"
+          }
+        },
+        "security": [
+          {
+            "ClerkSession": []
+          }
+        ]
+      }
+    },
+    "/api/duels/sources/{source_kind}/{source_id}": {
+      "get": {
+        "tags": [
+          "Duel matches"
+        ],
+        "summary": "Source",
+        "operationId": "source_api_duels_sources__source_kind___source_id__get",
+        "parameters": [
+          {
+            "name": "source_kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "quiz",
+                "tournament"
+              ],
+              "type": "string",
+              "title": "Source Kind"
+            }
+          },
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Source Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceInfo"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request, retained-history or action limit reached"
+          },
+          "503": {
+            "description": "Feature, migration, identity keys or storage unavailable"
+          },
+          "403": {
+            "description": "Host or source-sharing role rejected"
+          },
+          "404": {
+            "description": "Source/match/participation absent or unavailable to this actor"
+          },
+          "409": {
+            "description": "Stale version, source/phase/readiness conflict or conflicting retry"
+          },
+          "422": {
+            "description": "Invalid input or unsupported reviewed snapshot"
+          },
+          "401": {
+            "description": "Valid Clerk session required"
+          }
+        },
+        "security": [
+          {
+            "ClerkSession": []
+          }
+        ]
+      }
+    },
+    "/api/duels": {
+      "post": {
+        "tags": [
+          "Duel matches"
+        ],
+        "summary": "Create",
+        "operationId": "create_api_duels_post",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDuel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Match"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request, retained-history or action limit reached"
+          },
+          "503": {
+            "description": "Feature, migration, identity keys or storage unavailable"
+          },
+          "403": {
+            "description": "Host or source-sharing role rejected"
+          },
+          "404": {
+            "description": "Source/match/participation absent or unavailable to this actor"
+          },
+          "409": {
+            "description": "Stale version, source/phase/readiness conflict or conflicting retry"
+          },
+          "422": {
+            "description": "Invalid input or unsupported reviewed snapshot"
+          },
+          "401": {
+            "description": "Valid Clerk session required"
+          }
+        },
+        "security": [
+          {
+            "ClerkSession": []
+          }
+        ]
+      }
+    },
+    "/api/duels/history": {
+      "get": {
+        "tags": [
+          "Duel matches"
+        ],
+        "summary": "History",
+        "operationId": "history_api_duels_history_get",
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 128,
+              "default": "",
+              "title": "After"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchHistory"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request, retained-history or action limit reached"
+          },
+          "503": {
+            "description": "Feature, migration, identity keys or storage unavailable"
+          },
+          "403": {
+            "description": "Host or source-sharing role rejected"
+          },
+          "404": {
+            "description": "Source/match/participation absent or unavailable to this actor"
+          },
+          "409": {
+            "description": "Stale version, source/phase/readiness conflict or conflicting retry"
+          },
+          "422": {
+            "description": "Invalid input or unsupported reviewed snapshot"
+          },
+          "401": {
+            "description": "Valid Clerk session required"
+          }
+        },
+        "security": [
+          {
+            "ClerkSession": []
+          }
+        ]
+      }
+    },
+    "/api/duels/rooms/{room_id}/match": {
+      "get": {
+        "tags": [
+          "Duel matches"
+        ],
+        "summary": "Current",
+        "operationId": "current_api_duels_rooms__room_id__match_get",
+        "parameters": [
+          {
+            "name": "room_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Room Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Match"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request, retained-history or action limit reached"
+          },
+          "503": {
+            "description": "Feature, migration, identity keys or storage unavailable"
+          },
+          "403": {
+            "description": "Host or source-sharing role rejected"
+          },
+          "404": {
+            "description": "Source/match/participation absent or unavailable to this actor"
+          },
+          "409": {
+            "description": "Stale version, source/phase/readiness conflict or conflicting retry"
+          },
+          "422": {
+            "description": "Invalid input or unsupported reviewed snapshot"
+          },
+          "401": {
+            "description": "Valid Clerk session required"
+          }
+        },
+        "security": [
+          {
+            "ClerkSession": []
+          }
+        ]
+      }
+    },
+    "/api/duels/rooms/{room_id}/management": {
+      "get": {
+        "tags": [
+          "Duel matches"
+        ],
+        "summary": "Management",
+        "operationId": "management_api_duels_rooms__room_id__management_get",
+        "parameters": [
+          {
+            "name": "room_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Room Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Management"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request, retained-history or action limit reached"
+          },
+          "503": {
+            "description": "Feature, migration, identity keys or storage unavailable"
+          },
+          "403": {
+            "description": "Host or source-sharing role rejected"
+          },
+          "404": {
+            "description": "Source/match/participation absent or unavailable to this actor"
+          },
+          "409": {
+            "description": "Stale version, source/phase/readiness conflict or conflicting retry"
+          },
+          "422": {
+            "description": "Invalid input or unsupported reviewed snapshot"
+          },
+          "401": {
+            "description": "Valid Clerk session required"
+          }
+        },
+        "security": [
+          {
+            "ClerkSession": []
+          }
+        ]
+      }
+    },
+    "/api/duels/{match_id}": {
+      "get": {
+        "tags": [
+          "Duel matches"
+        ],
+        "summary": "Snapshot",
+        "operationId": "snapshot_api_duels__match_id__get",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Match Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Match"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request, retained-history or action limit reached"
+          },
+          "503": {
+            "description": "Feature, migration, identity keys or storage unavailable"
+          },
+          "403": {
+            "description": "Host or source-sharing role rejected"
+          },
+          "404": {
+            "description": "Source/match/participation absent or unavailable to this actor"
+          },
+          "409": {
+            "description": "Stale version, source/phase/readiness conflict or conflicting retry"
+          },
+          "422": {
+            "description": "Invalid input or unsupported reviewed snapshot"
+          },
+          "401": {
+            "description": "Valid Clerk session required"
+          }
+        },
+        "security": [
+          {
+            "ClerkSession": []
+          }
+        ]
+      }
+    },
+    "/api/duels/{match_id}/questions": {
+      "get": {
+        "tags": [
+          "Duel matches"
+        ],
+        "summary": "Questions",
+        "operationId": "questions_api_duels__match_id__questions_get",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Match Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Questions"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request, retained-history or action limit reached"
+          },
+          "503": {
+            "description": "Feature, migration, identity keys or storage unavailable"
+          },
+          "403": {
+            "description": "Host or source-sharing role rejected"
+          },
+          "404": {
+            "description": "Source/match/participation absent or unavailable to this actor"
+          },
+          "409": {
+            "description": "Stale version, source/phase/readiness conflict or conflicting retry"
+          },
+          "422": {
+            "description": "Invalid input or unsupported reviewed snapshot"
+          },
+          "401": {
+            "description": "Valid Clerk session required"
+          }
+        },
+        "security": [
+          {
+            "ClerkSession": []
+          }
+        ]
+      }
+    },
+    "/api/duels/{match_id}/players/{player_id}/attempt": {
+      "get": {
+        "tags": [
+          "Duel matches"
+        ],
+        "summary": "Attempt",
+        "operationId": "attempt_api_duels__match_id__players__player_id__attempt_get",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Match Id"
+            }
+          },
+          {
+            "name": "player_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Player Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerAttempt"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request, retained-history or action limit reached"
+          },
+          "503": {
+            "description": "Feature, migration, identity keys or storage unavailable"
+          },
+          "403": {
+            "description": "Host or source-sharing role rejected"
+          },
+          "404": {
+            "description": "Source/match/participation absent or unavailable to this actor"
+          },
+          "409": {
+            "description": "Stale version, source/phase/readiness conflict or conflicting retry"
+          },
+          "422": {
+            "description": "Invalid input or unsupported reviewed snapshot"
+          },
+          "401": {
+            "description": "Valid Clerk session required"
+          }
+        },
+        "security": [
+          {
+            "ClerkSession": []
+          }
+        ]
+      }
+    },
+    "/api/duels/{match_id}/players/{player_id}/ready": {
+      "put": {
+        "tags": [
+          "Duel matches"
+        ],
+        "summary": "Ready",
+        "operationId": "ready_api_duels__match_id__players__player_id__ready_put",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Match Id"
+            }
+          },
+          {
+            "name": "player_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Player Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Ready"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__duel_api__PlayerAction"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request, retained-history or action limit reached"
+          },
+          "503": {
+            "description": "Feature, migration, identity keys or storage unavailable"
+          },
+          "403": {
+            "description": "Host or source-sharing role rejected"
+          },
+          "404": {
+            "description": "Source/match/participation absent or unavailable to this actor"
+          },
+          "409": {
+            "description": "Stale version, source/phase/readiness conflict or conflicting retry"
+          },
+          "422": {
+            "description": "Invalid input or unsupported reviewed snapshot"
+          },
+          "401": {
+            "description": "Valid Clerk session required"
+          }
+        },
+        "security": [
+          {
+            "ClerkSession": []
+          }
+        ]
+      }
+    },
+    "/api/duels/{match_id}/players/{player_id}/submit": {
+      "post": {
+        "tags": [
+          "Duel matches"
+        ],
+        "summary": "Submit",
+        "operationId": "submit_api_duels__match_id__players__player_id__submit_post",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Match Id"
+            }
+          },
+          {
+            "name": "player_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Player Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Submit"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__duel_api__PlayerAction"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request, retained-history or action limit reached"
+          },
+          "503": {
+            "description": "Feature, migration, identity keys or storage unavailable"
+          },
+          "403": {
+            "description": "Host or source-sharing role rejected"
+          },
+          "404": {
+            "description": "Source/match/participation absent or unavailable to this actor"
+          },
+          "409": {
+            "description": "Stale version, source/phase/readiness conflict or conflicting retry"
+          },
+          "422": {
+            "description": "Invalid input or unsupported reviewed snapshot"
+          },
+          "401": {
+            "description": "Valid Clerk session required"
+          }
+        },
+        "security": [
+          {
+            "ClerkSession": []
+          }
+        ]
+      }
+    },
+    "/api/duels/{match_id}/players/{player_id}/forfeit": {
+      "post": {
+        "tags": [
+          "Duel matches"
+        ],
+        "summary": "Forfeit",
+        "operationId": "forfeit_api_duels__match_id__players__player_id__forfeit_post",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Match Id"
+            }
+          },
+          {
+            "name": "player_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Player Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Version"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__duel_api__PlayerAction"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request, retained-history or action limit reached"
+          },
+          "503": {
+            "description": "Feature, migration, identity keys or storage unavailable"
+          },
+          "403": {
+            "description": "Host or source-sharing role rejected"
+          },
+          "404": {
+            "description": "Source/match/participation absent or unavailable to this actor"
+          },
+          "409": {
+            "description": "Stale version, source/phase/readiness conflict or conflicting retry"
+          },
+          "422": {
+            "description": "Invalid input or unsupported reviewed snapshot"
+          },
+          "401": {
+            "description": "Valid Clerk session required"
+          }
+        },
+        "security": [
+          {
+            "ClerkSession": []
+          }
+        ]
+      }
+    },
+    "/api/duels/{match_id}/start": {
+      "post": {
+        "tags": [
+          "Duel matches"
+        ],
+        "summary": "Start",
+        "operationId": "start_api_duels__match_id__start_post",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Match Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Version"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Action"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request, retained-history or action limit reached"
+          },
+          "503": {
+            "description": "Feature, migration, identity keys or storage unavailable"
+          },
+          "403": {
+            "description": "Host or source-sharing role rejected"
+          },
+          "404": {
+            "description": "Source/match/participation absent or unavailable to this actor"
+          },
+          "409": {
+            "description": "Stale version, source/phase/readiness conflict or conflicting retry"
+          },
+          "422": {
+            "description": "Invalid input or unsupported reviewed snapshot"
+          },
+          "401": {
+            "description": "Valid Clerk session required"
+          }
+        },
+        "security": [
+          {
+            "ClerkSession": []
+          }
+        ]
+      }
+    },
+    "/api/duels/{match_id}/cancel": {
+      "post": {
+        "tags": [
+          "Duel matches"
+        ],
+        "summary": "Cancel",
+        "operationId": "cancel_api_duels__match_id__cancel_post",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Match Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Version"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Action"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request, retained-history or action limit reached"
+          },
+          "503": {
+            "description": "Feature, migration, identity keys or storage unavailable"
+          },
+          "403": {
+            "description": "Host or source-sharing role rejected"
+          },
+          "404": {
+            "description": "Source/match/participation absent or unavailable to this actor"
+          },
+          "409": {
+            "description": "Stale version, source/phase/readiness conflict or conflicting retry"
+          },
+          "422": {
+            "description": "Invalid input or unsupported reviewed snapshot"
+          },
+          "401": {
+            "description": "Valid Clerk session required"
+          }
+        },
+        "security": [
+          {
+            "ClerkSession": []
+          }
+        ]
+      }
+    },
+    "/api/duels/{match_id}/results": {
+      "get": {
+        "tags": [
+          "Duel matches"
+        ],
+        "summary": "Results",
+        "operationId": "results_api_duels__match_id__results_get",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Match Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__duel_api__Results"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request, retained-history or action limit reached"
+          },
+          "503": {
+            "description": "Feature, migration, identity keys or storage unavailable"
+          },
+          "403": {
+            "description": "Host or source-sharing role rejected"
+          },
+          "404": {
+            "description": "Source/match/participation absent or unavailable to this actor"
+          },
+          "409": {
+            "description": "Stale version, source/phase/readiness conflict or conflicting retry"
+          },
+          "422": {
+            "description": "Invalid input or unsupported reviewed snapshot"
+          },
+          "401": {
+            "description": "Valid Clerk session required"
+          }
+        },
+        "security": [
+          {
+            "ClerkSession": []
+          }
+        ]
+      }
+    },
+    "/api/duels/{match_id}/review": {
+      "get": {
+        "tags": [
+          "Duel matches"
+        ],
+        "summary": "Review",
+        "operationId": "review_api_duels__match_id__review_get",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Match Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__duel_api__Review"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request, retained-history or action limit reached"
+          },
+          "503": {
+            "description": "Feature, migration, identity keys or storage unavailable"
+          },
+          "403": {
+            "description": "Host or source-sharing role rejected"
+          },
+          "404": {
+            "description": "Source/match/participation absent or unavailable to this actor"
+          },
+          "409": {
+            "description": "Stale version, source/phase/readiness conflict or conflicting retry"
+          },
+          "422": {
+            "description": "Invalid input or unsupported reviewed snapshot"
+          },
+          "401": {
+            "description": "Valid Clerk session required"
+          }
+        },
+        "security": [
+          {
+            "ClerkSession": []
+          }
+        ]
+      }
+    },
+    "/api/duels/{match_id}/rematch": {
+      "post": {
+        "tags": [
+          "Duel matches"
+        ],
+        "summary": "Rematch",
+        "operationId": "rematch_api_duels__match_id__rematch_post",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Match Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Rematch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Match"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request, retained-history or action limit reached"
+          },
+          "503": {
+            "description": "Feature, migration, identity keys or storage unavailable"
+          },
+          "403": {
+            "description": "Host or source-sharing role rejected"
+          },
+          "404": {
+            "description": "Source/match/participation absent or unavailable to this actor"
+          },
+          "409": {
+            "description": "Stale version, source/phase/readiness conflict or conflicting retry"
+          },
+          "422": {
+            "description": "Invalid input or unsupported reviewed snapshot"
+          },
+          "401": {
+            "description": "Valid Clerk session required"
+          }
+        },
+        "security": [
+          {
+            "ClerkSession": []
+          }
+        ]
+      }
+    },
+    "/api/me/player": {
+      "get": {
+        "tags": [
+          "Player identity"
+        ],
+        "summary": "Identity",
+        "operationId": "identity_api_me_player_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerIdentity"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Valid Clerk session required"
+          }
+        },
+        "security": [
+          {
+            "ClerkSession": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Action": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "waiting",
+              "countdown",
+              "running",
+              "finished",
+              "expired",
+              "cancelled"
+            ],
+            "title": "Status"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "version",
+          "reason",
+          "started_at",
+          "expires_at"
+        ],
+        "title": "Action"
+      },
+      "AnswerResult": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "choice": {
+            "type": "integer",
+            "title": "Choice"
+          },
+          "correct": {
+            "type": "boolean",
+            "title": "Correct"
+          },
+          "answer_index": {
+            "type": "integer",
+            "title": "Answer Index"
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation"
+          },
+          "answer_visual_html": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer Visual Html"
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "choice",
+          "correct",
+          "answer_index",
+          "explanation",
+          "answer_visual_html"
+        ],
+        "title": "AnswerResult"
+      },
+      "Attempt": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "source_deck_id": {
+            "type": "string",
+            "title": "Source Deck Id"
+          },
+          "lesson_id": {
+            "type": "string",
+            "title": "Lesson Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "source_hash": {
+            "type": "string",
+            "title": "Source Hash"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "completed",
+              "abandoned"
+            ],
+            "title": "Status"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "created_at": {
+            "type": "integer",
+            "title": "Created At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "abandoned_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Abandoned At"
+          },
+          "state": {
+            "$ref": "#/components/schemas/DeckState"
+          },
+          "cards": {
+            "items": {
+              "$ref": "#/components/schemas/PublicCard"
+            },
+            "type": "array",
+            "title": "Cards"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "source_deck_id",
+          "lesson_id",
+          "title",
+          "source_hash",
+          "parent_id",
+          "status",
+          "version",
+          "created_at",
+          "completed_at",
+          "abandoned_at",
+          "state",
+          "cards"
+        ],
+        "title": "Attempt"
+      },
+      "AttemptHistory": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/app__practice_api__AttemptSummary"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "title": "AttemptHistory"
+      },
+      "Availability": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "source_unavailable",
+                  "source_unapproved",
+                  "source_changed"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "available",
+          "reason"
+        ],
+        "title": "Availability"
+      },
+      "CreateAttempt": {
+        "properties": {
+          "which": {
+            "type": "string",
+            "enum": [
+              "all",
+              "hard"
+            ],
+            "title": "Which",
+            "default": "all"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CreateAttempt"
+      },
+      "CreateDuel": {
+        "properties": {
+          "source_kind": {
+            "type": "string",
+            "enum": [
+              "quiz",
+              "tournament"
+            ],
+            "title": "Source Kind"
+          },
+          "source_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Source Id"
+          },
+          "expected_question_set_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Expected Question Set Id"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "local",
+              "room"
+            ],
+            "title": "Mode"
+          },
+          "room_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Room Id"
+          },
+          "expected_room_version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Room Version"
+          },
+          "players": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "maxLength": 60,
+                  "minLength": 1
+                },
+                "type": "array",
+                "maxItems": 2,
+                "minItems": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Players"
+          },
+          "question_indices": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer",
+                  "maximum": 49.0,
+                  "minimum": 0.0
+                },
+                "type": "array",
+                "maxItems": 50,
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Question Indices"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_kind",
+          "source_id",
+          "expected_question_set_id",
+          "mode"
+        ],
+        "title": "CreateDuel"
+      },
+      "DeckState": {
+        "properties": {
+          "next": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next"
+          },
+          "known": {
+            "type": "integer",
+            "title": "Known"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "reviews": {
+            "type": "integer",
+            "title": "Reviews"
+          },
+          "hard": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Hard"
+          }
+        },
+        "type": "object",
+        "required": [
+          "next",
+          "known",
+          "total",
+          "reviews",
+          "hard"
+        ],
+        "title": "DeckState"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Management": {
+        "properties": {
+          "room_id": {
+            "type": "string",
+            "title": "Room Id"
+          },
+          "match_id": {
+            "type": "string",
+            "title": "Match Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "waiting",
+              "countdown",
+              "running",
+              "finished",
+              "expired",
+              "cancelled"
+            ],
+            "title": "Status"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "room_id",
+          "match_id",
+          "status",
+          "version",
+          "reason"
+        ],
+        "title": "Management"
+      },
+      "Match": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "local",
+              "room"
+            ],
+            "title": "Mode"
+          },
+          "room_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Room Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "waiting",
+              "countdown",
+              "running",
+              "finished",
+              "expired",
+              "cancelled"
+            ],
+            "title": "Status"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "created_at": {
+            "type": "integer",
+            "title": "Created At"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "server_now": {
+            "type": "integer",
+            "title": "Server Now"
+          },
+          "my_player_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "My Player Id"
+          },
+          "players": {
+            "items": {
+              "$ref": "#/components/schemas/Player"
+            },
+            "type": "array",
+            "title": "Players"
+          },
+          "source": {
+            "$ref": "#/components/schemas/Availability"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "mode",
+          "room_id",
+          "title",
+          "status",
+          "version",
+          "total",
+          "created_at",
+          "started_at",
+          "expires_at",
+          "server_now",
+          "my_player_id",
+          "players",
+          "source",
+          "reason"
+        ],
+        "title": "Match"
+      },
+      "MatchHistory": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Match"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "title": "MatchHistory"
+      },
+      "Player": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          },
+          "submitted": {
+            "type": "boolean",
+            "title": "Submitted"
+          },
+          "forfeited": {
+            "type": "boolean",
+            "title": "Forfeited"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "display_name",
+          "version",
+          "ready",
+          "submitted",
+          "forfeited"
+        ],
+        "title": "Player"
+      },
+      "PlayerAttempt": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "player_id": {
+            "type": "string",
+            "title": "Player Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "answers": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answers"
+          },
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          },
+          "submitted": {
+            "type": "boolean",
+            "title": "Submitted"
+          },
+          "forfeited": {
+            "type": "boolean",
+            "title": "Forfeited"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "waiting",
+              "countdown",
+              "running",
+              "finished",
+              "expired",
+              "cancelled"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "player_id",
+          "version",
+          "answers",
+          "ready",
+          "submitted",
+          "forfeited",
+          "status"
+        ],
+        "title": "PlayerAttempt"
+      },
+      "PlayerIdentity": {
+        "properties": {
+          "player_id": {
+            "type": "string",
+            "title": "Player Id"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "clerk",
+              "local_test"
+            ],
+            "title": "Provider"
+          }
+        },
+        "type": "object",
+        "required": [
+          "player_id",
+          "provider"
+        ],
+        "title": "PlayerIdentity"
+      },
+      "PublicCard": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "concept",
+              "diagram"
+            ],
+            "title": "Kind"
+          },
+          "front": {
+            "type": "string",
+            "title": "Front"
+          },
+          "back": {
+            "type": "string",
+            "title": "Back"
+          },
+          "front_visual_html": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Front Visual Html"
+          },
+          "back_visual_html": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Back Visual Html"
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "kind",
+          "front",
+          "back"
+        ],
+        "title": "PublicCard"
+      },
+      "PublicQuestion": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "multiple_choice",
+              "true_false",
+              "short_answer"
+            ],
+            "title": "Type"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Options"
+          },
+          "visual_html": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visual Html"
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "type",
+          "question",
+          "options"
+        ],
+        "title": "PublicQuestion",
+        "description": "A question as the browser sees it: no answer, no explanation."
+      },
+      "Questions": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/PublicQuestion"
+            },
+            "type": "array",
+            "title": "Questions"
+          },
+          "started_at": {
+            "type": "integer",
+            "title": "Started At"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "server_now": {
+            "type": "integer",
+            "title": "Server Now"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "questions",
+          "started_at",
+          "expires_at",
+          "server_now"
+        ],
+        "title": "Questions"
+      },
+      "Ready": {
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Version"
+          },
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_version",
+          "ready"
+        ],
+        "title": "Ready"
+      },
+      "Rematch": {
+        "properties": {
+          "expected_room_version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Room Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "Rematch"
+      },
+      "ReviewInput": {
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Version"
+          },
+          "card": {
+            "type": "integer",
+            "maximum": 99.0,
+            "minimum": 0.0,
+            "title": "Card"
+          },
+          "result": {
+            "type": "string",
+            "enum": [
+              "know",
+              "again"
+            ],
+            "title": "Result"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_version",
+          "card",
+          "result"
+        ],
+        "title": "ReviewInput"
+      },
+      "ReviewedAttempt": {
+        "properties": {
+          "player_id": {
+            "type": "string",
+            "title": "Player Id"
+          },
+          "answers": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answers"
+          },
+          "results": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AnswerResult"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "player_id",
+          "answers",
+          "results"
+        ],
+        "title": "ReviewedAttempt"
+      },
+      "SourceInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "source_kind": {
+            "type": "string",
+            "enum": [
+              "quiz",
+              "tournament"
+            ],
+            "title": "Source Kind"
+          },
+          "question_set_id": {
+            "type": "string",
+            "title": "Question Set Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "approved": {
+            "type": "boolean",
+            "title": "Approved"
+          },
+          "lesson_approved": {
+            "type": "boolean",
+            "title": "Lesson Approved"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "source_kind",
+          "question_set_id",
+          "title",
+          "total",
+          "approved",
+          "lesson_approved"
+        ],
+        "title": "SourceInfo"
+      },
+      "Submit": {
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Version"
+          },
+          "answers": {
+            "items": {
+              "type": "integer",
+              "maximum": 3.0,
+              "minimum": 0.0
+            },
+            "type": "array",
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Answers"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_version",
+          "answers"
+        ],
+        "title": "Submit"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "Version": {
+        "properties": {
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_version"
+        ],
+        "title": "Version"
+      },
+      "app__duel_api__PlayerAction": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "player_id": {
+            "type": "string",
+            "title": "Player Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "match_version": {
+            "type": "integer",
+            "title": "Match Version"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "waiting",
+              "countdown",
+              "running",
+              "finished",
+              "expired",
+              "cancelled"
+            ],
+            "title": "Status"
+          },
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          },
+          "submitted": {
+            "type": "boolean",
+            "title": "Submitted"
+          },
+          "forfeited": {
+            "type": "boolean",
+            "title": "Forfeited"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "player_id",
+          "version",
+          "match_version",
+          "status",
+          "ready",
+          "submitted",
+          "forfeited"
+        ],
+        "title": "PlayerAction"
+      },
+      "app__duel_api__PlayerResult": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "submitted": {
+            "type": "boolean",
+            "title": "Submitted"
+          },
+          "forfeited": {
+            "type": "boolean",
+            "title": "Forfeited"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "display_name",
+          "submitted",
+          "forfeited",
+          "score",
+          "total",
+          "rank"
+        ],
+        "title": "PlayerResult"
+      },
+      "app__duel_api__Results": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "finished",
+              "expired"
+            ],
+            "title": "Status"
+          },
+          "players": {
+            "items": {
+              "$ref": "#/components/schemas/app__duel_api__PlayerResult"
+            },
+            "type": "array",
+            "title": "Players"
+          },
+          "winner_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Winner Ids"
+          },
+          "scoring": {
+            "type": "string",
+            "const": "correct_answers_only",
+            "title": "Scoring"
+          },
+          "source": {
+            "$ref": "#/components/schemas/Availability"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "players",
+          "winner_ids",
+          "scoring",
+          "source"
+        ],
+        "title": "Results"
+      },
+      "app__duel_api__Review": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "finished",
+              "expired"
+            ],
+            "title": "Status"
+          },
+          "players": {
+            "items": {
+              "$ref": "#/components/schemas/app__duel_api__PlayerResult"
+            },
+            "type": "array",
+            "title": "Players"
+          },
+          "winner_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Winner Ids"
+          },
+          "scoring": {
+            "type": "string",
+            "const": "correct_answers_only",
+            "title": "Scoring"
+          },
+          "source": {
+            "$ref": "#/components/schemas/Availability"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/PublicQuestion"
+            },
+            "type": "array",
+            "title": "Questions"
+          },
+          "attempts": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewedAttempt"
+            },
+            "type": "array",
+            "title": "Attempts"
+          },
+          "solution": {
+            "items": {
+              "$ref": "#/components/schemas/app__duel_api__Solution"
+            },
+            "type": "array",
+            "title": "Solution"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "players",
+          "winner_ids",
+          "scoring",
+          "source",
+          "questions",
+          "attempts",
+          "solution"
+        ],
+        "title": "Review"
+      },
+      "app__duel_api__Solution": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "answer_index": {
+            "type": "integer",
+            "title": "Answer Index"
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation"
+          },
+          "answer_visual_html": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer Visual Html"
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "answer_index",
+          "explanation",
+          "answer_visual_html"
+        ],
+        "title": "Solution"
+      },
+      "app__practice_api__AttemptSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "source_deck_id": {
+            "type": "string",
+            "title": "Source Deck Id"
+          },
+          "lesson_id": {
+            "type": "string",
+            "title": "Lesson Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "source_hash": {
+            "type": "string",
+            "title": "Source Hash"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "completed",
+              "abandoned"
+            ],
+            "title": "Status"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "created_at": {
+            "type": "integer",
+            "title": "Created At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "abandoned_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Abandoned At"
+          },
+          "state": {
+            "$ref": "#/components/schemas/DeckState"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "source_deck_id",
+          "lesson_id",
+          "title",
+          "source_hash",
+          "parent_id",
+          "status",
+          "version",
+          "created_at",
+          "completed_at",
+          "abandoned_at",
+          "state"
+        ],
+        "title": "AttemptSummary"
+      }
+    },
+    "securitySchemes": {
+      "ClerkSession": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "A Clerk session token from the configured issuer and frontend origin."
+      }
+    }
+  }
+}

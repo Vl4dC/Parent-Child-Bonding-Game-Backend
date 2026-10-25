@@ -23,9 +23,10 @@ def digest(value):
 
 
 class DiagramGame:
-    def __init__(self, repository, clock=None):
+    def __init__(self, repository, clock=None, duels_enabled=False):
         self.store = DiagramStore(repository)
         self.clock = clock
+        self.duels_enabled = duels_enabled
         if not repository.durable and clock is not None:
             repository.diagram_clock_ms = clock
 
@@ -155,6 +156,29 @@ class DiagramGame:
                 }
             if room["closed"] or room["version"] != body["expected_room_version"]:
                 raise HTTPException(409, "Room changed or closed; read its current snapshot.")
+            check_duels = self.duels_enabled or hasattr(tx.repository, "duel_state")
+            if tx.connection is not None and not check_duels:
+                check_duels = tx.connection.execute(
+                    "select to_regclass('api_private.duel_matches') is not null"
+                ).fetchone()[0]
+            if check_duels:
+                if tx.connection is not None:
+                    active_duel = tx.connection.execute(
+                        "select exists(select 1 from api_private.duel_matches where room_id=%s "
+                        "and data->>'status' in ('waiting','running') and (data->>'expires_at')::bigint>%s)",
+                        (room["id"], now),
+                    ).fetchone()[0]
+                else:
+                    active_duel = any(
+                        m["room_id"] == room["id"]
+                        and m["status"] in ("waiting", "running")
+                        and m["expires_at"] > now
+                        for m in getattr(tx.repository, "duel_state", {})
+                        .get("matches", {})
+                        .values()
+                    )
+                if active_duel:
+                    raise HTTPException(409, "Finish or cancel the room's current duel first.")
             for existing in tx.active_races(room["id"]):
                 state = self.status(existing, tx.players(existing["id"]), now)
                 if state == "waiting" and existing["owner_id"] != room["host_id"]:

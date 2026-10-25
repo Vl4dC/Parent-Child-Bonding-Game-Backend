@@ -118,3 +118,22 @@ participant content access. Finished/expired cancellation is 409. Source-change 
 does not reopen on reapproval. Readiness now exposes enabled diagram dependency failures.
 See [new contracts and unchanged leave/rejoin policy](DIAGRAM_LIFECYCLE_READINESS.md). No client,
 proxy, UI, AI or harness files were modified. Fresh per-race acknowledgement remains future work.
+
+
+## Clerk and real practice-match handoff — 25 October 2026 addition
+
+Frontend main 3302544 uses Clerk. FastAPI production now verifies its Bearer session token and
+ignores player-selector impersonation. Read `/api/me/player` to obtain the mapped UUID used by
+room host/member IDs. See [Clerk setup](CLERK_BACKEND.md). No frontend file was changed here.
+
+Use the new [duel/card contract](DUELS_AND_FLASHCARD_ATTEMPTS.md) and
+[OpenAPI supplement](duels-flashcards-clerk.openapi.json). Add proxy/client support for `duels`,
+`flashcard-attempts`, new flashcard attempt suffixes and `me/player`; preserve Authorization and
+Idempotency-Key and support PUT. FastAPI CORS already allows the required headers for exact origins.
+
+A local duel has two creator-controlled slots; room mode has two independent verified players
+with fresh per-match readiness. Use separate match/player versions; no early score/key reveal.
+Render question/answer visual HTML in the existing sandboxed frame contract. Do not submit both
+players to the same legacy solo tournament. Card restart creates a new attempt ID; render its
+frozen cards/state rather than resetting browser-only progress. Existing review/progress APIs
+remain available. Deployment, real tenant/device acceptance and feature enablement are separate.

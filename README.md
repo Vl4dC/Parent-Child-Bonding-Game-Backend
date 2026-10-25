@@ -168,3 +168,19 @@ diagram dependencies. Apply migration 009 after 008; nothing applies migrations 
 Use `uv run python -m app.diagram_preflight --probe` to check before enabling.
 See [lifecycle, API, rollout and remaining work](docs/DIAGRAM_LIFECYCLE_READINESS.md).
 This entry is append-only; no frontend or AI changes or hosted deployment are included.
+
+
+## Duel/card attempts and Clerk — 25 October 2026 addition
+
+The current production API requires Clerk session verification. This supersedes earlier public-mode
+instructions retained above; anonymous UUID selection is limited to explicit development/test mode.
+See [Clerk setup](docs/CLERK_BACKEND.md), [duel/card APIs](docs/DUELS_AND_FLASHCARD_ATTEMPTS.md), and
+[deployment preparation](docs/DEPLOYMENT_READINESS_DUELS.md). This implementation is prepared for
+an unmerged review branch; no hosted deployment or migration was executed.
+
+New opt-in flags are `DUELS_ENABLED=false` and `FLASHCARD_ATTEMPTS_ENABLED=false`. Apply migrations
+010/011 explicitly and run `uv run python -m app.release_check` before controlled enablement.
+The read-only check probes the new schemas without changing flags; `--renderer` also checks the
+existing diagram browser. Production startup rejects missing Clerk configuration.
+Real matches use reviewed saved questions with independent sheets; flashcard restarts freeze
+existing cards and preserve earlier results. No frontend or AI/model/harness source changed.

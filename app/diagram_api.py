@@ -211,7 +211,9 @@ async def actor(request: Request, owner: Annotated[str, Depends(player_id)]):
     await asyncio.to_thread(reserve_request, repository, owner, settings.api_requests_per_minute)
     return Actor(
         owner,
-        DiagramGame(repository, getattr(request.app.state, "diagram_clock_ms", None)),
+        DiagramGame(
+            repository, getattr(request.app.state, "diagram_clock_ms", None), settings.duels_enabled
+        ),
         request,
     )
 

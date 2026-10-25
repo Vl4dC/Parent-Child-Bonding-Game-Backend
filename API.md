@@ -82,3 +82,21 @@ failure returns 503. Disabled features do not require Node/Chromium. Responses a
 See [exact rules and examples](docs/DIAGRAM_LIFECYCLE_READINESS.md) and the additive
 [15-operation diagram/readiness OpenAPI snapshot](docs/diagram-lifecycle-readiness.openapi.json).
 Earlier API descriptions and snapshots are preserved as historical records.
+
+
+## Clerk, real duels and card attempts — 25 October 2026 addition
+
+Current production requests require a verified Clerk Bearer session; earlier anonymous-mode sections
+are historical. `X-Player-ID` cannot override a verified identity. `GET /api/me/player` supplies the
+mapped UUID used by room membership. Account/login/signup endpoints remain removed.
+The new APIs provide 16 duel operations and 6 card-attempt operations, plus that identity read.
+See [complete bodies, responses and version rules](docs/DUELS_AND_FLASHCARD_ATTEMPTS.md),
+[Clerk verification](docs/CLERK_BACKEND.md), and the new
+[OpenAPI supplement](docs/duels-flashcards-clerk.openapi.json). Existing snapshots are retained.
+
+New writes require Idempotency-Key; unknown fields, caller scores/actors/timestamps and stale
+versions are rejected. Room duels require two captured verified players and fresh match readiness.
+Local duels are creator-controlled pass-the-phone slots. Scores/solutions unlock only after both
+attempts end or expiry. Card restart is deterministic and preserves original deck/earlier progress.
+Enabled features add migration checks to `/ready`, and new routes reject unready feature storage.
+Both features default off. See [migration, staging and rollback handoff](docs/DEPLOYMENT_READINESS_DUELS.md).

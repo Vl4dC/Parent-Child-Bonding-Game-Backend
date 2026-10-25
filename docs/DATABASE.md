@@ -102,3 +102,21 @@ Preflight checks tables, indexes, cleanup/invalidation functions and an origin-e
 The migration has no historical repair sweep. Drain/cancel previously stale matches before
 enabling an existing deployment; see [rollout and readiness](DIAGRAM_LIFECYCLE_READINESS.md).
 No hosted database was migrated as part of implementation.
+
+
+## Clerk player mapping and migrations 010/011 — 25 October 2026
+
+Verified Clerk issuer/subject pairs now select stable derived UUIDs before existing request-local
+RLS claims are set. There is no automatic ownership migration from anonymous/default-player data.
+See [mapping and configuration](CLERK_BACKEND.md). No Supabase Auth provider client is introduced.
+
+Migration 010 adds private source/lesson links for owned card-attempt records, insert/delete
+triggers and history/receipt indexes. Source/lesson deletion removes attempts and their creation
+receipts. Migration 011 adds private duel match/player/request tables, source/room deletion
+cascades, source invalidation and caller-bound participant erasure. New private tables have RLS
+and no browser-role table privileges. The normal card-attempt records keep existing owner RLS.
+
+Apply after 009 explicitly; startup never migrates. Tests cover both empty-schema installation and
+010/011 upgrade with legacy records retained, plus rollback, role privileges, concurrency, restart
+and source/data erasure. Feature readiness verifies required tables/functions/indexes and active
+triggers. See [deployment checks](DEPLOYMENT_READINESS_DUELS.md); no hosted SQL was executed.
