@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     memory_db_path: str | None = None
     # SQLite file for homes, wallets and friends. Unset: home.db, or in memory for tests.
     home_db_path: str | None = None
+    presence_ttl_seconds: int = Field(90, ge=30, le=300)
+    game_invite_ttl_seconds: int = Field(600, ge=60, le=3600)
+    game_invites_per_hour: int = Field(30, ge=1, le=100)
     model_timeout_seconds: int = Field(60, ge=1, le=300)
 
     @property
