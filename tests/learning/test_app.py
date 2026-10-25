@@ -145,6 +145,37 @@ def test_auto_visuals_are_stored_and_rendered(client, lesson_id):
     assert client.get(f"/api/lessons/{lesson_id}").json()["visuals"] == [v]
 
 
+def test_illustration_is_stored_in_the_lesson_and_served_as_an_img(client, lesson_id, monkeypatch):
+    import base64
+    import io
+
+    from PIL import Image
+
+    import learning_service.routes as app_module
+    from learning_service.visuals.illustrate import to_webp
+    from learning_service.visuals.models import Visual
+
+    raw = io.BytesIO()
+    Image.new("RGB", (1200, 900), "orange").save(raw, "PNG")
+    code = "data:image/webp;base64," + base64.b64encode(to_webp(raw.getvalue())).decode()
+    pic = Visual(
+        kind="illustration",
+        section_index=0,
+        title="Addresses",
+        caption="Every device has an address.",
+        alt="a row of houses, each with a mailbox",
+        code=code,
+    )
+    monkeypatch.setattr(app_module, "make_visuals", lambda _request: [pic])
+    [v] = client.post(f"/api/lessons/{lesson_id}/visuals", json={}).json()["visuals"]
+    assert v["kind"] == "illustration" and f'src="{code}"' in v["html"]
+    assert client.get(f"/api/lessons/{lesson_id}").json()["visuals"] == [
+        v
+    ]  # stored with the lesson
+    page = client.get(f"/api/lessons/{lesson_id}/visuals/{v['id']}/view")
+    assert page.status_code == 200 and '<img class="illustration"' in page.text
+
+
 def test_ask_is_passed_and_visuals_accumulate(client, lesson_id):
     client.post(f"/api/lessons/{lesson_id}/visuals", json={})
     client.post(f"/api/lessons/{lesson_id}/visuals", json={"ask": "  show me a firewall  "})

@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     database_lock_timeout_ms: int = Field(3000, ge=100, le=30000)
     database_statement_timeout_ms: int = Field(30000, ge=1000, le=300000)
     generation_enabled: bool = False
+    # False lifts the daily attempt budget, the per-minute request budget and the busy gate.
+    generation_limits_enabled: bool = True
     generation_concurrency: int = Field(2, ge=1, le=8)
     generation_daily_limit: int = Field(30, ge=1, le=1000)
     api_requests_per_minute: int = Field(120, ge=1, le=10000)
@@ -34,9 +36,20 @@ class Settings(BaseSettings):
     # Meaning-based book search. Empty disables it (keyword search only); needs the provider's API key.
     embedding_model: str | None = "openrouter:openai/text-embedding-3-small"
     embedding_dimensions: int = Field(512, ge=64, le=3072)
+    illustrations_enabled: bool = False
+    illustration_model: str = "anthropic/claude-haiku-5.5"
+    illustrations_per_lesson: int = Field(2, ge=0, le=5)
     # SQLite file for chat memory (conversations kept per player). Unset: memory.db, or in memory for tests.
     memory_db_path: str | None = None
     model_timeout_seconds: int = Field(60, ge=1, le=300)
+
+    @property
+    def daily_limit(self) -> int | None:
+        return self.generation_daily_limit if self.generation_limits_enabled else None
+
+    @property
+    def requests_per_minute(self) -> int | None:
+        return self.api_requests_per_minute if self.generation_limits_enabled else None
 
     @field_validator("cors_origins")
     @classmethod
