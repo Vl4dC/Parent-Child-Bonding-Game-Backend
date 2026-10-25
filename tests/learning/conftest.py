@@ -69,8 +69,16 @@ def _fresh_image_approvals():
 
 @pytest.fixture(autouse=True)
 def _no_visual_model(monkeypatch):
-    """A VISUAL_MODEL, SAFETY_MODEL or AUDIENCE_MAX_AGE in the developer's .env must not leak into tests."""
-    for name in ("VISUAL_MODEL", "SAFETY_MODEL", "AUDIENCE_MAX_AGE"):
+    """A VISUAL_MODEL, SAFETY_MODEL, AUDIENCE_MAX_AGE or illustration setting in the developer's .env must not
+    leak into tests."""
+    for name in (
+        "VISUAL_MODEL",
+        "SAFETY_MODEL",
+        "AUDIENCE_MAX_AGE",
+        "ILLUSTRATIONS_ENABLED",
+        "ILLUSTRATION_MODEL",
+        "ILLUSTRATIONS_PER_LESSON",
+    ):
         monkeypatch.delenv(name, raising=False)
 
 

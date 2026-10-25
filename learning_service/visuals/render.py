@@ -24,9 +24,12 @@ LIBS = {
         "https://cdn.jsdelivr.net/npm/vega-embed@6.26.0/build/vega-embed.min.js",
     ],
     "interactive": [],
+    "illustration": [],
 }
 
-MAX_CHARS = {"diagram": 5_000, "chart": 30_000, "interactive": 40_000}
+# An illustration's code is a WebP data URL (~100-300 KB), produced by illustrate.py, not by a chat model
+MAX_CHARS = {"diagram": 5_000, "chart": 30_000, "interactive": 40_000, "illustration": 1_500_000}
+ILLUSTRATION_URL = re.compile(r"data:image/(webp|png|jpeg);base64,[A-Za-z0-9+/]+={0,2}")
 
 MERMAID_TYPES = {
     "flowchart",
@@ -130,6 +133,11 @@ def validate(kind: VisualKind, code: str) -> str | None:
                 )
         return None
 
+    if kind == "illustration":
+        if not ILLUSTRATION_URL.fullmatch(code):
+            return "an illustration must be a base64 WebP, PNG or JPEG data URL"
+        return None
+
     for pattern, why in INTERACTIVE_BANNED:
         if re.search(pattern, code, flags=re.I):
             return why
@@ -151,6 +159,7 @@ THEME = """
 html, body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
 #root { padding:12px; }
 .mermaid { display:flex; justify-content:center; margin:0; }
+.illustration { display:block; width:100%; max-width:1024px; height:auto; margin:0 auto; border-radius:8px; }
 .visual-error { padding:12px; border-radius:8px; border:1px dashed var(--line); color:var(--muted); }
 """
 
@@ -225,6 +234,12 @@ def document(visual: Visual, visual_id: str) -> str:
     elif visual.kind == "chart":
         body = '<div id="chart" style="width:100%"></div>'
         run = CHART_RUN.replace("__SPEC__", _script_json(json.loads(visual.code)))
+    elif visual.kind == "illustration":
+        body = (
+            f'<img class="illustration" src="{html.escape(visual.code)}" alt="{html.escape(visual.alt)}" '
+            "onerror=\"__fail('image did not load')\">"
+        )
+        run = ""
     else:
         body, run = visual.code, ""
 

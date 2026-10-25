@@ -1,9 +1,12 @@
+import base64
+import io
 import json
 
+import httpx
 import pytest
 
 from learning_service.lesson import LessonSection, SectionVisual
-from learning_service.visuals import harness, render
+from learning_service.visuals import harness, illustrate, render
 from learning_service.visuals.models import (
     Visual,
     VisualDraft,
@@ -23,6 +26,7 @@ GOOD = {
         }
     ),
     "interactive": '<input id="s" type="range"><svg viewBox="0 0 10 10"></svg><script>s.oninput=()=>{}</script>',
+    "illustration": "data:image/webp;base64,UklGRhYAAABXRUJQVlA4",
 }
 
 
@@ -61,6 +65,9 @@ def test_good_code_passes(kind):
         ("interactive", "<script>alert(1)</script>", "alert"),
         ("interactive", "<html><body><svg></svg></body></html>", "fragment"),
         ("interactive", "", "empty"),
+        ("illustration", "https://example.com/a.webp", "data URL"),
+        ("illustration", "data:image/svg+xml;base64,PHN2Zz4=", "data URL"),
+        ("illustration", 'data:image/webp;base64,AAAA" onload="alert(1)', "data URL"),
     ],
 )
 def test_bad_code_is_rejected_with_reason(kind, code, reason):
@@ -110,12 +117,15 @@ def test_chart_and_alt_cannot_break_out_of_script():
 
 # ---------------------------------------------------------------- skills
 def test_skills_loaded_with_when_and_how():
-    assert set(harness.SKILLS) == {"diagram", "chart", "interactive"}
+    assert set(harness.SKILLS) == {"diagram", "chart", "interactive", "illustration"}
     for s in harness.SKILLS.values():
         assert s.description and "#" in s.body
 
 
-def test_planner_sees_descriptions_not_bodies():
+def test_planner_sees_descriptions_not_bodies(monkeypatch):
+    off = harness.plan_prompt(request(ask="show me a firewall"))
+    assert harness.SKILLS["illustration"].description not in off  # switched off: not offered
+    monkeypatch.setenv("ILLUSTRATIONS_ENABLED", "true")
     p = harness.plan_prompt(request(ask="show me a firewall"))
     for s in harness.SKILLS.values():
         assert s.description in p
@@ -256,3 +266,117 @@ def test_drawer_uses_the_separate_visual_model_only_when_one_is_set(monkeypatch)
     monkeypatch.setenv("VISUAL_MODEL", "openrouter:anthropic/claude-haiku-5.5")
     harness.drawer_llm()
     assert asked == [None, "openrouter:anthropic/claude-haiku-5.5"]
+
+
+# ---------------------------------------------------------------- illustrations
+def illustrations_on(monkeypatch, per_lesson=2):
+    monkeypatch.setenv("ILLUSTRATIONS_ENABLED", "true")
+    monkeypatch.setenv("ILLUSTRATIONS_PER_LESSON", str(per_lesson))
+
+
+def test_illustration_document_is_an_escaped_img_without_libraries():
+    doc = render.document(visual("illustration", alt='a "seed"<b>'), "v")
+    assert f'<img class="illustration" src="{GOOD["illustration"]}"' in doc
+    assert 'alt="a &quot;seed&quot;&lt;b&gt;"' in doc
+    assert "cdn.jsdelivr.net" not in doc and "img-src data:" in doc
+
+
+def test_illustration_prompt_has_house_style_age_rules_and_no_text():
+    young = illustrate.prompt("a seed sprouting", "plants", 9)
+    older = illustrate.prompt("a seed sprouting", "plants", 16)
+    for p in (young, older):
+        assert "Show: a seed sprouting" in p and "no text, letters, numbers" in p
+        assert "nothing scary, violent, gory or suggestive" in p
+    assert "picture-book" in young and "science-textbook" in older
+
+
+def test_to_webp_shrinks_wide_images():
+    from PIL import Image
+
+    raw = io.BytesIO()
+    Image.new("RGB", (2048, 1536), "green").save(raw, "PNG")
+    img = Image.open(io.BytesIO(illustrate.to_webp(raw.getvalue())))
+    assert img.format == "WEBP" and img.size == (1024, 768)
+    with pytest.raises(illustrate.IllustrationFailed):
+        illustrate.to_webp(b"not an image")
+
+
+def fake_image_api(monkeypatch, response=None, error=None):
+    """Replace the HTTP call to the image endpoint; returns the request bodies it received."""
+    from PIL import Image
+
+    raw = io.BytesIO()
+    Image.new("RGB", (64, 48), "blue").save(raw, "JPEG")
+    body = response or {
+        "data": [
+            {"b64_json": base64.b64encode(raw.getvalue()).decode(), "media_type": "image/jpeg"}
+        ],
+        "usage": {"cost": 0.03},
+    }
+    sent = []
+
+    def post(url, headers, json, timeout):
+        sent.append(json)
+        if error:
+            raise error
+        return httpx.Response(200, json=body, request=httpx.Request("POST", url))
+
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    monkeypatch.setattr(illustrate.httpx, "post", post)
+    illustrate._generate.cache_clear()
+    return sent
+
+
+def test_illustration_is_drawn_with_one_image_call_and_no_chat_model(monkeypatch):
+    illustrations_on(monkeypatch)
+    sent = fake_image_api(monkeypatch)
+    visuals, llm = run(
+        monkeypatch, {VisualDraft: by_skill}, lesson=lesson_with(["illustration", "chart"])
+    )
+    assert [v.kind for v in visuals] == ["illustration", "chart"]
+    pic = visuals[0]
+    assert render.validate("illustration", pic.code) is None
+    assert pic.code.startswith("data:image/webp;base64,")
+    assert (pic.title, pic.caption, pic.alt) == ("Section 0", "p", "draw 0")
+    assert (
+        len(sent) == 1 and "Show: draw 0" in sent[0]["prompt"] and sent[0]["aspect_ratio"] == "4:3"
+    )
+    assert len(llm.prompts) == 1  # only the chart went to the chat model
+
+
+def test_same_illustration_is_not_requested_twice(monkeypatch):
+    illustrations_on(monkeypatch)
+    sent = fake_image_api(monkeypatch)
+    first = illustrate.illustrate("a seed", "plants", 10)
+    assert illustrate.illustrate("a seed", "plants", 10) == first and len(sent) == 1
+
+
+@pytest.mark.parametrize(
+    "kw",
+    [
+        {"error": httpx.ConnectTimeout("slow")},
+        {"response": {"data": []}},
+        {"response": {"data": [{"b64_json": base64.b64encode(b"junk").decode()}]}},
+    ],
+)
+def test_failed_illustration_is_dropped_not_fatal(monkeypatch, kw):
+    illustrations_on(monkeypatch)
+    fake_image_api(monkeypatch, **kw)
+    visuals, _ = run(
+        monkeypatch, {VisualDraft: by_skill}, lesson=lesson_with(["illustration", "diagram"])
+    )
+    assert [v.kind for v in visuals] == ["diagram"]
+
+
+def test_illustrations_switched_off_are_never_requested(monkeypatch):
+    sent = fake_image_api(monkeypatch)
+    visuals, _ = run(monkeypatch, {VisualDraft: by_skill}, lesson=lesson_with(["illustration"]))
+    assert visuals == [] and sent == []
+
+
+def test_missing_api_key_fails_cleanly(monkeypatch):
+    illustrations_on(monkeypatch)
+    fake_image_api(monkeypatch)
+    monkeypatch.delenv("OPENROUTER_API_KEY")
+    with pytest.raises(illustrate.IllustrationFailed, match="OPENROUTER_API_KEY"):
+        illustrate.illustrate("a seed", "plants", 10)

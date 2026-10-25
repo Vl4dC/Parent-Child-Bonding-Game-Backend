@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     # Meaning-based book search. Empty disables it (keyword search only); needs the provider's API key.
     embedding_model: str | None = "openrouter:openai/text-embedding-3-small"
     embedding_dimensions: int = Field(512, ge=64, le=3072)
+    illustrations_enabled: bool = False
+    illustration_model: str = "google/gemini-3.1-flash-lite-image"
+    illustrations_per_lesson: int = Field(2, ge=0, le=5)
     model_timeout_seconds: int = Field(60, ge=1, le=300)
 
     @field_validator("cors_origins")

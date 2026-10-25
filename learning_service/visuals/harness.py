@@ -8,7 +8,9 @@ Built the way Claude's own harness handles skills and artifacts:
                 section a `visual` plan (or none), adapting to topic, age and preference.
                 Only a learner's own request (`ask`) needs a separate planner call here.
   draw          per plan item, in parallel: load that skill, write the code, validate,
-                and retry with the validator's reason if it was rejected
+                and retry with the validator's reason if it was rejected.
+                An illustration skips the chat model: its brief goes straight to the
+                image model (illustrate.py), one call, a few seconds
   render        render.document() wraps each visual in a sandboxed page
 
 Graph:
@@ -30,10 +32,10 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 
 from app.generation import model_settings
-from learning_service.lesson import reading_level
+from learning_service.lesson import reading_level, visual_menu
 from learning_service.quiz_graph import _llm
 from learning_service.safety import content_rules
-from learning_service.visuals import render
+from learning_service.visuals import illustrate, render
 from learning_service.visuals.models import (
     Visual,
     VisualDraft,
@@ -42,7 +44,7 @@ from learning_service.visuals.models import (
     VisualPlanItem,
     VisualRequest,
 )
-from learning_service.visuals.skillbook import SKILLS, menu
+from learning_service.visuals.skillbook import SKILLS
 
 log = logging.getLogger("visuals")
 MAX_ATTEMPTS = 3
@@ -88,7 +90,7 @@ def plan_prompt(req: VisualRequest) -> str:
         f'A {req.age}-year-old learner studying "{req.topic}" asked to see: "{req.ask}".\n'
         "Plan exactly one visual that answers this request, tied to the closest lesson section. "
         "Show the real mechanism, not a decorative picture.\n\n"
-        f"Available kinds (pick the one whose description fits best):\n{menu()}\n\n"
+        f"Available kinds (pick the one whose description fits best):\n{visual_menu()}\n\n"
         f"Lesson sections (refer to them by number):\n{_sections(req)}\n\n"
         "`brief` must say exactly what to draw: the elements, their labels in the learner's words, "
         "and for an interactive, the control and what it changes.\n\n"
@@ -142,9 +144,36 @@ def draw_prompt(req: VisualRequest, item: VisualPlanItem, feedback: str = "") ->
     )
 
 
+def draw_illustration(payload: dict) -> dict:
+    """One image-model call; the words around the picture come from the plan, so no chat model is needed."""
+    req: VisualRequest = payload["request"]
+    item: VisualPlanItem = payload["item"]
+    if not illustrate.enabled():
+        return {"drawn": {}}
+    try:
+        code = illustrate.illustrate(item.brief, req.topic, req.age)
+    except Exception:
+        log.warning("drawing illustration failed")
+        return {"drawn": {}}
+    if render.validate(item.kind, code) is not None:
+        log.warning("illustration rejected by the validator")
+        return {"drawn": {}}
+    visual = Visual(
+        title=req.lesson.sections[item.section_index].heading,
+        caption=item.purpose,
+        alt=item.brief,
+        code=code,
+        kind=item.kind,
+        section_index=item.section_index,
+    )
+    return {"drawn": {payload["n"]: visual}}
+
+
 def draw_visual(payload: dict) -> dict:
     req: VisualRequest = payload["request"]
     item: VisualPlanItem = payload["item"]
+    if item.kind == "illustration":
+        return draw_illustration(payload)
     feedback = ""
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
