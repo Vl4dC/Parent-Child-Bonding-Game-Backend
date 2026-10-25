@@ -16,6 +16,7 @@ from __future__ import annotations
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Body, HTTPException, Request
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from app.repository import current_session
@@ -70,6 +71,7 @@ class PlayerOut(BaseModel):
 
 
 class MatchState(BaseModel):
+    can_start: bool = False
     id: str
     challenge_id: str
     game: Literal["mcq", "heads_up", "diagram"]
@@ -305,3 +307,36 @@ def get_results(match_id: MatchId, request: Request) -> Results:
         return Results(**matches.results(doc, matches.clock()))
     except MatchError as exc:
         raise HTTPException(exc.status, exc.message) from exc
+
+
+@router.get(
+    "/{match_id}/diagram/view",
+    response_class=HTMLResponse,
+    summary="View the masked diagram board",
+    responses=errors(404, 409),
+)
+def diagram_view(match_id: MatchId, request: Request):
+    """Render only the public masked diagram for a captured participant. The private slot answers
+    remain server-side; the response must stay in a sandboxed iframe."""
+    from learning_service.visuals.models import Visual
+    from learning_service.visuals.render import document
+
+    doc = memory_of(request).get_match(player_id(), match_id)
+    if doc is None:
+        raise gone()
+    if doc["game"] != "diagram":
+        raise HTTPException(409, "This match has no diagram board.")
+    code = doc["mermaid"]
+    for slot in doc["slots"]:
+        code = code.replace(f'{slot}["?"]', f'{slot}["{slot}: ?"]')
+    visual = Visual(
+        kind="diagram",
+        section_index=0,
+        title=doc["title"],
+        caption="Fill the missing labels.",
+        alt="Diagram with missing labels",
+        code=code,
+    )
+    return HTMLResponse(
+        document(visual, match_id), headers={"Content-Security-Policy": "sandbox allow-scripts"}
+    )

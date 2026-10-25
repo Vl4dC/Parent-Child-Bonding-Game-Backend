@@ -220,3 +220,11 @@ Only this prefix requires Clerk tokens, per the user's updated decision; legacy 
 unchanged. Swagger has typed schemas, examples and a scoped Bearer authorization scheme.
 Configure the issuer and signed claims before switching `SOCIAL_API=backend`. This supersedes
 earlier statements that these routes and scoped token verification were still pending.
+
+## Core UI integration helpers
+
+Use the restart-deck endpoint for "study again" instead of resetting reviews in browser storage.
+Use room match discovery to navigate joined players after the host starts the game; outsiders and
+late arrivals not captured in the match receive 404. Render the masked diagram-view HTML only in
+an iframe with scripts allowed and same-origin permission absent. Existing match/diagram rules,
+participation rewards and all older endpoints remain unchanged. See the additive API.md section.

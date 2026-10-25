@@ -512,6 +512,14 @@ class MemoryStore:
             return None
         return json.loads(rows[0]["doc"])
 
+    def room_match(self, player_id: str, room_id: str) -> dict | None:
+        rows = self._query(
+            "select m.id from matches m join challenges c on c.id=m.challenge_id "
+            "where c.room_id=? and m.expires_at>? order by m.created_at desc,m.id desc limit 1",
+            (room_id, now()),
+        )
+        return self.get_match(player_id, rows[0]["id"]) if rows else None
+
     def mutate_match(self, player_id: str, match_id: str, change):
         """Read the match, let `change(doc)` modify it and return a result, and save it, all in one transaction so
         simultaneous players cannot overwrite each other. If `change` raises, nothing is saved. Returns the result,

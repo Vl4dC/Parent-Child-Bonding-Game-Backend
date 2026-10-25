@@ -14,7 +14,7 @@ Graph:
 
 Install:  pip install langgraph langchain langchain-anthropic pydantic
 Run:      python quiz_graph.py "medium quiz on AWS VPC networking" -n 6
-Model:    set QUIZ_MODEL (default anthropic:claude-sonnet-5-5), needs ANTHROPIC_API_KEY
+Model:    set QUIZ_MODEL (default openai/gpt-6-luna via OpenRouter), needs OPENROUTER_API_KEY
 """
 
 from __future__ import annotations
@@ -143,11 +143,14 @@ def _llm(model: str | None = None, temperature: float = 1.0):
     """The chat model. `model` overrides QUIZ_MODEL (same format), e.g. for a separate visual agent."""
     runtime = model_settings.get()
     model = model or (
-        runtime.quiz_model if runtime else os.getenv("QUIZ_MODEL", "anthropic:claude-sonnet-5-5")
+        runtime.quiz_model if runtime else os.getenv("QUIZ_MODEL", "openai/gpt-6-luna")
     )
     timeout = (
         runtime.model_timeout_seconds if runtime else int(os.getenv("MODEL_TIMEOUT_SECONDS", "60"))
     )
+    # Bare vendor/model IDs are OpenRouter names; keep the selected model ID intact.
+    if model.startswith(("openai/", "anthropic/")):
+        model = "openrouter:" + model
     if model.startswith("openrouter:"):
         # e.g. openrouter:anthropic/claude-sonnet-5.5 (OpenAI-compatible endpoint)
         return init_chat_model(

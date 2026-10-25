@@ -32,8 +32,8 @@ class Settings(BaseSettings):
     diagram_browser_sandbox: bool = True
     diagram_render_timeout: int = Field(20, ge=5, le=60)
     diagram_render_concurrency: int = Field(1, ge=1, le=4)
-    quiz_model: str = "anthropic:claude-sonnet-5-5"
-    visual_model: str | None = None
+    quiz_model: str = "openai/gpt-6-luna"
+    visual_model: str | None = "openrouter:anthropic/claude-haiku-5.5"
     # Meaning-based book search. Empty disables it (keyword search only); needs the provider's API key.
     embedding_model: str | None = "openrouter:openai/text-embedding-3-small"
     embedding_dimensions: int = Field(512, ge=64, le=3072)

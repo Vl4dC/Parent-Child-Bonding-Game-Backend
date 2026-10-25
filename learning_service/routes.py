@@ -777,3 +777,58 @@ def view_card(
     if visual is None:
         raise HTTPException(404, f"This card has no diagram on its {side}")
     return HTMLResponse(document(visual, f"{deck.id}-{index}-{side}"), headers=SANDBOXED)
+
+
+class RestartDeckIn(BaseModel):
+    expected_reviews: int = Field(ge=0, strict=True)
+
+
+@app.post(
+    "/api/flashcards/{deck_id}/restart",
+    tags=[CARDS],
+    response_model=flashcards.PublicDeck,
+    summary="Practise the same cards again",
+    responses=errors(404, 409),
+)
+def restart_deck(
+    deck_id: DeckId,
+    body: Annotated[
+        RestartDeckIn,
+        Body(
+            openapi_examples={
+                "restart": {
+                    "summary": "Start another pass after eight reviews",
+                    "value": {"expected_reviews": 8},
+                }
+            }
+        ),
+    ],
+    idempotency_key: Annotated[str, Header(min_length=8, max_length=128)],
+):
+    """Create a fresh review pass over the same cards without a model call. The old pass stays unchanged.
+    An exact request-key replay returns the same new deck; changed input or stale review counts returns 409."""
+    source = get_or_404(DECKS, deck_id, "Deck")
+    previous = source.restart_receipts.get(idempotency_key)
+    if previous:
+        if previous["expected_reviews"] != body.expected_reviews:
+            raise HTTPException(409, "Request key already used for another restart.")
+        return get_or_404(DECKS, previous["deck_id"], "Deck").public()
+    if body.expected_reviews != source.progress.reviews:
+        raise HTTPException(409, "Deck changed. Reload before restarting.")
+    if len(source.restart_receipts) >= 1000:
+        raise HTTPException(429, "This deck reached its restart limit.")
+    fresh = source.model_copy(
+        deep=True,
+        update={
+            "id": new_id(),
+            "progress": flashcards.start(len(source.cards)),
+            "review_receipts": {},
+            "restart_receipts": {},
+        },
+    )
+    DECKS[fresh.id] = fresh
+    source.restart_receipts[idempotency_key] = {
+        "expected_reviews": body.expected_reviews,
+        "deck_id": fresh.id,
+    }
+    return fresh.public()
